@@ -13,17 +13,37 @@ como PWA. El plan por hitos y las decisiones tomadas están en
 
 ## Comandos
 
-> Se completan cuando exista el esqueleto (hito 1).
-
 ```bash
+npm run db:start     # Supabase local en Docker (después: npx supabase status -o env para las claves)
 npm run dev          # servidor de desarrollo (usa MockProvider si no hay BGG_API_TOKEN)
 npm run lint
-npm run typecheck    # tsc --noEmit
+npm run typecheck    # next typegen + tsc --noEmit
 npm test             # vitest
-npm run test:e2e     # playwright
-supabase db reset    # recrea la base local aplicando supabase/migrations/
-supabase gen types typescript --local > src/lib/supabase/database.types.ts
+npm run format       # prettier (con plugin de Tailwind)
+npm run db:reset     # recrea la base local aplicando supabase/migrations/
+npm run db:types     # regenera src/lib/supabase/database.types.ts
+npm run build
 ```
+
+Puesta en marcha local: `npm install`, `npm run db:start`, copiar
+`.env.example` a `.env.local` y completar las claves con
+`npx supabase status -o env` (`API_URL`, `PUBLISHABLE_KEY` y `SECRET_KEY`).
+
+## Next.js 16.4: leer antes de escribir código
+
+Esta versión trae cambios que no están en los datos de entrenamiento (ver
+`AGENTS.md`). La documentación de la versión instalada está en
+`node_modules/next/dist/docs/`. Lo que más impacta acá:
+
+- **Cache Components** (`cacheComponents: true`) y **Partial Prefetching**
+  están activos. Todo lo que lee datos del request (`cookies()`, la sesión,
+  Supabase con el cliente de servidor) tiene que estar **dentro de un
+  `<Suspense>`**, o en una Server Action o un Route Handler. Si no, falla el
+  build. Nunca hacer `await` de la sesión en un layout.
+  Guía: `01-app/02-guides/authentication-with-cache-components.md`.
+- `middleware.ts` ahora se llama **`proxy.ts`** (exporta `proxy`).
+- Los tipos `PageProps<"/ruta">` y `LayoutProps<"/ruta">` son globales y los
+  genera `next typegen`, que ya corre dentro de `npm run typecheck`.
 
 ## Arquitectura
 
@@ -48,7 +68,8 @@ src/
     supabase/
       client.ts                   cliente de browser (createBrowserClient)
       server.ts                   cliente de servidor con cookies (createServerClient)
-      admin.ts                    service role — `import "server-only"`; solo para la cache de BGG
+      admin.ts                    clave secreta (saltea RLS) — `import "server-only"`; solo para la cache de BGG
+      proxy.ts                    updateSession(), lo usa src/proxy.ts
       database.types.ts           generado; no editar a mano
     game-data/
       types.ts                    interfaz GameDataProvider y tipos
@@ -57,8 +78,11 @@ src/
       bgg/                        BggProvider, parser XML, __fixtures__/*.xml
     resumen-ia/                   (fase 2) PDF del reglamento → resumen con Claude
     validations/                  esquemas zod compartidos por formularios y acciones
-  proxy.ts                        refresco de sesión de Supabase (middleware.ts en Next < 16)
-public/sw.js                      service worker
+    auth.ts                       getUsuarioActual() (lee cookies: dentro de <Suspense>)
+    rutas.ts                      rutas públicas y validación de ?next= (anti open redirect)
+  proxy.ts                        refresco de sesión + redirección a /login (chequeo optimista)
+public/sw.js                      service worker (red primero; /offline sin conexión; nunca cachea datos)
+public/icons/                     íconos de la PWA (los genera scripts/generar-iconos.mjs)
 supabase/
   migrations/                     SQL versionado; la fuente de verdad del esquema
   tests/                          tests pgTAP de RLS
@@ -134,6 +158,7 @@ Actions, así el token de BGG nunca llega al cliente.
 ## Convenciones
 
 ### Idioma y nombres
+
 - **Dominio en español, igual que la base**: `juegos`, `resumenes`,
   `jugadores_min`, `ResultadoBusqueda`, `buscar()`. Sin ñ ni tildes en
   identificadores (`anio`).
@@ -145,6 +170,7 @@ Actions, así el token de BGG nunca llega al cliente.
 - Rutas en español y kebab-case: `/juegos/[id]/hoja-de-turno`.
 
 ### Base de datos
+
 - **Todo cambio de esquema es una migración nueva** en `supabase/migrations/`
   (`YYYYMMDDHHMMSS_descripcion.sql`). Nunca editar una migración ya aplicada.
 - Toda tabla nueva tiene RLS habilitado y políticas explícitas por operación
@@ -156,6 +182,7 @@ Actions, así el token de BGG nunca llega al cliente.
   cache de BGG. Cualquier otro acceso usa la sesión del usuario y depende de RLS.
 
 ### Next.js
+
 - Server Components por defecto; `"use client"` solo donde hay interacción.
 - Mutaciones con **Server Actions** que validan con zod y devuelven
   `{ ok: true, data } | { ok: false, error }`; nunca hacen throw hacia la UI.
@@ -163,9 +190,14 @@ Actions, así el token de BGG nunca llega al cliente.
   sobreviven a un refresh).
 - Código solo de servidor: `import "server-only"` (provider de BGG, cliente admin).
 - Variables públicas solo con prefijo `NEXT_PUBLIC_`; `BGG_API_TOKEN` y
-  `SUPABASE_SERVICE_ROLE_KEY` nunca.
+  `SUPABASE_SECRET_KEY` nunca.
 
 ### UI / mobile
+
+- Colores siempre con los tokens de `globals.css` (`bg-fondo`, `bg-superficie`,
+  `text-texto`, `text-texto-suave`, `bg-primario`, `border-borde`...), que ya
+  resuelven el modo oscuro y la impresión. Íconos de `lucide-react`.
+
 - Mobile-first: diseñar a 360 px y agrandar con `sm:`/`md:`.
 - Áreas táctiles de al menos 44 px; acciones principales al alcance del pulgar
   (barra inferior y botones flotantes).
@@ -174,11 +206,13 @@ Actions, así el token de BGG nunca llega al cliente.
 - Markdown con `react-markdown` + `remark-gfm`, sin HTML crudo.
 
 ### Tests
+
 - Unitarios junto al código: `foo.ts` → `foo.test.ts`.
 - Nada de llamadas reales a BGG en los tests: fixtures XML + `fetch` simulado.
 - Los e2e corren con `GAME_DATA_PROVIDER=mock`.
 
 ### Git
+
 - Commits chicos, en español, en imperativo ("Agrega filtro por duración").
 - Antes de commitear: `lint`, `typecheck` y `test` en verde.
 
@@ -186,14 +220,14 @@ Actions, así el token de BGG nunca llega al cliente.
 
 Ver `.env.example`.
 
-| Variable | Dónde | Uso |
-|---|---|---|
-| `NEXT_PUBLIC_SUPABASE_URL` | cliente y servidor | URL del proyecto |
-| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | cliente y servidor | clave pública (RLS manda) |
-| `SUPABASE_SERVICE_ROLE_KEY` | solo servidor | escribir la cache de BGG |
-| `BGG_API_TOKEN` | solo servidor | activa BggProvider |
-| `GAME_DATA_PROVIDER` | solo servidor | `mock` para forzar MockProvider |
-| `NEXT_PUBLIC_SITE_URL` | cliente y servidor | redirecciones de OAuth y magic link |
+| Variable                               | Dónde              | Uso                                           |
+| -------------------------------------- | ------------------ | --------------------------------------------- |
+| `NEXT_PUBLIC_SUPABASE_URL`             | cliente y servidor | URL del proyecto                              |
+| `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` | cliente y servidor | clave pública `sb_publishable_…` (RLS manda)  |
+| `SUPABASE_SECRET_KEY`                  | solo servidor      | clave `sb_secret_…`; escribir la cache de BGG |
+| `BGG_API_TOKEN`                        | solo servidor      | activa BggProvider                            |
+| `GAME_DATA_PROVIDER`                   | solo servidor      | `mock` para forzar MockProvider               |
+| `NEXT_PUBLIC_SITE_URL`                 | cliente y servidor | redirecciones de OAuth y magic link           |
 
 ## Fase 2 (no implementar sin pedido explícito)
 

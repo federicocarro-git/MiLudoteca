@@ -1,0 +1,54 @@
+@import "tailwindcss";
+
+/* Paleta: verde mesa de juego + fondo cálido. Usar siempre estos tokens
+   (bg-fondo, text-texto, bg-primario, ...) en vez de colores sueltos. */
+:root {
+  --fondo: #faf8f5;
+  --superficie: #ffffff;
+  --borde: #e7e2da;
+  --texto: #1f1b16;
+  --texto-suave: #6b6359;
+  --primario: #0f766e;
+  --primario-hover: #115e59;
+  --sobre-primario: #ffffff;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --fondo: #14120f;
+    --superficie: #1f1c18;
+    --borde: #36312a;
+    --texto: #f3efe9;
+    --texto-suave: #a89f93;
+    --primario: #2dd4bf;
+    --primario-hover: #5eead4;
+    --sobre-primario: #042f2e;
+  }
+}
+
+@theme inline {
+  --color-fondo: var(--fondo);
+  --color-superficie: var(--superficie);
+  --color-borde: var(--borde);
+  --color-texto: var(--texto);
+  --color-texto-suave: var(--texto-suave);
+  --color-primario: var(--primario);
+  --color-primario-hover: var(--primario-hover);
+  --color-sobre-primario: var(--sobre-primario);
+  --font-sans: var(--font-geist-sans);
+}
+
+body {
+  background: var(--fondo);
+  color: var(--texto);
+}
+
+/* Al imprimir, siempre fondo blanco y texto negro. */
+@media print {
+  :root {
+    --fondo: #ffffff;
+    --superficie: #ffffff;
+    --texto: #000000;
+    --texto-suave: #333333;
+  }
+}
