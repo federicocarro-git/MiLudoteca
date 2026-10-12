@@ -1,0 +1,232 @@
+@import "tailwindcss";
+
+/* Paleta: verde mesa de juego + fondo cálido. Usar siempre estos tokens
+   (bg-fondo, text-texto, bg-primario, ...) en vez de colores sueltos. */
+:root {
+  --fondo: #faf8f5;
+  --superficie: #ffffff;
+  --borde: #e7e2da;
+  --texto: #1f1b16;
+  --texto-suave: #6b6359;
+  --primario: #0f766e;
+  --primario-hover: #115e59;
+  --sobre-primario: #ffffff;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --fondo: #14120f;
+    --superficie: #1f1c18;
+    --borde: #36312a;
+    --texto: #f3efe9;
+    --texto-suave: #a89f93;
+    --primario: #2dd4bf;
+    --primario-hover: #5eead4;
+    --sobre-primario: #042f2e;
+  }
+}
+
+@theme inline {
+  --color-fondo: var(--fondo);
+  --color-superficie: var(--superficie);
+  --color-borde: var(--borde);
+  --color-texto: var(--texto);
+  --color-texto-suave: var(--texto-suave);
+  --color-primario: var(--primario);
+  --color-primario-hover: var(--primario-hover);
+  --color-sobre-primario: var(--sobre-primario);
+  --font-sans: var(--font-geist-sans);
+}
+
+body {
+  background: var(--fondo);
+  color: var(--texto);
+}
+
+/* Al imprimir, siempre fondo blanco y texto negro. */
+@media print {
+  :root {
+    --fondo: #ffffff;
+    --superficie: #ffffff;
+    --texto: #000000;
+    --texto-suave: #333333;
+  }
+}
+
+/* ---------------------------------------------------------------------------
+   Markdown de los resúmenes (components/markdown.tsx)
+   --------------------------------------------------------------------------- */
+@layer components {
+  .md {
+    line-height: 1.65;
+    overflow-wrap: anywhere;
+  }
+  .md > * + * {
+    margin-top: 0.85em;
+  }
+  .md h1,
+  .md h2,
+  .md h3,
+  .md h4 {
+    font-weight: 700;
+    line-height: 1.25;
+    letter-spacing: -0.01em;
+    margin-top: 1.4em;
+    break-after: avoid;
+  }
+  .md > :first-child {
+    margin-top: 0;
+  }
+  .md h1 {
+    font-size: 1.5em;
+  }
+  .md h2 {
+    font-size: 1.3em;
+  }
+  .md h3 {
+    font-size: 1.1em;
+  }
+  .md h4 {
+    font-size: 1em;
+  }
+  .md ul,
+  .md ol {
+    padding-left: 1.4em;
+  }
+  .md ul {
+    list-style: disc;
+  }
+  .md ol {
+    list-style: decimal;
+  }
+  .md li + li,
+  .md li > ul,
+  .md li > ol {
+    margin-top: 0.3em;
+  }
+  .md li::marker {
+    color: var(--texto-suave);
+  }
+  /* Checklists de GFM */
+  .md li.task-list-item {
+    list-style: none;
+    margin-left: -1.4em;
+  }
+  .md li.task-list-item input {
+    margin-right: 0.5em;
+    width: 1.05em;
+    height: 1.05em;
+    vertical-align: -0.15em;
+    accent-color: var(--primario);
+  }
+  .md a {
+    color: var(--primario);
+    text-decoration: underline;
+    text-underline-offset: 3px;
+  }
+  .md strong {
+    font-weight: 700;
+  }
+  .md blockquote {
+    border-left: 4px solid var(--primario);
+    background: color-mix(in srgb, var(--primario) 8%, transparent);
+    padding: 0.6em 0.9em;
+    border-radius: 0 0.75rem 0.75rem 0;
+  }
+  .md code {
+    font-family: ui-monospace, monospace;
+    font-size: 0.9em;
+    background: var(--fondo);
+    border: 1px solid var(--borde);
+    border-radius: 0.375rem;
+    padding: 0.1em 0.35em;
+  }
+  .md pre {
+    background: var(--fondo);
+    border: 1px solid var(--borde);
+    border-radius: 0.75rem;
+    padding: 0.75em 1em;
+    overflow-x: auto;
+  }
+  .md pre code {
+    border: 0;
+    padding: 0;
+    background: none;
+  }
+  .md hr {
+    border: 0;
+    border-top: 1px solid var(--borde);
+    margin: 1.5em 0;
+  }
+  .md-tabla {
+    overflow-x: auto;
+    border: 1px solid var(--borde);
+    border-radius: 0.75rem;
+  }
+  .md table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.95em;
+  }
+  .md th,
+  .md td {
+    padding: 0.5em 0.75em;
+    border-bottom: 1px solid var(--borde);
+    text-align: left;
+    vertical-align: top;
+  }
+  .md tr:last-child td {
+    border-bottom: 0;
+  }
+  .md th {
+    background: var(--fondo);
+    font-weight: 600;
+    white-space: nowrap;
+  }
+
+  /* Hoja de turno: más grande, para leer en la mesa. */
+  .md-hoja {
+    font-size: 1.125rem;
+  }
+  .md-hoja h2 {
+    background: color-mix(in srgb, var(--primario) 10%, transparent);
+    border-radius: 0.75rem;
+    padding: 0.35em 0.6em;
+  }
+
+  @media print {
+    .md {
+      font-size: 11pt;
+      line-height: 1.45;
+    }
+    .md-hoja {
+      font-size: 12pt;
+    }
+    .md-hoja h2 {
+      background: none;
+      border-bottom: 2px solid #000;
+      border-radius: 0;
+      padding: 0 0 0.15em;
+    }
+    .md-tabla {
+      overflow: visible;
+      border-color: #999;
+    }
+    .md tr,
+    .md li,
+    .md blockquote,
+    .md pre {
+      break-inside: avoid;
+    }
+    .md a {
+      color: inherit;
+    }
+  }
+}
+
+@media print {
+  @page {
+    size: A4;
+    margin: 14mm;
+  }
+}

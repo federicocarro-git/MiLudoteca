@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="utf-8"?>
+<items termsofuse="https://boardgamegeek.com/xmlapi/termsofuse">
+	<item type="boardgame" id="13">
+		<thumbnail>https://cf.geekdo-images.com/W3Bsga_uLP9kO91gZ7H8yw__thumb/img/8a9HeqFydO7Uun_le9bXWPnidcA=/fit-in/200x150/filters:strip_icc()/pic2419375.jpg</thumbnail>
+		<image>https://cf.geekdo-images.com/W3Bsga_uLP9kO91gZ7H8yw__original/img/A-0yDJkve0avEicYQ4HoNO-HkK8=/0x0/filters:format(jpeg)/pic2419375.jpg</image>
+		<name type="primary" sortindex="1" value="CATAN" />
+		<name type="alternate" sortindex="1" value="Die Siedler von Catan" />
+		<name type="alternate" sortindex="1" value="Los Colonos de Catán" />
+		<description>In CATAN (formerly The Settlers of Catan), players try to be the dominant force on the island of Catan by building settlements, cities, and roads.&#10;&#10;Players trade &amp;quot;resources&amp;quot; &amp;mdash; brick, wood, wool &amp;amp; ore &amp;mdash; with each other.&#10;&#10;Caf&amp;eacute; edition not included.</description>
+		<yearpublished value="1995" />
+		<minplayers value="3" />
+		<maxplayers value="4" />
+		<poll name="suggested_numplayers" title="User Suggested Number of Players" totalvotes="2361">
+			<results numplayers="3">
+				<result value="Best" numvotes="789" />
+			</results>
+		</poll>
+		<playingtime value="120" />
+		<minplaytime value="60" />
+		<maxplaytime value="120" />
+		<minage value="10" />
+		<link type="boardgamecategory" id="1021" value="Economic" />
+		<link type="boardgamecategory" id="1026" value="Negotiation" />
+		<link type="boardgamemechanic" id="2072" value="Dice Rolling" />
+		<link type="boardgamemechanic" id="2008" value="Trading" />
+		<link type="boardgamefamily" id="3" value="Catan" />
+		<link type="boardgamedesigner" id="11" value="Klaus Teuber" />
+		<link type="boardgamepublisher" id="37" value="KOSMOS" />
+		<statistics page="1">
+			<ratings>
+				<usersrated value="125000" />
+				<average value="7.1" />
+				<bayesaverage value="6.9" />
+				<averageweight value="2.2876" />
+			</ratings>
+		</statistics>
+	</item>
+</items>

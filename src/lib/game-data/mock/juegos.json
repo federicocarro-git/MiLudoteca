@@ -1,0 +1,134 @@
+[
+  {
+    "id": "mock-catan",
+    "nombre": "Catan",
+    "anio": 1995,
+    "jugadores_min": 3,
+    "jugadores_max": 4,
+    "duracion_min": 90,
+    "complejidad": 2.29,
+    "tipos": ["eurogame", "negociación", "dados"],
+    "descripcion": "Los jugadores colonizan una isla: juntan recursos, construyen caminos, pueblos y ciudades, y negocian entre ellos. Gana quien llega primero a 10 puntos de victoria."
+  },
+  {
+    "id": "mock-catan-junior",
+    "nombre": "Catan Junior",
+    "anio": 2007,
+    "jugadores_min": 2,
+    "jugadores_max": 4,
+    "duracion_min": 30,
+    "complejidad": 1.2,
+    "tipos": ["infantil", "familiar", "dados"],
+    "descripcion": "Versión para chicos de Catan, con piratas y guaridas en lugar de pueblos y ciudades."
+  },
+  {
+    "id": "mock-carcassonne",
+    "nombre": "Carcassonne",
+    "anio": 2000,
+    "jugadores_min": 2,
+    "jugadores_max": 5,
+    "duracion_min": 45,
+    "complejidad": 1.9,
+    "tipos": ["losetas", "familiar"],
+    "descripcion": "Cada turno se coloca una loseta para armar entre todos un paisaje medieval de ciudades, caminos y monasterios, y se ubican seguidores para sumar puntos."
+  },
+  {
+    "id": "mock-ticket-to-ride",
+    "nombre": "¡Aventureros al Tren!",
+    "anio": 2004,
+    "jugadores_min": 2,
+    "jugadores_max": 5,
+    "duracion_min": 60,
+    "complejidad": 1.83,
+    "tipos": ["familiar", "cartas"],
+    "descripcion": "Juntá cartas de colores para reclamar rutas de tren y conectar las ciudades de tus billetes de destino."
+  },
+  {
+    "id": "mock-pandemic",
+    "nombre": "Pandemic",
+    "anio": 2008,
+    "jugadores_min": 2,
+    "jugadores_max": 4,
+    "duracion_min": 45,
+    "complejidad": 2.4,
+    "tipos": ["cooperativo"],
+    "descripcion": "Un equipo de especialistas recorre el mundo para frenar cuatro enfermedades y descubrir sus curas antes de que sea tarde. Se gana o se pierde todos juntos."
+  },
+  {
+    "id": "mock-azul",
+    "nombre": "Azul",
+    "anio": 2017,
+    "jugadores_min": 2,
+    "jugadores_max": 4,
+    "duracion_min": 45,
+    "complejidad": 1.76,
+    "tipos": ["abstracto", "familiar"],
+    "descripcion": "Los jugadores eligen azulejos de las fábricas para decorar la pared del palacio real de Évora, sumando puntos por filas, columnas y colores completos."
+  },
+  {
+    "id": "mock-7-wonders",
+    "nombre": "7 Wonders",
+    "anio": 2010,
+    "jugadores_min": 2,
+    "jugadores_max": 7,
+    "duracion_min": 30,
+    "complejidad": 2.32,
+    "tipos": ["cartas", "eurogame"],
+    "descripcion": "Durante tres eras, cada jugador elige una carta y pasa el resto, para desarrollar su civilización y construir una maravilla del mundo antiguo."
+  },
+  {
+    "id": "mock-codenames",
+    "nombre": "Código Secreto",
+    "anio": 2015,
+    "jugadores_min": 2,
+    "jugadores_max": 8,
+    "duracion_min": 15,
+    "complejidad": 1.27,
+    "tipos": ["party", "palabras", "por equipos", "deducción"],
+    "descripcion": "Dos equipos compiten por encontrar a sus agentes. Los jefes de espías dan pistas de una sola palabra que pueden apuntar a varias cartas a la vez."
+  },
+  {
+    "id": "mock-dixit",
+    "nombre": "Dixit",
+    "anio": 2008,
+    "jugadores_min": 3,
+    "jugadores_max": 6,
+    "duracion_min": 30,
+    "complejidad": 1.21,
+    "tipos": ["party", "cartas", "familiar"],
+    "descripcion": "El narrador describe una de sus cartas ilustradas con una frase y el resto tiene que adivinar cuál es, entre las que cada uno aporta."
+  },
+  {
+    "id": "mock-splendor",
+    "nombre": "Splendor",
+    "anio": 2014,
+    "jugadores_min": 2,
+    "jugadores_max": 4,
+    "duracion_min": 30,
+    "complejidad": 1.79,
+    "tipos": ["cartas", "familiar"],
+    "descripcion": "Comerciantes de gemas del Renacimiento juntan fichas para comprar minas, rutas y tiendas, y atraer la visita de nobles."
+  },
+  {
+    "id": "mock-wingspan",
+    "nombre": "Wingspan",
+    "anio": 2019,
+    "jugadores_min": 1,
+    "jugadores_max": 5,
+    "duracion_min": 70,
+    "complejidad": 2.45,
+    "tipos": ["cartas", "eurogame", "solitario"],
+    "descripcion": "Los jugadores atraen aves a sus reservas naturales y encadenan sus poderes en tres hábitats: bosque, pradera y humedal."
+  },
+  {
+    "id": "mock-the-crew",
+    "nombre": "La Tripulación",
+    "anio": 2019,
+    "jugadores_min": 2,
+    "jugadores_max": 5,
+    "duracion_min": 20,
+    "complejidad": 1.98,
+    "tipos": ["cartas", "cooperativo"],
+    "descripcion": "Juego de bazas cooperativo: la tripulación cumple misiones cada vez más difíciles con comunicación muy limitada."
+  }
+]
