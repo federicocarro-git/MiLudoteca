@@ -123,6 +123,28 @@ export function EditorResumen({
     return () => clearTimeout(t);
   }, [claveBorrador, textos, hayCambios, borradorPendiente]);
 
+  // Al ocultar o cerrar la página (cambiar de app, recargar, el sistema mata
+  // la pestaña), guardar ya, sin esperar el debounce.
+  const ultimo = useRef({ textos, hayCambios, pendiente: borradorPendiente !== null });
+  useEffect(() => {
+    ultimo.current = { textos, hayCambios, pendiente: borradorPendiente !== null };
+  });
+  useEffect(() => {
+    const guardarYa = () => {
+      const { textos: t, hayCambios: cambios, pendiente } = ultimo.current;
+      if (cambios && !pendiente) {
+        escribirBorrador(claveBorrador, { textos: t, guardadoEn: new Date().toISOString() });
+      }
+    };
+    const alOcultar = () => document.visibilityState === "hidden" && guardarYa();
+    window.addEventListener("pagehide", guardarYa);
+    document.addEventListener("visibilitychange", alOcultar);
+    return () => {
+      window.removeEventListener("pagehide", guardarYa);
+      document.removeEventListener("visibilitychange", alOcultar);
+    };
+  }, [claveBorrador]);
+
   // Después de aplicar un formato, restaurar la selección en el textarea.
   useEffect(() => {
     const sel = seleccionPendiente.current;

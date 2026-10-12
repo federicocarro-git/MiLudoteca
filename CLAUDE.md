@@ -21,6 +21,9 @@ npm run typecheck    # next typegen + tsc --noEmit
 npm test             # vitest (los de integración se saltean solos)
 npm run test:integracion  # tests contra el Supabase local (necesita db:start y .env.local)
 npm run test:bgg-real     # contra la API real de BGG (necesita BGG_API_TOKEN)
+npm run test:db           # RLS con pgTAP (supabase/tests; necesita db:start)
+npm run test:e2e          # Playwright (tests/e2e): compila y levanta la app en :3000
+                          # PLAYWRIGHT_CHROMIUM_PATH=... para usar un Chromium ya instalado
 npm run format       # prettier (con plugin de Tailwind)
 npm run db:reset     # recrea la base local aplicando supabase/migrations/
 npm run db:types     # regenera src/lib/supabase/database.types.ts
@@ -44,6 +47,9 @@ Esta versión trae cambios que no están en los datos de entrenamiento (ver
   build. Nunca hacer `await` de la sesión en un layout.
   Guía: `01-app/02-guides/authentication-with-cache-components.md`.
 - `middleware.ts` ahora se llama **`proxy.ts`** (exporta `proxy`).
+- `lib/supabase/server.ts` hace `await connection()`: `supabase-js` usa
+  `Date.now()` y Next no lo permite en el prerender de las rutas con sesión.
+  Si aparece en los logs "encountered the unstable value `Date.now()`", es eso.
 - Los tipos `PageProps<"/ruta">` y `LayoutProps<"/ruta">` son globales y los
   genera `next typegen`, que ya corre dentro de `npm run typecheck`.
 
@@ -115,9 +121,12 @@ supabase/
   migrations/                     SQL versionado; la fuente de verdad del esquema
   templates/                      plantillas de mail de Auth (copiarlas al dashboard en producción)
   config.toml                     Supabase local (Auth ya configurado, ver docs/AUTH.md)
-  tests/                          tests pgTAP de RLS
+  tests/rls.test.sql              tests pgTAP de RLS (32 casos)
+tests/e2e/                        Playwright: un spec por área + helpers.ts (usuarios, juegos, Mailpit)
+.github/workflows/ci.yml          CI: lint/tipos/unitarios/build + pgTAP/integración/e2e con Supabase local
 docs/PLAN.md                      plan por hitos y decisiones
 docs/AUTH.md                      flujos de login y configuración de Auth en producción
+docs/DEPLOY.md                    publicar en Supabase + Vercel y verificación posterior
 ```
 
 ### Modelo de datos
@@ -361,7 +370,17 @@ parser o el cliente.
 
 - Unitarios junto al código: `foo.ts` → `foo.test.ts`.
 - Nada de llamadas reales a BGG en los tests: fixtures XML + `fetch` simulado.
-- Los e2e corren con `GAME_DATA_PROVIDER=mock`.
+- RLS: `supabase/tests/rls.test.sql` (pgTAP). Cada política nueva lleva su caso:
+  lo que el dueño puede hacer **y** lo que otro usuario no. Los DELETE directos
+  en `storage.objects` están bloqueados por Supabase: probarlos en los e2e.
+- e2e: cada test crea sus usuarios y datos con la API admin
+  (`tests/e2e/helpers.ts`) y los borra al final; los tests que comparten filas
+  de BGG van en `describe.configure({ mode: "serial" })`. Los e2e compilan con
+  `GAME_DATA_PROVIDER=mock` y `NEXT_PUBLIC_AUTH_GOOGLE=true`, y la app tiene
+  que correr en `localhost:3000` (el `site_url` de Auth).
+- Selectores: preferir `getByRole`/`getByLabel` con `exact: true` (varios
+  textos se repiten: "Nombre"/"Buscar por nombre", "8 juegos"/"Ver 8 juegos").
+  Ojo con las pestañas visitadas que Next deja montadas y ocultas.
 
 ### Git
 

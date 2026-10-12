@@ -129,11 +129,27 @@ Cada hito termina con lint, typecheck y tests en verde, y un commit.
 - [x] Guardar vuelve a la pestaña editada con un aviso.
 - [x] Verificado de punta a punta (22 chequeos).
 
-### 8. Cierre de fase 1
+### 8. Cierre de fase 1 — _hecho_
 
-- Tests de RLS con pgTAP (`supabase test db`) a partir de los casos ya validados.
-- E2E con Playwright de los flujos principales usando MockProvider.
-- Deploy en Vercel; configurar Google OAuth y las URLs de redirección en Supabase.
+- [x] Tests de RLS con pgTAP (`npm run test:db`, 32 casos), con prueba de
+      mutación: una política permisiva agregada a mano hace fallar el test.
+- [x] e2e con Playwright en el repo (`npm run test:e2e`, 41 tests en 6
+      archivos): auth, alta, catálogo, ficha, resúmenes y seguridad entre
+      usuarios. Estables en 3 corridas seguidas.
+- [x] CI en GitHub Actions: lint, tipos, formato, unitarios y build; después
+      pgTAP, integración y e2e contra Supabase local.
+- [x] `README.md` (puesta en marcha) y `docs/DEPLOY.md` (Supabase + Vercel).
+- [x] Arreglos encontrados al cerrar: `connection()` en el cliente de
+      Supabase del servidor (error de prerender con `Date.now()`) y borrador del
+      editor guardado al cerrar la página.
+
+## Pendientes de la fase 1
+
+- [ ] Deploy en Vercel y configuración de Auth en el proyecto real (pasos en
+      `docs/DEPLOY.md` y `docs/AUTH.md`).
+- [ ] Probar Google con credenciales reales.
+- [ ] Token de BGG: correr `npm run test:bgg-real` y completar la checklist de `CLAUDE.md`.
+- [ ] Limpiar fotos huérfanas en Storage (subidas y no guardadas) con un cron.
 
 ## Fase 2 (preparado, no implementado)
 

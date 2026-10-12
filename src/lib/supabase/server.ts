@@ -1,6 +1,7 @@
 import "server-only";
 import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
+import { connection } from "next/server";
 import { getSupabaseEnv } from "@/lib/env";
 import type { Database } from "./database.types";
 
@@ -9,6 +10,10 @@ import type { Database } from "./database.types";
 // dentro de un <Suspense> (o en una Server Action / Route Handler).
 export async function createClient() {
   const cookieStore = await cookies();
+  // supabase-js usa Date.now() (vencimiento del token), que Next no permite en
+  // el prerender de las rutas con sesión (Partial Prefetching): todo lo que use
+  // este cliente se resuelve recién con el request.
+  await connection();
   const { url, publishableKey } = getSupabaseEnv();
 
   return createServerClient<Database>(url, publishableKey, {
