@@ -61,20 +61,19 @@ Cada hito termina con lint, typecheck y tests en verde, y un commit.
       cuenta sin confirmar, `next`, link mágico y redirección a Google.
 - [ ] Probar Google con credenciales reales (pasos en `docs/AUTH.md`).
 
-### 3. GameDataProvider
+### 3. GameDataProvider — _hecho_
 
-- `src/lib/game-data/types.ts`: interfaz + tipos `ResultadoBusqueda` y `DatosJuego`.
-- `MockProvider`: lee `src/lib/game-data/mock/juegos.json` (unos 10 juegos
-  conocidos), con búsqueda sin distinguir mayúsculas ni acentos.
-- `BggProvider`: `fetch` a `https://boardgamegeek.com/xmlapi2/...` con
-  `Authorization: Bearer`, reintento ante 202, espera ante 429 (respeta
-  `Retry-After` o hace backoff exponencial), parseo con `fast-xml-parser`,
-  decodificación de entidades HTML en la descripción y cache en `juegos`
-  (si `bgg_sincronizado_en` tiene menos de 30 días, no se vuelve a llamar).
-- `getGameDataProvider()`: BGG si hay token; Mock si no es producción;
-  `null` (búsqueda oculta) en producción sin token.
-- Tests: `MockProvider`, selección del provider, y `BggProvider` con XML de
-  ejemplo en `__fixtures__/` y un `fetch` simulado (incluye los casos 202 y 429).
+- [x] `types.ts`: interfaz, `ResultadoBusqueda`, `DatosJuego` (con los nombres
+      de columna de `juegos`) y `ErrorGameData`.
+- [x] `MockProvider` con 12 juegos (búsqueda sin tildes ni mayúsculas, por relevancia).
+- [x] `BggProvider`: cliente con 202/429/5xx/401, parser con `fast-xml-parser`
+      y `he`, cache de 30 días en `juegos` con el cliente admin y vuelta a la
+      copia vencida si BGG falla.
+- [x] Vocabulario de `tipos` en español y traducción desde categorías y mecánicas de BGG.
+- [x] `getGameDataProvider()` / `elegirProvider()` según el entorno.
+- [x] 58 tests nuevos (fixtures XML + `fetch` simulado), 5 de integración
+      contra Supabase local y `npm run test:bgg-real` para cuando llegue el token.
+- [ ] Correr `test:bgg-real` con el token y completar la checklist de `CLAUDE.md`.
 
 ### 4. Agregar juego
 

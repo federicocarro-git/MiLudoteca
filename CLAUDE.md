@@ -18,7 +18,9 @@ npm run db:start     # Supabase local en Docker (después: npx supabase status -
 npm run dev          # servidor de desarrollo (usa MockProvider si no hay BGG_API_TOKEN)
 npm run lint
 npm run typecheck    # next typegen + tsc --noEmit
-npm test             # vitest
+npm test             # vitest (los de integración se saltean solos)
+npm run test:integracion  # tests contra el Supabase local (necesita db:start y .env.local)
+npm run test:bgg-real     # contra la API real de BGG (necesita BGG_API_TOKEN)
 npm run format       # prettier (con plugin de Tailwind)
 npm run db:reset     # recrea la base local aplicando supabase/migrations/
 npm run db:types     # regenera src/lib/supabase/database.types.ts
@@ -76,6 +78,8 @@ src/
     game-data/
       types.ts                    interfaz GameDataProvider y tipos
       index.ts                    getGameDataProvider(): elige la implementación
+      tipos.ts                    vocabulario de "tipos" + traducción desde BGG
+      texto.ts                    normalizar() y orden por relevancia
       mock/                       MockProvider + juegos.json
       bgg/                        BggProvider, parser XML, __fixtures__/*.xml
     resumen-ia/                   (fase 2) PDF del reglamento → resumen con Claude
@@ -137,17 +141,46 @@ Actions, así el token de BGG nunca llega al cliente.
 
 ### BggProvider
 
-- Base: `https://boardgamegeek.com/xmlapi2` (**sin** `www`).
-- Header `Authorization: Bearer ${BGG_API_TOKEN}` en todas las llamadas.
-- `search?query=...&type=boardgame` y `thing?id=...&stats=1`.
-- **202**: BGG encoló el pedido. Reintentar con backoff (máximo N intentos).
-- **429**: esperar `Retry-After` si viene; si no, backoff exponencial.
-- Cache: antes de `thing`, buscar en `juegos` (`origen = 'bgg'`, mismo
-  `bgg_id`). Si `bgg_sincronizado_en` tiene menos de 30 días, usar la fila
-  cacheada; si no, pedir a BGG y hacer upsert con el cliente admin.
-- Tests con XML de ejemplo en `src/lib/game-data/bgg/__fixtures__/` y `fetch` simulado.
+Archivos en `src/lib/game-data/bgg/`:
+
+- `cliente.ts` (`ClienteBgg`): `GET https://boardgamegeek.com/xmlapi2/<endpoint>`
+  (**sin** `www`) con `Authorization: Bearer ${BGG_API_TOKEN}`, timeout de 10 s y
+  hasta 4 intentos:
+  - **202** (pedido encolado), **5xx** y errores de red: reintenta con backoff
+    exponencial (1 s, 2 s, 4 s).
+  - **429**: espera `Retry-After` (segundos o fecha HTTP) o, si no viene, el
+    doble del backoff. Si pide esperar más de 15 s, corta con `limite_de_pedidos`.
+  - **401/403**: `no_autorizado`, sin reintentar.
+  - Cada espera tiene un tope de 15 s, para no colgar una Server Action.
+- `parser.ts`: `parsearBusqueda` (`search`; sin repetidos, porque BGG devuelve
+  una entrada por cada nombre que coincide) y `parsearDetalle` (`thing&stats=1`).
+  Decodifica entidades HTML (con `he`), convierte los `0` de BGG en `null`,
+  usa la imagen `https` (o el thumbnail) y traduce categorías y mecánicas a
+  `tipos` (vocabulario en `src/lib/game-data/tipos.ts`).
+- `bgg-provider.ts`: `buscar` (mínimo 2 caracteres; ordena primero el nombre
+  exacto, después los que empiezan igual, después el resto) y
+  `obtenerDetalle` (cache primero; vigencia de 30 días). Si BGG falla y hay una
+  copia vencida, devuelve la copia. Si la cache falla, sigue sin ella.
+- `cache-supabase.ts`: cache en `juegos` (`origen = 'bgg'`) con el cliente
+  admin. Primero intenta un update y después un insert, porque PostgREST no
+  puede hacer upsert contra el índice único parcial de `bgg_id`. Si dos
+  pedidos insertan a la vez, el que falla con 23505 actualiza.
+- Errores: `ErrorGameData` con `codigo` (`no_autorizado`, `limite_de_pedidos`,
+  `no_disponible`, `respuesta_invalida`) y un mensaje en español para la UI.
+- Tests: fixtures en `__fixtures__/` y `fetch` simulado (`cliente.test.ts`,
+  `parser.test.ts`, `bgg-provider.test.ts`); la cache contra Supabase local en
+  `cache-supabase.integracion.test.ts`.
+
+El `MockProvider` (`mock/`) tiene 12 juegos en `juegos.json`, sin `bgg_id` ni
+imagen (no se hace pasar por BGG). En desarrollo agrega 300 ms de latencia para
+que se vean los estados de carga.
 
 #### Pendiente de verificar con la API real (cuando se apruebe el token)
+
+Correr `BGG_API_TOKEN=... npm run test:bgg-real`: verifica lo que se puede
+automatizar e imprime lo observado (códigos, headers) para completar esta lista.
+Si algo no coincide, actualizar los fixtures con respuestas reales y ajustar el
+parser o el cliente.
 
 - [ ] Que el header `Authorization: Bearer` sea el esquema que BGG acepta, y
       qué devuelve un pedido sin token o con un token inválido (código y cuerpo).
@@ -161,6 +194,10 @@ Actions, así el token de BGG nunca llega al cliente.
 - [ ] Dominio de las imágenes (se supone `cf.geekdo-images.com`) para
       `images.remotePatterns` de `next.config`.
 - [ ] Si `search` incluye expansiones aunque se pida `type=boardgame`.
+- [ ] Si los nombres de categorías y mecánicas coinciden con los de `tipos.ts`
+      (por ejemplo, "Solo / Solitaire Game", "Deck, Bag, and Pool Building").
+- [ ] Cómo es el cuerpo de un 202 en `thing` (el fixture `respuesta-202.xml` es
+      una suposición basada en `collection`).
 - [ ] Requisitos de atribución de los términos de uso de la API ("Powered by BGG").
 
 ## Convenciones
