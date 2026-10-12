@@ -52,7 +52,7 @@ export async function actualizarCatalogo(
     .eq("user_id", usuario.id)
     .select("juego_id");
   if (error || data.length === 0) {
-    if (error) console.error(error);
+    if (error) console.error("actualizarCatalogo", juegoId, error);
     return { ok: false, error: "No se pudo guardar. Probá de nuevo." };
   }
   refresh();
@@ -69,7 +69,7 @@ export async function agregarAlCatalogo(juegoId: string): Promise<Resultado<null
     .insert({ juego_id: juegoId, user_id: usuario.id });
   // 23505: ya estaba; para la persona es lo mismo.
   if (error && error.code !== "23505") {
-    console.error(error);
+    console.error("agregarAlCatalogo", juegoId, error);
     return { ok: false, error: "No se pudo agregar. Probá de nuevo." };
   }
   refresh();
@@ -99,7 +99,7 @@ export async function quitarDelCatalogo(juegoId: string): Promise<Resultado<null
     .eq("juego_id", juegoId)
     .eq("user_id", usuario.id);
   if (error) {
-    console.error(error);
+    console.error("quitarDelCatalogo", juegoId, error);
     return { ok: false, error: "No se pudo quitar. Probá de nuevo." };
   }
 
@@ -145,7 +145,7 @@ export async function actualizarJuego(
 
   const { error } = await supabase.from("juegos").update(datos).eq("id", juegoId);
   if (error) {
-    console.error(error);
+    console.error("actualizarJuego", juegoId, error);
     return { ok: false, error: "No se pudo guardar. Probá de nuevo." };
   }
 
