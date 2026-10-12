@@ -1,14 +1,17 @@
 import type { Metadata } from "next";
 import { EncabezadoPagina } from "@/components/layout/encabezado-pagina";
+import { FormularioJuego } from "@/components/juegos/formulario-juego";
+import { elegirProvider } from "@/lib/game-data";
 
 export const metadata: Metadata = { title: "Agregar juego" };
 
-// Hito 4: formulario de carga manual + panel de búsqueda.
 export default function NuevoJuegoPage() {
+  // Sin provider (producción sin token de BGG) se oculta la búsqueda.
+  const origen = elegirProvider(process.env);
   return (
     <>
       <EncabezadoPagina titulo="Agregar juego" />
-      <p className="text-texto-suave">El formulario de carga llega en el hito 4.</p>
+      <FormularioJuego origen={origen} />
     </>
   );
 }

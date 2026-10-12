@@ -75,13 +75,22 @@ Cada hito termina con lint, typecheck y tests en verde, y un commit.
       contra Supabase local y `npm run test:bgg-real` para cuando llegue el token.
 - [ ] Correr `test:bgg-real` con el token y completar la checklist de `CLAUDE.md`.
 
-### 4. Agregar juego
+### 4. Agregar juego — _hecho_
 
-- `/juegos/nuevo`: formulario completo (react-hook-form + zod), subida de
-  imagen con vista previa y redimensionado.
-- Panel de búsqueda (solo si hay provider): elegir un resultado completa el
-  formulario, que se puede editar antes de guardar (ver la tabla de decisiones).
-- Detección de duplicados en el catálogo propio por `bgg_id` o nombre.
+- [x] `/juegos/nuevo`: formulario completo (todos los campos de `juegos` +
+      puntuación y notas), con errores por campo y sin perder lo escrito.
+- [x] Foto: se achica en el navegador (4000×3000 → 1200×900 WebP) y se sube a
+      Storage en la carpeta del usuario.
+- [x] Panel de búsqueda (oculto si no hay provider): con debounce, descarta
+      respuestas viejas, y al elegir un resultado completa el formulario para
+      editarlo. Avisa si lo editado se va a guardar como versión propia.
+- [x] Guardar: reusa la fila de BGG si no hubo cambios; si hubo, crea un juego
+      manual con `bgg_id` de referencia. Aviso de duplicados con "Agregar igual".
+- [x] Ficha básica en `/juegos/[id]` (el hito 6 le agrega las pestañas).
+- [x] Migración `20261012000000_imagen_url_local.sql`: acepta `http://` de
+      localhost en `imagen_url` (Storage local).
+- [x] Verificado de punta a punta (21 chequeos con Playwright contra Supabase local).
+- [ ] Limpiar fotos huérfanas (subidas y no guardadas): más adelante, con un cron.
 
 ### 5. Catálogo
 

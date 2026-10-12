@@ -13,8 +13,14 @@ const ITEMS: Item[] = [
 ];
 
 export function BarraInferior() {
-  const pathname = usePathname();
+  return <BarraInferiorVista pathname={usePathname()} />;
+}
 
+/**
+ * La barra sin depender de la URL. Se usa como fallback del <Suspense>: en
+ * rutas dinámicas (`/juegos/[id]`) usePathname() es dato del request.
+ */
+export function BarraInferiorVista({ pathname }: { pathname: string | null }) {
   return (
     <nav
       aria-label="Navegación principal"
@@ -22,7 +28,8 @@ export function BarraInferior() {
     >
       <ul className="mx-auto flex max-w-lg">
         {ITEMS.map(({ href, etiqueta, Icono }) => {
-          const activo = pathname === href || pathname.startsWith(`${href}/`);
+          const activo =
+            pathname !== null && (pathname === href || pathname.startsWith(`${href}/`));
           return (
             <li key={href} className="flex-1">
               <Link

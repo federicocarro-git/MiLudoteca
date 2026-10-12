@@ -67,6 +67,7 @@ src/
   components/
     ui/                           componentes genéricos (Boton, Campo, ...)
     auth/                         formulario de login
+    juegos/                       formulario de alta, buscador, selector e imagen de juego
     <feature>/                    componentes de cada feature (catalogo/, juegos/, ...)
   lib/
     supabase/
@@ -84,6 +85,11 @@ src/
       bgg/                        BggProvider, parser XML, __fixtures__/*.xml
     resumen-ia/                   (fase 2) PDF del reglamento → resumen con Claude
     validations/                  esquemas zod compartidos por formularios y acciones
+    juegos/
+      consultas.ts                obtenerJuego(id) para la ficha (lee cookies)
+      comparar.ts                 mismosDatos() (¿se editó lo que vino de BGG?) y escaparLike()
+    formato.ts                    textos de jugadores, duración y complejidad
+    imagenes.ts                   achica las fotos en el navegador (máx. 1200 px, WebP)
     auth.ts                       getUsuarioActual() (lee cookies: dentro de <Suspense>)
     auth-errores.ts               códigos de error de Supabase Auth → mensajes en español
     resultado.ts                  tipo Resultado<T> que devuelven las Server Actions
@@ -116,6 +122,29 @@ Ver `supabase/migrations/20261011000000_esquema_inicial.sql`.
   a los datos del juego. Es la fuente de la pantalla de catálogo y sus filtros.
 - Storage `imagenes-juegos`: público para lectura; cada usuario escribe en
   `<user_id>/...`.
+
+### Alta de juegos (`/juegos/nuevo`)
+
+- `actions.ts`: `buscarJuegos`, `obtenerDatosJuego` (pasan por el provider en
+  el servidor) y `guardarJuego`:
+  1. Valida con `juegoFormularioSchema` (errores por campo).
+  2. Si llega `bgg_id` y los datos son **iguales** a la fila cacheada de BGG,
+     reusa esa fila compartida. Si se editaron, crea un juego `manual` propio
+     que conserva el `bgg_id` como referencia.
+  3. Si en el catálogo ya hay un juego con el mismo `bgg_id` o el mismo nombre
+     (sin distinguir mayúsculas), avisa y ofrece "Agregar igual"
+     (`confirmar_duplicado`).
+  4. Inserta en `catalogo_usuario`. Si falla, borra el juego recién creado.
+  5. Redirige a `/juegos/<id>?agregado=1`.
+- Imágenes: se achican en el navegador (`lib/imagenes.ts`) y se suben directo a
+  Storage con la sesión del usuario (`<user_id>/<uuid>.webp`). Si alguien sube
+  una foto y no guarda, queda huérfana (pendiente: limpieza periódica).
+- La página es estática: **si hay búsqueda o no se decide en el build**
+  (`elegirProvider(process.env)`). Al agregar `BGG_API_TOKEN` en Vercel hay que
+  redeployar (Vercel lo exige igual). Para los e2e, compilar con
+  `GAME_DATA_PROVIDER=mock`.
+- Las imágenes `http://` (Storage local) se muestran con `unoptimized`, porque
+  el optimizador de Next bloquea las IPs locales.
 
 ### Datos externos: GameDataProvider
 
@@ -257,6 +286,11 @@ parser o el cliente.
   que la persona escribió cuando hay un error.
 - Errores en un `<p aria-live="polite">`; botón deshabilitado y con spinner
   mientras `pending`.
+- Errores por campo: la acción devuelve `errores: Record<campo, mensaje>` y el
+  campo los muestra con `error=` (`Campo`, `AreaTexto`, `Selector` ponen
+  `aria-invalid` y `aria-describedby`).
+- Inputs ocultos controlados (`bgg_id`, `tipos`, `imagen_url`) salen del estado
+  de React: no tocarlos a mano desde el DOM.
 
 ### Tests
 
