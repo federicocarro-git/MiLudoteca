@@ -50,8 +50,9 @@ Esta versión trae cambios que no están en los datos de entrenamiento (ver
 ```
 src/
   app/
-    (auth)/login/                 login con email y Google
-    auth/callback/route.ts        intercambio del code de OAuth
+    (auth)/login/                 login con email y Google (actions.ts: Server Actions de auth)
+    auth/callback/route.ts        vuelta de Google (intercambia el code de OAuth)
+    auth/confirm/route.ts         links de los mails (token_hash; también acepta code)
     (app)/                        rutas protegidas (layout que exige sesión)
       catalogo/                   catálogo personal + filtros + "¿A qué jugamos?"
       juegos/nuevo/               alta manual + panel de búsqueda
@@ -62,7 +63,8 @@ src/
         resumen/editar/             editor de resúmenes en markdown
     manifest.ts                   manifiesto de la PWA
   components/
-    ui/                           componentes genéricos (Button, Sheet, Tabs, ...)
+    ui/                           componentes genéricos (Boton, Campo, ...)
+    auth/                         formulario de login
     <feature>/                    componentes de cada feature (catalogo/, juegos/, ...)
   lib/
     supabase/
@@ -79,14 +81,20 @@ src/
     resumen-ia/                   (fase 2) PDF del reglamento → resumen con Claude
     validations/                  esquemas zod compartidos por formularios y acciones
     auth.ts                       getUsuarioActual() (lee cookies: dentro de <Suspense>)
+    auth-errores.ts               códigos de error de Supabase Auth → mensajes en español
+    resultado.ts                  tipo Resultado<T> que devuelven las Server Actions
+    sitio.ts                      urlDelSitio() para los links de OAuth y de los mails
     rutas.ts                      rutas públicas y validación de ?next= (anti open redirect)
   proxy.ts                        refresco de sesión + redirección a /login (chequeo optimista)
 public/sw.js                      service worker (red primero; /offline sin conexión; nunca cachea datos)
 public/icons/                     íconos de la PWA (los genera scripts/generar-iconos.mjs)
 supabase/
   migrations/                     SQL versionado; la fuente de verdad del esquema
+  templates/                      plantillas de mail de Auth (copiarlas al dashboard en producción)
+  config.toml                     Supabase local (Auth ya configurado, ver docs/AUTH.md)
   tests/                          tests pgTAP de RLS
-docs/PLAN.md
+docs/PLAN.md                      plan por hitos y decisiones
+docs/AUTH.md                      flujos de login y configuración de Auth en producción
 ```
 
 ### Modelo de datos
@@ -205,6 +213,14 @@ Actions, así el token de BGG nunca llega al cliente.
   blanco, tablas sin cortes de página adentro de una fila).
 - Markdown con `react-markdown` + `remark-gfm`, sin HTML crudo.
 
+### Formularios
+
+- Inputs controlados (`useState`) cuando el formulario usa `useActionState`:
+  React 19 resetea el `<form>` después de cada acción y, si no, se borra lo
+  que la persona escribió cuando hay un error.
+- Errores en un `<p aria-live="polite">`; botón deshabilitado y con spinner
+  mientras `pending`.
+
 ### Tests
 
 - Unitarios junto al código: `foo.ts` → `foo.test.ts`.
@@ -228,6 +244,7 @@ Ver `.env.example`.
 | `BGG_API_TOKEN`                        | solo servidor      | activa BggProvider                            |
 | `GAME_DATA_PROVIDER`                   | solo servidor      | `mock` para forzar MockProvider               |
 | `NEXT_PUBLIC_SITE_URL`                 | cliente y servidor | redirecciones de OAuth y magic link           |
+| `NEXT_PUBLIC_AUTH_GOOGLE`              | cliente            | `true` muestra el botón de Google             |
 
 ## Fase 2 (no implementar sin pedido explícito)
 

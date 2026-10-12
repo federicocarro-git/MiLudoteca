@@ -47,11 +47,19 @@ Cada hito termina con lint, typecheck y tests en verde, y un commit.
 - [x] Verificado con build de producción + Playwright (viewport de celular):
       redirecciones del proxy, sesión leída en la página de cuenta, cierre de sesión.
 
-### 2. Autenticación
+### 2. Autenticación — _hecho_
 
-- `/login`: email (magic link + contraseña) y Google OAuth.
-- `/auth/callback` (intercambio del code) y `/auth/confirm` (OTP por email).
-- Grupo `(app)` protegido: redirige a `/login` si no hay sesión.
+- [x] `/login`: email (contraseña, crear cuenta, link mágico) y Google OAuth
+      (el botón se muestra con `NEXT_PUBLIC_AUTH_GOOGLE=true`).
+- [x] `/auth/callback` (code de OAuth) y `/auth/confirm` (`token_hash` de las
+      plantillas propias; también acepta `code`).
+- [x] Plantillas de mail en español; confirmación de email obligatoria;
+      contraseña de 8 caracteres como mínimo.
+- [x] Errores de Auth traducidos; `?next=` validado (sin open redirect).
+- [x] Verificado de punta a punta contra Supabase local con Mailpit: alta,
+      confirmación desde otro navegador, link reusado, contraseña incorrecta,
+      cuenta sin confirmar, `next`, link mágico y redirección a Google.
+- [ ] Probar Google con credenciales reales (pasos en `docs/AUTH.md`).
 
 ### 3. GameDataProvider
 
