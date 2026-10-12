@@ -6,6 +6,7 @@ import { useActionState, useState } from "react";
 import { guardarJuego } from "@/app/(app)/juegos/nuevo/actions";
 import { Boton } from "@/components/ui/boton";
 import { AreaTexto, Campo, Selector } from "@/components/ui/campo";
+import { Chip } from "@/components/ui/chip";
 import { TIPOS } from "@/lib/game-data/tipos";
 import type { DatosJuego, ProviderId } from "@/lib/game-data/types";
 import { mismosDatos } from "@/lib/juegos/comparar";
@@ -225,19 +226,9 @@ export function FormularioJuego({ origen }: { origen: ProviderId | null }) {
               {TIPOS.map((tipo) => {
                 const activo = valores.tipos.includes(tipo);
                 return (
-                  <button
-                    key={tipo}
-                    type="button"
-                    aria-pressed={activo}
-                    onClick={() => alternarTipo(tipo)}
-                    className={`min-h-9 rounded-full border px-3 text-sm ${
-                      activo
-                        ? "bg-primario border-primario text-sobre-primario"
-                        : "border-borde text-texto-suave hover:text-texto"
-                    }`}
-                  >
+                  <Chip key={tipo} activo={activo} onClick={() => alternarTipo(tipo)}>
                     {tipo}
-                  </button>
+                  </Chip>
                 );
               })}
             </div>

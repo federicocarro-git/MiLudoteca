@@ -68,6 +68,7 @@ src/
     ui/                           componentes genéricos (Boton, Campo, ...)
     auth/                         formulario de login
     juegos/                       formulario de alta, buscador, selector e imagen de juego
+    catalogo/                     grilla con filtros, panel de filtros, tarjeta y sorteo
     <feature>/                    componentes de cada feature (catalogo/, juegos/, ...)
   lib/
     supabase/
@@ -85,6 +86,9 @@ src/
       bgg/                        BggProvider, parser XML, __fixtures__/*.xml
     resumen-ia/                   (fase 2) PDF del reglamento → resumen con Claude
     validations/                  esquemas zod compartidos por formularios y acciones
+    catalogo/
+      filtros.ts                  leer/escribir filtros de la URL, filtrar, ordenar, sortear
+      consultas.ts                obtenerMiCatalogo() (vista mi_catalogo; lee cookies)
     juegos/
       consultas.ts                obtenerJuego(id) para la ficha (lee cookies)
       comparar.ts                 mismosDatos() (¿se editó lo que vino de BGG?) y escaparLike()
@@ -145,6 +149,23 @@ Ver `supabase/migrations/20261011000000_esquema_inicial.sql`.
   `GAME_DATA_PROVIDER=mock`.
 - Las imágenes `http://` (Storage local) se muestran con `unoptimized`, porque
   el optimizador de Next bloquea las IPs locales.
+
+### Catálogo (`/catalogo`)
+
+- El servidor trae el catálogo **completo** del usuario (`obtenerMiCatalogo`) y
+  `CatalogoInteractivo` filtra en el navegador con `filtrarCatalogo` (función
+  pura, testeada). Una colección personal tiene, como mucho, unos cientos de
+  juegos. Si algún día no alcanza, mover los filtros a la consulta.
+- Filtros en la query string: `q`, `jugadores`, `duracion` (máxima, en
+  minutos), `complejidad` (`liviano` 1–2, `medio` 2–3, `pesado` 3–5), `tipo`
+  y `orden` (`nombre` por defecto, `recientes`, `puntuacion`, `duracion`). Se
+  actualizan con `window.history.replaceState`, que Next sincroniza con
+  `useSearchParams` sin volver a pedir la página. Lo inválido en la URL se ignora.
+- Un juego **sin** un dato no pasa el filtro de ese dato (se avisa en el panel).
+- "¿A qué jugamos?" sortea entre los juegos visibles (con los filtros
+  aplicados), con una animación corta que respeta `prefers-reduced-motion`.
+  "Otro" nunca repite el anterior si hay alternativas.
+- La búsqueda ignora tildes y mayúsculas (`normalizar`).
 
 ### Datos externos: GameDataProvider
 
@@ -289,6 +310,8 @@ parser o el cliente.
 - Errores por campo: la acción devuelve `errores: Record<campo, mensaje>` y el
   campo los muestra con `error=` (`Campo`, `AreaTexto`, `Selector` ponen
   `aria-invalid` y `aria-describedby`).
+- Hojas modales con `Hoja` (`components/ui/hoja.tsx`, sobre `<dialog>`): desde
+  abajo en el celular y centradas en pantallas grandes. Chips con `Chip`.
 - Inputs ocultos controlados (`bgg_id`, `tipos`, `imagen_url`) salen del estado
   de React: no tocarlos a mano desde el DOM.
 

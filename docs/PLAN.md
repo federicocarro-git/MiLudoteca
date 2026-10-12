@@ -92,13 +92,18 @@ Cada hito termina con lint, typecheck y tests en verde, y un commit.
 - [x] Verificado de punta a punta (21 chequeos con Playwright contra Supabase local).
 - [ ] Limpiar fotos huérfanas (subidas y no guardadas): más adelante, con un cron.
 
-### 5. Catálogo
+### 5. Catálogo — _hecho_
 
-- `/catalogo`: grilla de tarjetas con los filtros en la query string
-  (`?jugadores=4&duracion=60&complejidad=1-2.5&tipo=cooperativo&q=cat`).
-- Hoja inferior con filtros en el celular; chips con los filtros activos.
-- Botón "¿A qué jugamos?" (respeta los filtros; animación corta y link a la ficha).
-- Estados vacíos y skeletons.
+- [x] `/catalogo`: grilla de tarjetas (foto, jugadores, duración, nivel,
+      puntuación); 2 columnas en el celular, 3–4 en pantallas grandes.
+- [x] Filtros en la query string: jugadores, duración máxima, complejidad,
+      tipo (solo los que hay en el catálogo), búsqueda sin tildes y orden.
+- [x] Panel de filtros en una hoja inferior, con conteo en vivo; chips de los
+      filtros activos para quitarlos de a uno; estado "Ningún juego coincide".
+- [x] "¿A qué jugamos?": botón flotante que sortea entre los juegos filtrados.
+- [x] Estado vacío y esqueleto de carga.
+- [x] Verificado de punta a punta (20 chequeos), incluido que filtrar no
+      vuelve a pedir el catálogo y que un juego nuevo aparece al volver.
 
 ### 6. Ficha del juego
 
