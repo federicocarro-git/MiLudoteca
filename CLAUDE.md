@@ -64,7 +64,7 @@ src/
           como-se-juega/              Cómo se juega
           hoja-de-turno/              Hoja de turno (celular e impresión, pantalla encendida)
         editar/                     editar datos de un juego manual propio
-        resumen/editar/             editor de resúmenes en markdown (hito 7)
+        resumen/editar/             editor de resúmenes en markdown (+ actions.ts: guardarResumen)
         actions.ts                  actualizarCatalogo, agregarAlCatalogo, quitarDelCatalogo, actualizarJuego
     manifest.ts                   manifiesto de la PWA
   components/
@@ -72,6 +72,7 @@ src/
     auth/                         formulario de login
     juegos/                       formulario de alta, buscador, selector e imagen de juego
     catalogo/                     grilla con filtros, panel de filtros, tarjeta y sorteo
+    resumenes/                    editor de resúmenes
     markdown.tsx                  render de resúmenes (react-markdown + remark-gfm; estilos .md en globals.css)
     <feature>/                    componentes de cada feature (catalogo/, juegos/, ...)
   lib/
@@ -98,6 +99,8 @@ src/
       comparar.ts                 mismosDatos() (¿se editó lo que vino de BGG?) y escaparLike()
       storage.ts                  rutaImagenPropia(): qué fotos del bucket se pueden borrar
       valores-formulario.ts       valores del formulario de juego (alta y edición)
+    resumenes/
+      formato.ts                  barra de formato del editor (funciones puras) y plantillas
     formato.ts                    textos de jugadores, duración y complejidad
     imagenes.ts                   achica las fotos en el navegador (máx. 1200 px, WebP)
     auth.ts                       getUsuarioActual() (lee cookies: dentro de <Suspense>)
@@ -189,6 +192,22 @@ Ver `supabase/migrations/20261011000000_esquema_inicial.sql`.
 - Hoja de turno: `.md-hoja` (letra de 18 px, fases con fondo), tablas con
   scroll propio en el celular, `@media print` en A4 sin navegación ni
   botones, y "Mantener pantalla encendida" con la Screen Wake Lock API.
+
+### Editor de resúmenes (`/juegos/[id]/resumen/editar?seccion=...`)
+
+- Un solo formulario con las dos secciones (Cómo se juega / Hoja de turno);
+  cambiar de sección no pierde lo escrito. Escribir / Vista previa (el mismo
+  `Markdown` de la ficha).
+- Barra de formato (título, negrita, lista, checklist, tabla) con
+  `aplicarFormato` (`lib/resumenes/formato.ts`): funciones puras que devuelven
+  el texto y la selección nuevos. Plantillas para empezar.
+- `guardarResumen`: upsert en `resumenes` por `(juego_id, autor_id)`; no toca
+  `origen`. Vuelve a la pestaña editada con `?guardado=1`.
+- Borrador en `localStorage` (`miludoteca:borrador-resumen:<juegoId>`) mientras
+  hay cambios; al abrir, si difiere de lo guardado, ofrece Recuperar/Descartar.
+- `useAvisoCambios`: confirma antes de salir con cambios (beforeunload y
+  clicks en links, en fase de captura). El "atrás" del navegador no se puede
+  frenar: para eso está el borrador.
 
 ### Datos externos: GameDataProvider
 

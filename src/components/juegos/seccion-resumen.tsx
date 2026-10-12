@@ -1,4 +1,4 @@
-import { FileText, Pencil } from "lucide-react";
+import { CircleCheck, FileText, Pencil } from "lucide-react";
 import { notFound } from "next/navigation";
 import type { ReactNode } from "react";
 import { Markdown } from "@/components/markdown";
@@ -25,10 +25,12 @@ export async function SeccionResumen({
   juegoId,
   seccion,
   herramientas,
+  guardado = false,
 }: {
   juegoId: string;
   seccion: Seccion;
   herramientas?: ReactNode;
+  guardado?: boolean;
 }) {
   const [juego, resumen] = await Promise.all([obtenerJuego(juegoId), obtenerResumen(juegoId)]);
   if (!juego) notFound();
@@ -48,6 +50,15 @@ export async function SeccionResumen({
 
   return (
     <div className="space-y-4">
+      {guardado && (
+        <p
+          role="status"
+          className="bg-primario/10 flex items-center gap-2 rounded-2xl p-3 text-sm font-medium print:hidden"
+        >
+          <CircleCheck aria-hidden className="text-primario size-5" />
+          Guardaste el resumen.
+        </p>
+      )}
       <div className="flex flex-wrap items-center justify-between gap-2 print:hidden">
         {herramientas ?? <span />}
         <BotonLink href={editar} variante="secundario">

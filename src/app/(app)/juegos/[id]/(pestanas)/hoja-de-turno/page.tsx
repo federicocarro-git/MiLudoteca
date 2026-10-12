@@ -5,11 +5,19 @@ import { EsqueletoResumen, SeccionResumen } from "@/components/juegos/seccion-re
 
 export const metadata: Metadata = { title: "Hoja de turno" };
 
-export default function HojaDeTurnoPage({ params }: PageProps<"/juegos/[id]/hoja-de-turno">) {
+export default function HojaDeTurnoPage({
+  params,
+  searchParams,
+}: PageProps<"/juegos/[id]/hoja-de-turno">) {
   return (
     <Suspense fallback={<EsqueletoResumen />}>
-      {params.then(({ id }) => (
-        <SeccionResumen juegoId={id} seccion="hoja_de_turno" herramientas={<HerramientasHoja />} />
+      {Promise.all([params, searchParams]).then(([{ id }, sp]) => (
+        <SeccionResumen
+          juegoId={id}
+          seccion="hoja_de_turno"
+          herramientas={<HerramientasHoja />}
+          guardado={sp.guardado === "1"}
+        />
       ))}
     </Suspense>
   );

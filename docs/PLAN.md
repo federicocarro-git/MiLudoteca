@@ -119,12 +119,15 @@ Cada hito termina con lint, typecheck y tests en verde, y un commit.
       limpia y "Mantener pantalla encendida".
 - [x] Verificado de punta a punta (30 chequeos), incluido un PDF de la hoja.
 
-### 7. Editor de resúmenes
+### 7. Editor de resúmenes — _hecho_
 
-- `/juegos/[id]/resumen/editar`: dos textareas (cómo se juega / hoja de
-  turno) con pestañas Editar/Vista previa, barra mínima de formato
-  (encabezado, lista, checklist, tabla) y aviso al salir con cambios sin guardar.
-- Render: `react-markdown` + `remark-gfm` (sin HTML crudo).
+- [x] `/juegos/[id]/resumen/editar`: las dos secciones en un formulario,
+      Escribir / Vista previa, contador cerca del límite.
+- [x] Barra de formato para el celular (título, negrita, lista, checklist,
+      tabla) y plantillas para cada sección.
+- [x] Borrador local con "Recuperar" y aviso al salir con cambios sin guardar.
+- [x] Guardar vuelve a la pestaña editada con un aviso.
+- [x] Verificado de punta a punta (22 chequeos).
 
 ### 8. Cierre de fase 1
 

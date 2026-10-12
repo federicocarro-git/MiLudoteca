@@ -4,11 +4,14 @@ import { EsqueletoResumen, SeccionResumen } from "@/components/juegos/seccion-re
 
 export const metadata: Metadata = { title: "Cómo se juega" };
 
-export default function ComoSeJuegaPage({ params }: PageProps<"/juegos/[id]/como-se-juega">) {
+export default function ComoSeJuegaPage({
+  params,
+  searchParams,
+}: PageProps<"/juegos/[id]/como-se-juega">) {
   return (
     <Suspense fallback={<EsqueletoResumen />}>
-      {params.then(({ id }) => (
-        <SeccionResumen juegoId={id} seccion="como_se_juega" />
+      {Promise.all([params, searchParams]).then(([{ id }, sp]) => (
+        <SeccionResumen juegoId={id} seccion="como_se_juega" guardado={sp.guardado === "1"} />
       ))}
     </Suspense>
   );
