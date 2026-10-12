@@ -8,7 +8,7 @@
     "duracion_min": 90,
     "complejidad": 2.29,
     "tipos": ["eurogame", "negociación", "dados"],
-    "descripcion": "Los jugadores colonizan una isla: juntan recursos, construyen caminos, pueblos y ciudades, y negocian entre ellos. Gana quien llega primero a 10 puntos de victoria."
+    "descripcion": "Los jugadores colonizan una isla: juntan recursos, construyen caminos, pueblos y ciudades, y negocian entre ellos. Gana quien llega primero a 10 puntos de victoria.\n\nCada turno se tiran los dados y todas las regiones con ese número producen recursos. Con madera, ladrillo, lana, cereal y mineral se construye; lo que falta se consigue comerciando con los demás o con el banco.\n\nEl ladrón, la ruta comercial más larga y el gran ejército hacen que nada esté decidido hasta el final."
   },
   {
     "id": "mock-catan-junior",
@@ -30,7 +30,7 @@
     "duracion_min": 45,
     "complejidad": 1.9,
     "tipos": ["losetas", "familiar"],
-    "descripcion": "Cada turno se coloca una loseta para armar entre todos un paisaje medieval de ciudades, caminos y monasterios, y se ubican seguidores para sumar puntos."
+    "descripcion": "Cada turno se coloca una loseta para armar entre todos un paisaje medieval de ciudades, caminos y monasterios, y se ubican seguidores para sumar puntos.\n\nLos seguidores pueden ser caballeros en las ciudades, ladrones en los caminos, monjes en los monasterios o granjeros en los campos. Cada uno puntúa distinto y vuelve a la reserva cuando su obra se completa."
   },
   {
     "id": "mock-ticket-to-ride",
@@ -41,7 +41,7 @@
     "duracion_min": 60,
     "complejidad": 1.83,
     "tipos": ["familiar", "cartas"],
-    "descripcion": "Juntá cartas de colores para reclamar rutas de tren y conectar las ciudades de tus billetes de destino."
+    "descripcion": "Juntá cartas de colores para reclamar rutas de tren y conectar las ciudades de tus billetes de destino.\n\nCada turno se elige una de tres acciones: robar cartas de vagón, reclamar una ruta o tomar billetes nuevos.\n\nAl final se suman los puntos de las rutas, los billetes cumplidos y la ruta continua más larga, y se restan los billetes que no se completaron."
   },
   {
     "id": "mock-pandemic",
@@ -52,7 +52,7 @@
     "duracion_min": 45,
     "complejidad": 2.4,
     "tipos": ["cooperativo"],
-    "descripcion": "Un equipo de especialistas recorre el mundo para frenar cuatro enfermedades y descubrir sus curas antes de que sea tarde. Se gana o se pierde todos juntos."
+    "descripcion": "Un equipo de especialistas recorre el mundo para frenar cuatro enfermedades y descubrir sus curas antes de que sea tarde. Se gana o se pierde todos juntos.\n\nCada jugador tiene un rol con una habilidad especial: médico, científica, investigadora, especialista en operaciones o experto en cuarentenas.\n\nSe pierde si los brotes se descontrolan, si se acaban los cubos de alguna enfermedad o si se terminan las cartas del mazo de jugador."
   },
   {
     "id": "mock-azul",
@@ -63,7 +63,7 @@
     "duracion_min": 45,
     "complejidad": 1.76,
     "tipos": ["abstracto", "familiar"],
-    "descripcion": "Los jugadores eligen azulejos de las fábricas para decorar la pared del palacio real de Évora, sumando puntos por filas, columnas y colores completos."
+    "descripcion": "Los jugadores eligen azulejos de las fábricas para decorar la pared del palacio real de Évora, sumando puntos por filas, columnas y colores completos.\n\nLas piezas que no entran en las líneas de preparación caen al suelo y restan puntos, así que hay que calcular bien qué tomar y qué dejarle a los demás."
   },
   {
     "id": "mock-7-wonders",
@@ -85,7 +85,7 @@
     "duracion_min": 15,
     "complejidad": 1.27,
     "tipos": ["party", "palabras", "por equipos", "deducción"],
-    "descripcion": "Dos equipos compiten por encontrar a sus agentes. Los jefes de espías dan pistas de una sola palabra que pueden apuntar a varias cartas a la vez."
+    "descripcion": "Dos equipos compiten por encontrar a sus agentes. Los jefes de espías dan pistas de una sola palabra que pueden apuntar a varias cartas a la vez.\n\nCuidado con el asesino: si un equipo lo toca, pierde en el acto.\n\nFunciona igual de bien con 4 que con 8 personas, y hay una variante para dos jugadores."
   },
   {
     "id": "mock-dixit",
@@ -118,7 +118,7 @@
     "duracion_min": 70,
     "complejidad": 2.45,
     "tipos": ["cartas", "eurogame", "solitario"],
-    "descripcion": "Los jugadores atraen aves a sus reservas naturales y encadenan sus poderes en tres hábitats: bosque, pradera y humedal."
+    "descripcion": "Los jugadores atraen aves a sus reservas naturales y encadenan sus poderes en tres hábitats: bosque, pradera y humedal.\n\nCada ave tiene un poder que se activa al jugar o al usar su hábitat, y las combinaciones generan huevos, comida y cartas.\n\nIncluye un modo solitario con el autómata Automubon."
   },
   {
     "id": "mock-the-crew",

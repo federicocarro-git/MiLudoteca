@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<items termsofuse="https://boardgamegeek.com/xmlapi/termsofuse">
+	<item type="boardgame" id="30549">
+		<name type="primary" sortindex="1" value="Pandemic" />
+		<description>In Pandemic, several virulent diseases have broken out simultaneously all over the world!   &#10;&#10;Each player&amp;rsquo;s role gives a unique ability &amp;ndash; use them well:&#10;&amp;bull; Medic&#10;&amp;bull; Scientist&#10;&#10;&#10;&#10;    &#10;Board game designer Matt Leacock calls it &amp;quot;a race against time&amp;quot;. R&amp;amp;D not included.&#10;&#10;</description>
+		<yearpublished value="2008" />
+		<minplayers value="2" />
+		<maxplayers value="4" />
+		<playingtime value="45" />
+	</item>
+</items>

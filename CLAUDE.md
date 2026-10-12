@@ -76,7 +76,7 @@ src/
   components/
     ui/                           componentes genéricos (Boton, Campo, ...)
     auth/                         formulario de login
-    juegos/                       formulario de alta, buscador, selector e imagen de juego
+    juegos/                       formulario de alta, buscador, selector e imagen de juego, enlace-bgg.tsx
     catalogo/                     grilla con filtros, panel de filtros, tarjeta y sorteo
     resumenes/                    editor de resúmenes
     markdown.tsx                  render de resúmenes (react-markdown + remark-gfm; estilos .md en globals.css)
@@ -94,8 +94,7 @@ src/
       tipos.ts                    vocabulario de "tipos" + traducción desde BGG
       texto.ts                    normalizar() y orden por relevancia
       mock/                       MockProvider + juegos.json
-      bgg/                        BggProvider, parser XML, __fixtures__/*.xml
-    resumen-ia/                   (fase 2) PDF del reglamento → resumen con Claude
+      bgg/                        BggProvider, parser XML, enlaces.ts (urlJuegoBgg), __fixtures__/*.xml
     validations/                  esquemas zod compartidos por formularios y acciones
     catalogo/
       filtros.ts                  leer/escribir filtros de la URL, filtrar, ordenar, sortear
@@ -138,8 +137,12 @@ Ver `supabase/migrations/20261011000000_esquema_inicial.sql`.
   **privado de su creador** (`creado_por`). Un juego manual puede tener
   `bgg_id` como referencia; la unicidad de `bgg_id` aplica solo a filas `bgg`.
 - `catalogo_usuario`: PK `(user_id, juego_id)`, con notas y puntuación (1 a 10).
-- `resumenes`: uno por `(juego_id, autor_id)`, en markdown. `origen` queda
-  preparado para la fase 2 (`manual` / `ia`).
+- `resumenes`: uno por `(juego_id, autor_id)`, en markdown. Siempre se
+  escriben a mano: no hay generación con IA (la columna `origen` que estaba
+  preparada para eso se quitó en `20261013000000_quitar_origen_resumenes.sql`).
+- `juegos.descripcion`: texto libre (hasta 20.000 caracteres). En los de BGG
+  viene de `/thing`, ya decodificada y con los párrafos separados por una línea
+  en blanco; en los manuales, la escribe quien carga el juego.
 - Vista `mi_catalogo` (`security_invoker`): catálogo del usuario actual unido
   a los datos del juego. Es la fuente de la pantalla de catálogo y sus filtros.
 - Storage `imagenes-juegos`: público para lectura; cada usuario escribe en
@@ -198,6 +201,16 @@ Ver `supabase/migrations/20261011000000_esquema_inicial.sql`.
   resúmenes y su foto (nadie más lo ve). Un juego de BGG se conserva.
 - Solo se editan los datos de juegos manuales propios (`editable`); los de BGG
   son compartidos (`/editar` da 404).
+- Descripción en la Ficha, con los saltos de línea respetados
+  (`whitespace-pre-line`). En los juegos de BGG (`origen = 'bgg'`) se atribuye
+  con "Descripción: BoardGameGeek" y link a la página del juego. Un juego
+  manual con `bgg_id` de referencia **no** se atribuye (la descripción pudo
+  haberse editado), pero igual muestra "Ver en BoardGameGeek".
+- "Ver en BoardGameGeek" (`EnlaceBgg`, `urlJuegoBgg`): en la Ficha y en las
+  pestañas vacías de cualquier juego con `bgg_id`. Abre en otra pestaña.
+- "Cómo se juega" y "Hoja de turno" son **opcionales** y se completan a mano.
+  Vacías: con `bgg_id`, mensaje con link a BGG (reglamento y ayudas de la
+  comunidad) y "Escribir" como opción secundaria; sin `bgg_id`, solo "Escribir".
 - Hoja de turno: `.md-hoja` (letra de 18 px, fases con fondo), tablas con
   scroll propio en el celular, `@media print` en A4 sin navegación ni
   botones, y "Mantener pantalla encendida" con la Screen Wake Lock API.
@@ -210,8 +223,8 @@ Ver `supabase/migrations/20261011000000_esquema_inicial.sql`.
 - Barra de formato (título, negrita, lista, checklist, tabla) con
   `aplicarFormato` (`lib/resumenes/formato.ts`): funciones puras que devuelven
   el texto y la selección nuevos. Plantillas para empezar.
-- `guardarResumen`: upsert en `resumenes` por `(juego_id, autor_id)`; no toca
-  `origen`. Vuelve a la pestaña editada con `?guardado=1`.
+- `guardarResumen`: upsert en `resumenes` por `(juego_id, autor_id)`. Vuelve a
+  la pestaña editada con `?guardado=1`.
 - Borrador en `localStorage` (`miludoteca:borrador-resumen:<juegoId>`) mientras
   hay cambios; al abrir, si difiere de lo guardado, ofrece Recuperar/Descartar.
 - `useAvisoCambios`: confirma antes de salir con cambios (beforeunload y
@@ -255,7 +268,10 @@ Archivos en `src/lib/game-data/bgg/`:
   - Cada espera tiene un tope de 15 s, para no colgar una Server Action.
 - `parser.ts`: `parsearBusqueda` (`search`; sin repetidos, porque BGG devuelve
   una entrada por cada nombre que coincide) y `parsearDetalle` (`thing&stats=1`).
-  Decodifica entidades HTML (con `he`), convierte los `0` de BGG en `null`,
+  Decodifica entidades HTML (con `he`, incluidas las doblemente escapadas como
+  `&amp;quot;`), y en la descripción (`limpiarDescripcion`) respeta los párrafos
+  (`&#10;&#10;`) y los saltos simples, quita los espacios al final de cada línea
+  y junta las líneas en blanco de más. Convierte los `0` de BGG en `null`,
   usa la imagen `https` (o el thumbnail) y traduce categorías y mecánicas a
   `tipos` (vocabulario en `src/lib/game-data/tipos.ts`).
 - `bgg-provider.ts`: `buscar` (mínimo 2 caracteres; ordena primero el nombre
@@ -273,7 +289,8 @@ Archivos en `src/lib/game-data/bgg/`:
   `cache-supabase.integracion.test.ts`.
 
 El `MockProvider` (`mock/`) tiene 12 juegos en `juegos.json`, sin `bgg_id` ni
-imagen (no se hace pasar por BGG). En desarrollo agrega 300 ms de latencia para
+imagen (no se hace pasar por BGG); varias descripciones tienen más de un
+párrafo para probar cómo se muestran. En desarrollo agrega 300 ms de latencia para
 que se vean los estados de carga.
 
 #### Pendiente de verificar con la API real (cuando se apruebe el token)
@@ -403,6 +420,9 @@ Ver `.env.example`.
 
 ## Fase 2 (no implementar sin pedido explícito)
 
-Resumen con IA a partir del PDF del reglamento, importar la colección de un
-usuario de BGG y registro de partidas. Qué queda preparado y qué falta: ver
-`docs/PLAN.md`.
+Importar la colección de un usuario de BGG y registro de partidas. Qué queda
+preparado y qué falta: ver `docs/PLAN.md`.
+
+Los resúmenes **no** se generan con IA (se descartó): "Cómo se juega" y "Hoja
+de turno" se escriben a mano. No agregar integraciones con la API de Claude ni
+código preparado para eso.

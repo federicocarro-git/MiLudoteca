@@ -223,6 +223,7 @@ export function FormularioJuego({
             value={valores.descripcion}
             onChange={cambiar("descripcion")}
             error={errores.descripcion}
+            ayuda="Texto libre. Separá los párrafos con una línea en blanco."
           />
         </section>
 

@@ -40,7 +40,7 @@ export const obtenerResumen = cache(async (juegoId: string) => {
   const supabase = await createClient();
   const { data, error } = await supabase
     .from("resumenes")
-    .select("como_se_juega, hoja_de_turno, origen, actualizado_en")
+    .select("como_se_juega, hoja_de_turno, actualizado_en")
     .eq("juego_id", juegoId)
     .maybeSingle();
   if (error) throw error;

@@ -96,9 +96,16 @@ function complejidad(valor: string | undefined): number | null {
   return Math.round(n * 100) / 100;
 }
 
-function descripcion(valor: string | undefined): string | null {
+/**
+ * Descripción de `thing`: BGG la manda con los saltos como `&#10;` y el resto
+ * de las entidades escapadas (a veces dos veces). Se decodifica todo, se
+ * respetan los párrafos (línea en blanco) y los saltos simples, y se limpian
+ * los espacios sobrantes al final de cada línea y las líneas en blanco de más.
+ */
+export function limpiarDescripcion(valor: string | undefined): string | null {
   const limpio = texto(valor)
     .replace(/\r\n?/g, "\n")
+    .replace(/[^\S\n]+$/gm, "")
     .replace(/\n{3,}/g, "\n\n");
   return limpio ? limpio.slice(0, 20000) : null;
 }
@@ -136,7 +143,7 @@ export function parsearDetalle(xml: string): DatosJuego[] {
           enteroPositivo(item.playingtime?.value) ?? enteroPositivo(item.maxplaytime?.value),
         complejidad: complejidad(item.statistics?.ratings?.averageweight?.value),
         anio: enteroPositivo(item.yearpublished?.value),
-        descripcion: descripcion(item.description),
+        descripcion: limpiarDescripcion(item.description),
         tipos,
       },
     ];

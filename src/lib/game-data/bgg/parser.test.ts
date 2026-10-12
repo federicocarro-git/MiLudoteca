@@ -62,6 +62,17 @@ describe("parsearDetalle", () => {
     );
   });
 
+  it("respeta párrafos y saltos simples, decodifica todo y limpia espacios y líneas de más", () => {
+    const [pandemic] = parsearDetalle(fixture("thing-descripcion.xml"));
+    expect(pandemic.descripcion).toBe(
+      "In Pandemic, several virulent diseases have broken out simultaneously all over the world!\n\n" +
+        "Each player’s role gives a unique ability – use them well:\n" +
+        "• Medic\n" +
+        "• Scientist\n\n" +
+        'Board game designer Matt Leacock calls it "a race against time". R&D not included.',
+    );
+  });
+
   it("convierte los ceros de BGG en null y usa el thumbnail si no hay imagen", () => {
     const [juego] = parsearDetalle(fixture("thing-sin-datos.xml"));
     expect(juego).toEqual({

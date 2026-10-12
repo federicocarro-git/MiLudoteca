@@ -95,10 +95,10 @@ test("escribir con la barra de formato, vista previa, borrador y guardar", async
 
   const { data } = await admin
     .from("resumenes")
-    .select("autor_id, origen, como_se_juega, hoja_de_turno")
+    .select("autor_id, como_se_juega, hoja_de_turno")
     .eq("juego_id", id)
     .single();
-  expect(data).toMatchObject({ autor_id: usuario.id, origen: "manual" });
+  expect(data).toMatchObject({ autor_id: usuario.id });
   expect(data!.como_se_juega).toMatch(/^## Objetivo/);
   expect(data!.hoja_de_turno).toMatch(/- \[ \] Curar$/);
 });
