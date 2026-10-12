@@ -172,19 +172,34 @@ test.describe("juegos de BGG", () => {
       nombre: "Juego de BGG",
       jugadores_min: 2,
       jugadores_max: 5,
+      descripcion: "Primer párrafo de BGG.\n\nSegundo párrafo.",
     });
     idFuera = await crearJuegoBgg({ bgg_id: FUERA, nombre: "Otro de BGG" });
     await admin.from("catalogo_usuario").insert({ user_id: usuario.id, juego_id: idBgg });
   });
   test.afterEach(() => borrarJuegosBgg(EN_CATALOGO, FUERA));
 
-  test("sin resumen muestra cómo empezar; no se puede editar", async ({ page }) => {
-    await page.goto(`/juegos/${idBgg}/como-se-juega`);
-    await expect(page.getByText("Todavía no escribiste cómo se juega")).toBeVisible();
-    await expect(page.getByRole("link", { name: "Escribir" })).toHaveAttribute(
-      "href",
-      `/juegos/${idBgg}/resumen/editar?seccion=como-se-juega`,
-    );
+  test("sin resumen: link a BGG y 'Escribir' como opción secundaria; no se puede editar", async ({
+    page,
+  }) => {
+    for (const [seccion, titulo] of [
+      ["como-se-juega", "Todavía no hay un resumen de cómo se juega"],
+      ["hoja-de-turno", "Todavía no hay hoja de turno"],
+    ]) {
+      await page.goto(`/juegos/${idBgg}/${seccion}`);
+      await expect(page.getByText(titulo)).toBeVisible();
+      await expect(page.getByText("En BoardGameGeek vas a encontrar el reglamento")).toBeVisible();
+      const bgg = page.getByRole("link", { name: /Ver en BoardGameGeek/ });
+      await expect(bgg).toHaveAttribute(
+        "href",
+        `https://boardgamegeek.com/boardgame/${EN_CATALOGO}`,
+      );
+      await expect(bgg).toHaveAttribute("target", "_blank");
+      await expect(page.getByRole("link", { name: "Escribir" })).toHaveAttribute(
+        "href",
+        `/juegos/${idBgg}/resumen/editar?seccion=${seccion}`,
+      );
+    }
     await page.goto(`/juegos/${idBgg}`);
     await expect(page.getByText("En tu catálogo")).toBeVisible();
     await expect(page.getByRole("link", { name: "Editar datos del juego" })).toHaveCount(0);
@@ -201,9 +216,63 @@ test.describe("juegos de BGG", () => {
     expect((await admin.from("juegos").select("id").eq("id", idBgg)).data).toHaveLength(1);
   });
 
+  test("la descripción de BGG se atribuye con link y respeta los párrafos", async ({ page }) => {
+    await page.goto(`/juegos/${idBgg}`);
+    const descripcion = page.locator("section", {
+      has: page.getByRole("heading", { name: "Descripción" }),
+    });
+    await expect(descripcion.locator("p").first()).toHaveText(
+      "Primer párrafo de BGG.\n\nSegundo párrafo.",
+      {
+        useInnerText: true,
+      },
+    );
+    await expect(descripcion.getByText("Descripción:")).toBeVisible();
+    await expect(descripcion.getByRole("link", { name: "BoardGameGeek" })).toHaveAttribute(
+      "href",
+      `https://boardgamegeek.com/boardgame/${EN_CATALOGO}`,
+    );
+    await expect(page.getByRole("link", { name: /Ver en BoardGameGeek/ })).toBeVisible();
+  });
+
   test("agregarlo al catálogo desde la ficha", async ({ page }) => {
     await page.goto(`/juegos/${idFuera}`);
     await page.getByRole("button", { name: "Agregar a mi catálogo" }).click();
     await expect(page.getByText("En tu catálogo")).toBeVisible();
   });
+});
+
+test("juego manual sin bgg_id: las pestañas vacías ofrecen escribir y no hay link a BGG", async ({
+  page,
+}) => {
+  const id = await crearJuego(usuario, {
+    nombre: "Juego casero",
+    descripcion: "Lo inventamos en casa.",
+  });
+  await page.goto(`/juegos/${id}/hoja-de-turno`);
+  await expect(page.getByText("Todavía no hay hoja de turno")).toBeVisible();
+  await expect(page.getByRole("link", { name: "Escribir" })).toBeVisible();
+  await expect(page.getByRole("link", { name: /BoardGameGeek/ })).toHaveCount(0);
+  await page.goto(`/juegos/${id}`);
+  await expect(page.getByText("Lo inventamos en casa.")).toBeVisible();
+  await expect(page.getByRole("link", { name: /BoardGameGeek/ })).toHaveCount(0);
+});
+
+test("juego manual con bgg_id de referencia: link 'Ver en BoardGameGeek' sin atribuir la descripción", async ({
+  page,
+}) => {
+  const id = await crearJuego(usuario, {
+    nombre: "Mi versión",
+    bgg_id: 13,
+    descripcion: "La edité yo.",
+  });
+  await page.goto(`/juegos/${id}`);
+  await expect(page.getByRole("link", { name: /Ver en BoardGameGeek/ })).toHaveAttribute(
+    "href",
+    "https://boardgamegeek.com/boardgame/13",
+  );
+  await expect(page.getByText("Descripción:")).toHaveCount(0);
+  await page.goto(`/juegos/${id}/como-se-juega`);
+  await expect(page.getByRole("link", { name: /Ver en BoardGameGeek/ })).toBeVisible();
+  await expect(page.getByRole("link", { name: "Escribir" })).toBeVisible();
 });

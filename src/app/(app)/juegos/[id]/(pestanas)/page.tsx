@@ -3,9 +3,11 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
 import { AccionesCatalogo } from "@/components/juegos/acciones-catalogo";
+import { EnlaceBgg } from "@/components/juegos/enlace-bgg";
 import { ImagenJuego } from "@/components/juegos/imagen-juego";
 import { BotonLink } from "@/components/ui/boton";
 import { formatearComplejidad, formatearDuracion, formatearJugadores } from "@/lib/formato";
+import { urlJuegoBgg } from "@/lib/game-data/bgg/enlaces";
 import { obtenerJuego } from "@/lib/juegos/consultas";
 
 export const metadata: Metadata = { title: "Ficha" };
@@ -76,6 +78,9 @@ async function Ficha({ id, aviso }: { id: string; aviso: keyof typeof AVISOS | n
         <p className="text-texto-suave text-sm">{juego.tipos.join(" · ")}</p>
       )}
 
+      {/* Cualquier juego con bgg_id: los de BGG y los manuales que lo guardan de referencia. */}
+      {juego.bgg_id && <EnlaceBgg bggId={juego.bgg_id} className="print:hidden" />}
+
       <AccionesCatalogo
         juegoId={juego.id}
         catalogo={catalogo ? { puntuacion: catalogo.puntuacion, notas: catalogo.notas } : null}
@@ -88,6 +93,21 @@ async function Ficha({ id, aviso }: { id: string; aviso: keyof typeof AVISOS | n
           <p className="text-texto-suave text-sm leading-relaxed whitespace-pre-line">
             {juego.descripcion}
           </p>
+          {/* Solo se atribuye a BGG si es la fila de BGG: en un juego manual
+              con bgg_id de referencia, la descripción pudo haberse editado. */}
+          {juego.origen === "bgg" && juego.bgg_id && (
+            <p className="text-texto-suave text-xs">
+              Descripción:{" "}
+              <a
+                href={urlJuegoBgg(juego.bgg_id)}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-primario font-medium underline underline-offset-2"
+              >
+                BoardGameGeek
+              </a>
+            </p>
+          )}
         </section>
       )}
 
@@ -100,9 +120,6 @@ async function Ficha({ id, aviso }: { id: string; aviso: keyof typeof AVISOS | n
           <Pencil aria-hidden className="size-4" />
           Editar datos del juego
         </BotonLink>
-      )}
-      {juego.origen === "bgg" && (
-        <p className="text-texto-suave text-xs">Datos de BoardGameGeek.</p>
       )}
     </article>
   );

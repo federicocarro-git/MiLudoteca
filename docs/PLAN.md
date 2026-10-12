@@ -151,10 +151,22 @@ Cada hito termina con lint, typecheck y tests en verde, y un commit.
 - [ ] Token de BGG: correr `npm run test:bgg-real` y completar la checklist de `CLAUDE.md`.
 - [ ] Limpiar fotos huérfanas en Storage (subidas y no guardadas) con un cron.
 
+## Cambios después de la fase 1
+
+- **Descripción del juego**: la columna ya existía. Se agregó la atribución
+  "Descripción: BoardGameGeek" con link en los juegos de BGG, el link "Ver en
+  BoardGameGeek" para cualquier juego con `bgg_id`, una limpieza más completa
+  de la descripción de `/thing` (párrafos, saltos simples, espacios) y
+  descripciones con varios párrafos en el MockProvider.
+- **Pestañas opcionales**: "Cómo se juega" y "Hoja de turno" vacías ofrecen el
+  link a BGG (si el juego tiene `bgg_id`) y "Escribir".
+- **Sin resúmenes con IA**: se descartó generar resúmenes con la API de Claude.
+  Se quitó `resumenes.origen` (migración `20261013000000_quitar_origen_resumenes.sql`)
+  y la carpeta reservada `src/lib/resumen-ia/` de la arquitectura.
+
 ## Fase 2 (preparado, no implementado)
 
-| Funcionalidad                           | Qué ya queda listo                                                                                        | Qué falta                                                                                                                                                                            |
-| --------------------------------------- | --------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| PDF del reglamento → resumen con Claude | `resumenes.origen` (`manual` / `ia`); la carpeta `src/lib/resumen-ia/` está reservada en la arquitectura. | Bucket privado `reglamentos`, tabla `reglamentos (id, juego_id, autor_id, storage_path, ...)`, Route Handler que manda el PDF a la API de Claude y guarda el borrador para editarlo. |
-| Importar colección de BGG               | `BggProvider` ya maneja 202 (el endpoint `collection` lo usa mucho) y la cache en `juegos`.               | Método `importarColeccion(usuario)` en el provider de BGG, pedidos de `thing` en lotes, pantalla de progreso y alta masiva en `catalogo_usuario`.                                    |
-| Registro de partidas                    | Nada en la base todavía (se agrega como migración nueva).                                                 | Tablas `partidas (id, user_id, juego_id, jugada_en, duracion, notas)` y `partida_jugadores (partida_id, nombre, puntaje, gano)` con RLS por `user_id`.                               |
+| Funcionalidad             | Qué ya queda listo                                                                          | Qué falta                                                                                                                                              |
+| ------------------------- | ------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Importar colección de BGG | `BggProvider` ya maneja 202 (el endpoint `collection` lo usa mucho) y la cache en `juegos`. | Método `importarColeccion(usuario)` en el provider de BGG, pedidos de `thing` en lotes, pantalla de progreso y alta masiva en `catalogo_usuario`.      |
+| Registro de partidas      | Nada en la base todavía (se agrega como migración nueva).                                   | Tablas `partidas (id, user_id, juego_id, jugada_en, duracion, notas)` y `partida_jugadores (partida_id, nombre, puntaje, gano)` con RLS por `user_id`. |

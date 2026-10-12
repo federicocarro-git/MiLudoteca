@@ -18,6 +18,12 @@ describe("MockProvider", () => {
     }
   });
 
+  it("varias descripciones tienen más de un párrafo (para probar cómo se muestran)", () => {
+    const conParrafos = juegos.filter((j) => j.descripcion.includes("\n\n"));
+    expect(conParrafos.length).toBeGreaterThanOrEqual(5);
+    for (const j of juegos) expect(j.descripcion).not.toMatch(/\n{3,}|[ \t]\n/);
+  });
+
   it("busca sin distinguir mayúsculas ni tildes, con el exacto primero", async () => {
     const r = await provider.buscar("CATÁN");
     expect(r.map((x) => x.nombre)).toEqual(["Catan", "Catan Junior"]);

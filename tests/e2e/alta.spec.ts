@@ -44,6 +44,8 @@ test("buscar en el mock, completar el formulario y guardar", async ({ page }) =>
   await expect(page.getByText("3–4 jugadores")).toBeVisible();
   await expect(page.getByText("1 h 30 min")).toBeVisible();
   await expect(page.getByText("8/10")).toBeVisible();
+  // La descripción del mock tiene varios párrafos y se muestran separados.
+  await expect(page.getByText(/El ladrón, la ruta comercial más larga/)).toBeVisible();
 
   const { data } = await admin
     .from("catalogo_usuario")

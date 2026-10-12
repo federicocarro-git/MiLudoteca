@@ -133,7 +133,6 @@ export type Database = {
           hoja_de_turno: string;
           id: string;
           juego_id: string;
-          origen: string;
         };
         ComputedFields: never;
         Insert: {
@@ -144,7 +143,6 @@ export type Database = {
           hoja_de_turno?: string;
           id?: string;
           juego_id: string;
-          origen?: string;
         };
         Update: {
           actualizado_en?: string;
@@ -154,7 +152,6 @@ export type Database = {
           hoja_de_turno?: string;
           id?: string;
           juego_id?: string;
-          origen?: string;
         };
         Relationships: [
           {

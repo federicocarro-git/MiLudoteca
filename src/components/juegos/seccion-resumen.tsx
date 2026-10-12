@@ -2,14 +2,16 @@ import { CircleCheck, FileText, Pencil } from "lucide-react";
 import { notFound } from "next/navigation";
 import type { ReactNode } from "react";
 import { Markdown } from "@/components/markdown";
+import { EnlaceBgg } from "./enlace-bgg";
 import { BotonLink } from "@/components/ui/boton";
 import { obtenerJuego, obtenerResumen } from "@/lib/juegos/consultas";
 
 type Seccion = "como_se_juega" | "hoja_de_turno";
 
+// Las dos secciones son opcionales y se completan a mano.
 const TEXTOS: Record<Seccion, { vacio: string; ayuda: string; ancla: string }> = {
   como_se_juega: {
-    vacio: "Todavía no escribiste cómo se juega",
+    vacio: "Todavía no hay un resumen de cómo se juega",
     ayuda: "Un resumen de las reglas para explicarlo rápido: objetivo, preparación, turno y final.",
     ancla: "como-se-juega",
   },
@@ -19,6 +21,9 @@ const TEXTOS: Record<Seccion, { vacio: string; ayuda: string; ancla: string }> =
     ancla: "hoja-de-turno",
   },
 };
+
+const AYUDA_BGG =
+  "En BoardGameGeek vas a encontrar el reglamento y las ayudas que subió la comunidad. También podés escribir tu propio resumen.";
 
 /** Contenido de "Cómo se juega" u "Hoja de turno" (markdown del resumen propio). */
 export async function SeccionResumen({
@@ -38,12 +43,22 @@ export async function SeccionResumen({
   const editar = `/juegos/${juegoId}/resumen/editar?seccion=${TEXTOS[seccion].ancla}`;
 
   if (!texto) {
+    // Con bgg_id (de BGG o manual con referencia): primero el link a BGG y,
+    // como opción secundaria, escribirlo. Sin bgg_id: solo escribirlo.
+    const bggId = juego.juego.bgg_id;
     return (
       <section className="border-borde bg-superficie flex flex-col items-center gap-3 rounded-2xl border border-dashed px-6 py-10 text-center">
         <FileText aria-hidden className="text-primario size-10" />
         <h2 className="font-semibold">{TEXTOS[seccion].vacio}</h2>
-        <p className="text-texto-suave max-w-xs text-sm">{TEXTOS[seccion].ayuda}</p>
-        <BotonLink href={editar}>Escribir</BotonLink>
+        <p className="text-texto-suave max-w-xs text-sm">
+          {bggId ? AYUDA_BGG : TEXTOS[seccion].ayuda}
+        </p>
+        <div className="flex flex-wrap justify-center gap-3">
+          {bggId && <EnlaceBgg bggId={bggId} variante="boton" />}
+          <BotonLink href={editar} variante={bggId ? "secundario" : "primario"}>
+            <Pencil aria-hidden className="size-4" /> Escribir
+          </BotonLink>
+        </div>
       </section>
     );
   }
