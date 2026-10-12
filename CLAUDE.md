@@ -58,17 +58,21 @@ src/
     (app)/                        rutas protegidas (layout que exige sesión)
       catalogo/                   catálogo personal + filtros + "¿A qué jugamos?"
       juegos/nuevo/               alta manual + panel de búsqueda
-      juegos/[id]/                layout con pestañas:
-        page.tsx                    Ficha
-        como-se-juega/              Cómo se juega
-        hoja-de-turno/              Hoja de turno (pensada para celular e impresión)
-        resumen/editar/             editor de resúmenes en markdown
+      juegos/[id]/
+        (pestanas)/                 layout con encabezado + pestañas (una ruta por pestaña):
+          page.tsx                    Ficha (catálogo: editar/quitar/agregar)
+          como-se-juega/              Cómo se juega
+          hoja-de-turno/              Hoja de turno (celular e impresión, pantalla encendida)
+        editar/                     editar datos de un juego manual propio
+        resumen/editar/             editor de resúmenes en markdown (hito 7)
+        actions.ts                  actualizarCatalogo, agregarAlCatalogo, quitarDelCatalogo, actualizarJuego
     manifest.ts                   manifiesto de la PWA
   components/
     ui/                           componentes genéricos (Boton, Campo, ...)
     auth/                         formulario de login
     juegos/                       formulario de alta, buscador, selector e imagen de juego
     catalogo/                     grilla con filtros, panel de filtros, tarjeta y sorteo
+    markdown.tsx                  render de resúmenes (react-markdown + remark-gfm; estilos .md en globals.css)
     <feature>/                    componentes de cada feature (catalogo/, juegos/, ...)
   lib/
     supabase/
@@ -90,8 +94,10 @@ src/
       filtros.ts                  leer/escribir filtros de la URL, filtrar, ordenar, sortear
       consultas.ts                obtenerMiCatalogo() (vista mi_catalogo; lee cookies)
     juegos/
-      consultas.ts                obtenerJuego(id) para la ficha (lee cookies)
+      consultas.ts                obtenerJuego(id) y obtenerResumen(id), con cache() por request
       comparar.ts                 mismosDatos() (¿se editó lo que vino de BGG?) y escaparLike()
+      storage.ts                  rutaImagenPropia(): qué fotos del bucket se pueden borrar
+      valores-formulario.ts       valores del formulario de juego (alta y edición)
     formato.ts                    textos de jugadores, duración y complejidad
     imagenes.ts                   achica las fotos en el navegador (máx. 1200 px, WebP)
     auth.ts                       getUsuarioActual() (lee cookies: dentro de <Suspense>)
@@ -166,6 +172,23 @@ Ver `supabase/migrations/20261011000000_esquema_inicial.sql`.
   aplicados), con una animación corta que respeta `prefers-reduced-motion`.
   "Otro" nunca repite el anterior si hay alternativas.
 - La búsqueda ignora tildes y mayúsculas (`normalizar`).
+
+### Ficha del juego (`/juegos/[id]`)
+
+- Las pestañas son rutas hermanas dentro del grupo `(pestanas)`, con un
+  layout común (volver, nombre, pestañas). El layout **no** hace `await` de
+  `params`: cada parte lo resuelve en su `<Suspense>`. `obtenerJuego` usa
+  `cache()` para no repetir la consulta entre el layout y la página.
+- Next 16 mantiene montadas (ocultas, con `<Activity>`) las pestañas ya
+  visitadas, así que en el DOM puede haber más de una a la vez: tenerlo en
+  cuenta en los tests.
+- Quitar del catálogo un juego **manual propio** también borra el juego, sus
+  resúmenes y su foto (nadie más lo ve). Un juego de BGG se conserva.
+- Solo se editan los datos de juegos manuales propios (`editable`); los de BGG
+  son compartidos (`/editar` da 404).
+- Hoja de turno: `.md-hoja` (letra de 18 px, fases con fondo), tablas con
+  scroll propio en el celular, `@media print` en A4 sin navegación ni
+  botones, y "Mantener pantalla encendida" con la Screen Wake Lock API.
 
 ### Datos externos: GameDataProvider
 

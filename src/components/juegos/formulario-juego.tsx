@@ -3,62 +3,18 @@
 import { Info, Loader2, RotateCcw } from "lucide-react";
 import Link from "next/link";
 import { useActionState, useState } from "react";
-import { guardarJuego } from "@/app/(app)/juegos/nuevo/actions";
+import { guardarJuego, type EstadoGuardarJuego } from "@/app/(app)/juegos/nuevo/actions";
 import { Boton } from "@/components/ui/boton";
 import { AreaTexto, Campo, Selector } from "@/components/ui/campo";
 import { Chip } from "@/components/ui/chip";
 import { TIPOS } from "@/lib/game-data/tipos";
 import type { DatosJuego, ProviderId } from "@/lib/game-data/types";
 import { mismosDatos } from "@/lib/juegos/comparar";
+import { VACIO, valoresDesde, type ValoresJuego } from "@/lib/juegos/valores-formulario";
 import { BuscadorJuegos, NOMBRE_ORIGEN } from "./buscador-juegos";
 import { SelectorImagen } from "./selector-imagen";
 
-type Valores = {
-  nombre: string;
-  imagen_url: string | null;
-  jugadores_min: string;
-  jugadores_max: string;
-  duracion_min: string;
-  complejidad: string;
-  anio: string;
-  descripcion: string;
-  tipos: string[];
-  puntuacion: string;
-  notas: string;
-};
-
-const VACIO: Valores = {
-  nombre: "",
-  imagen_url: null,
-  jugadores_min: "",
-  jugadores_max: "",
-  duracion_min: "",
-  complejidad: "",
-  anio: "",
-  descripcion: "",
-  tipos: [],
-  puntuacion: "",
-  notas: "",
-};
-
-const texto = (n: number | null) => (n === null ? "" : String(n));
-
-function valoresDesde(datos: DatosJuego, actuales: Valores): Valores {
-  return {
-    ...actuales,
-    nombre: datos.nombre,
-    imagen_url: datos.imagen_url,
-    jugadores_min: texto(datos.jugadores_min),
-    jugadores_max: texto(datos.jugadores_max),
-    duracion_min: texto(datos.duracion_min),
-    complejidad: texto(datos.complejidad),
-    anio: texto(datos.anio),
-    descripcion: datos.descripcion ?? "",
-    tipos: [...datos.tipos],
-  };
-}
-
-function aDatos(v: Valores): Partial<DatosJuego> {
+function aDatos(v: ValoresJuego): Partial<DatosJuego> {
   const num = (s: string) => (s.trim() === "" ? null : Number(s.replace(",", ".")));
   return {
     nombre: v.nombre,
@@ -73,15 +29,34 @@ function aDatos(v: Valores): Partial<DatosJuego> {
   };
 }
 
-export function FormularioJuego({ origen }: { origen: ProviderId | null }) {
-  const [valores, setValores] = useState<Valores>(VACIO);
+type AccionGuardar = (previo: EstadoGuardarJuego, fd: FormData) => Promise<EstadoGuardarJuego>;
+
+/**
+ * Formulario de un juego. Sin `inicial` es el alta (con búsqueda si hay
+ * provider); con `inicial` y `accion` se usa para editar un juego propio.
+ */
+export function FormularioJuego({
+  origen,
+  inicial,
+  bggIdInicial = null,
+  accion: accionGuardar = guardarJuego,
+  textoBoton = "Guardar en mi catálogo",
+}: {
+  origen: ProviderId | null;
+  inicial?: ValoresJuego;
+  bggIdInicial?: number | null;
+  accion?: AccionGuardar;
+  textoBoton?: string;
+}) {
+  const [valores, setValores] = useState<ValoresJuego>(inicial ?? VACIO);
   // Datos tal como vinieron de la búsqueda (para saber si se editaron).
   const [original, setOriginal] = useState<DatosJuego | null>(null);
-  const [estado, accion, guardando] = useActionState(guardarJuego, null);
+  const [bggId, setBggId] = useState<number | null>(bggIdInicial);
+  const [estado, accion, guardando] = useActionState(accionGuardar, null);
   const errores = estado?.errores ?? {};
 
   const cambiar =
-    (campo: keyof Valores) =>
+    (campo: keyof ValoresJuego) =>
     (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) =>
       setValores((v) => ({ ...v, [campo]: e.target.value }));
 
@@ -95,11 +70,13 @@ export function FormularioJuego({ origen }: { origen: ProviderId | null }) {
   function elegir(datos: DatosJuego) {
     setValores((v) => valoresDesde(datos, v));
     setOriginal(datos);
+    setBggId(datos.bgg_id);
   }
 
   function empezarDeCero() {
     setValores((v) => ({ ...VACIO, puntuacion: v.puntuacion, notas: v.notas }));
     setOriginal(null);
+    setBggId(null);
   }
 
   const editado = original !== null && !mismosDatos(original, aDatos(valores));
@@ -133,7 +110,7 @@ export function FormularioJuego({ origen }: { origen: ProviderId | null }) {
           </div>
         )}
 
-        <input type="hidden" name="bgg_id" value={original?.bgg_id ?? ""} />
+        <input type="hidden" name="bgg_id" value={bggId ?? ""} />
         <input type="hidden" name="imagen_url" value={valores.imagen_url ?? ""} />
         {valores.tipos.map((t) => (
           <input key={t} type="hidden" name="tipos" value={t} />
@@ -310,7 +287,7 @@ export function FormularioJuego({ origen }: { origen: ProviderId | null }) {
 
         <Boton type="submit" className="w-full" disabled={guardando}>
           {guardando && <Loader2 aria-hidden className="size-4 animate-spin" />}
-          Guardar en mi catálogo
+          {textoBoton}
         </Boton>
       </form>
     </div>

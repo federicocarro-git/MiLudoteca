@@ -1,28 +1,37 @@
-import { CircleCheck, Clock, Gauge, Star, Users } from "lucide-react";
+import { CircleCheck, Clock, Gauge, Pencil, Users } from "lucide-react";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
+import { AccionesCatalogo } from "@/components/juegos/acciones-catalogo";
 import { ImagenJuego } from "@/components/juegos/imagen-juego";
+import { BotonLink } from "@/components/ui/boton";
 import { formatearComplejidad, formatearDuracion, formatearJugadores } from "@/lib/formato";
 import { obtenerJuego } from "@/lib/juegos/consultas";
 
-export const metadata: Metadata = { title: "Juego" };
+export const metadata: Metadata = { title: "Ficha" };
 
-// Ficha básica. El hito 6 agrega las pestañas "Cómo se juega" y "Hoja de turno".
-export default function JuegoPage({ params, searchParams }: PageProps<"/juegos/[id]">) {
+export default function FichaPage({ params, searchParams }: PageProps<"/juegos/[id]">) {
   return (
     <Suspense fallback={<EsqueletoFicha />}>
       {Promise.all([params, searchParams]).then(([{ id }, sp]) => (
-        <Ficha id={id} agregado={sp.agregado === "1"} />
+        <Ficha
+          id={id}
+          aviso={sp.agregado === "1" ? "agregado" : sp.editado === "1" ? "editado" : null}
+        />
       ))}
     </Suspense>
   );
 }
 
-async function Ficha({ id, agregado }: { id: string; agregado: boolean }) {
+const AVISOS = {
+  agregado: "¡Listo! Lo agregaste a tu catálogo.",
+  editado: "Guardaste los cambios.",
+};
+
+async function Ficha({ id, aviso }: { id: string; aviso: keyof typeof AVISOS | null }) {
   const resultado = await obtenerJuego(id);
   if (!resultado) notFound();
-  const { juego, catalogo } = resultado;
+  const { juego, catalogo, editable } = resultado;
 
   const datos = [
     { Icono: Users, texto: formatearJugadores(juego.jugadores_min, juego.jugadores_max) },
@@ -32,13 +41,13 @@ async function Ficha({ id, agregado }: { id: string; agregado: boolean }) {
 
   return (
     <article className="space-y-5">
-      {agregado && (
+      {aviso && (
         <p
           role="status"
           className="bg-primario/10 flex items-center gap-2 rounded-2xl p-3 text-sm font-medium"
         >
           <CircleCheck aria-hidden className="text-primario size-5" />
-          ¡Listo! Lo agregaste a tu catálogo.
+          {AVISOS[aviso]}
         </p>
       )}
       <ImagenJuego
@@ -48,10 +57,6 @@ async function Ficha({ id, agregado }: { id: string; agregado: boolean }) {
         priority
         className="aspect-[4/3] w-full rounded-2xl"
       />
-      <header>
-        <h1 className="text-2xl font-bold tracking-tight">{juego.nombre}</h1>
-        {juego.anio && <p className="text-texto-suave">{juego.anio}</p>}
-      </header>
 
       {datos.length > 0 && (
         <ul className="flex flex-wrap gap-2">
@@ -71,18 +76,11 @@ async function Ficha({ id, agregado }: { id: string; agregado: boolean }) {
         <p className="text-texto-suave text-sm">{juego.tipos.join(" · ")}</p>
       )}
 
-      {catalogo && (catalogo.puntuacion || catalogo.notas) && (
-        <section className="border-borde bg-superficie space-y-2 rounded-2xl border p-4">
-          <h2 className="font-semibold">En tu catálogo</h2>
-          {catalogo.puntuacion && (
-            <p className="flex items-center gap-1.5 text-sm">
-              <Star aria-hidden className="size-4 fill-amber-400 text-amber-400" />
-              Tu puntuación: <strong>{catalogo.puntuacion}/10</strong>
-            </p>
-          )}
-          {catalogo.notas && <p className="text-sm whitespace-pre-line">{catalogo.notas}</p>}
-        </section>
-      )}
+      <AccionesCatalogo
+        juegoId={juego.id}
+        catalogo={catalogo ? { puntuacion: catalogo.puntuacion, notas: catalogo.notas } : null}
+        esManualPropio={editable}
+      />
 
       {juego.descripcion && (
         <section className="space-y-2">
@@ -93,6 +91,16 @@ async function Ficha({ id, agregado }: { id: string; agregado: boolean }) {
         </section>
       )}
 
+      {editable && (
+        <BotonLink
+          href={`/juegos/${juego.id}/editar`}
+          variante="secundario"
+          className="print:hidden"
+        >
+          <Pencil aria-hidden className="size-4" />
+          Editar datos del juego
+        </BotonLink>
+      )}
       {juego.origen === "bgg" && (
         <p className="text-texto-suave text-xs">Datos de BoardGameGeek.</p>
       )}
@@ -104,8 +112,8 @@ function EsqueletoFicha() {
   return (
     <div className="space-y-4" aria-busy>
       <div className="bg-borde aspect-[4/3] w-full animate-pulse rounded-2xl" />
-      <div className="bg-borde h-7 w-2/3 animate-pulse rounded" />
-      <div className="bg-borde h-5 w-1/2 animate-pulse rounded" />
+      <div className="bg-borde h-8 w-2/3 animate-pulse rounded-full" />
+      <div className="bg-borde h-32 animate-pulse rounded-2xl" />
     </div>
   );
 }

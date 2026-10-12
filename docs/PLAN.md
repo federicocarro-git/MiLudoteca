@@ -105,13 +105,19 @@ Cada hito termina con lint, typecheck y tests en verde, y un commit.
 - [x] Verificado de punta a punta (20 chequeos), incluido que filtrar no
       vuelve a pedir el catálogo y que un juego nuevo aparece al volver.
 
-### 6. Ficha del juego
+### 6. Ficha del juego — _hecho_
 
-- `/juegos/[id]` (Ficha), `/juegos/[id]/como-se-juega`, `/juegos/[id]/hoja-de-turno`:
-  rutas anidadas con un layout de pestañas, para poder enlazar cada una.
-- Ficha: datos, notas y puntuación propias, editar/quitar del catálogo.
-- Hoja de turno: tipografía grande, tablas con scroll horizontal y estilos
-  `print:` (oculta la navegación, A4 en blanco y negro). Botón "Imprimir".
+- [x] Rutas `/juegos/[id]`, `/como-se-juega` y `/hoja-de-turno` con un layout
+      de pestañas (cada una se puede compartir e imprimir).
+- [x] Ficha: datos, foto, puntuación y notas (editables en una hoja), quitar
+      del catálogo (con confirmación) y agregar si no está.
+- [x] Editar los datos de un juego manual propio, con el mismo formulario del
+      alta; si cambia la foto, se borra la anterior de Storage.
+- [x] Markdown con `react-markdown` + `remark-gfm` (tablas, checklists), sin
+      HTML crudo; links externos con `noopener`.
+- [x] Hoja de turno: letra grande, tablas con scroll propio, impresión en A4
+      limpia y "Mantener pantalla encendida".
+- [x] Verificado de punta a punta (30 chequeos), incluido un PDF de la hoja.
 
 ### 7. Editor de resúmenes
 

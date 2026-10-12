@@ -6,7 +6,7 @@ import { ErrorImagen, prepararImagen } from "@/lib/imagenes";
 import { createClient } from "@/lib/supabase/client";
 import { ImagenJuego } from "./imagen-juego";
 
-const BUCKET = "imagenes-juegos";
+import { BUCKET_IMAGENES as BUCKET } from "@/lib/juegos/storage";
 
 /**
  * Elige una foto (en el celular ofrece la cámara), la achica en el navegador y
