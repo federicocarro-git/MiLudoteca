@@ -201,3 +201,48 @@ export function codigoDeSala(page: Page) {
   if (!codigo || !/^[A-Z2-9]{6}$/.test(codigo)) throw new Error(`No es una sala: ${page.url()}`);
   return codigo;
 }
+
+type JugadorTerminado = {
+  usuario?: Usuario;
+  nombre?: string;
+  puntos?: number;
+  gano: boolean;
+  posicion?: number | null;
+};
+
+/** Partida ya terminada (para historial y ranking), armada con la API admin. */
+export async function crearPartidaTerminada(
+  anfitrion: Usuario,
+  juego: { id?: string; nombre: string },
+  jugadores: JugadorTerminado[],
+  modo: "mas_puntos" | "cooperativo" = "mas_puntos",
+) {
+  const ahora = new Date().toISOString();
+  const { data, error } = await admin
+    .from("partidas")
+    .insert({
+      codigo: "ZZZZZZ",
+      juego_id: juego.id ?? null,
+      juego_nombre: juego.nombre,
+      anfitrion_id: anfitrion.id,
+      estado: "terminada",
+      terminada_en: ahora,
+      modo_resultado: modo,
+      cooperativo_ganado: modo === "cooperativo" ? jugadores.some((j) => j.gano) : null,
+    })
+    .select("id")
+    .single();
+  if (error) throw error;
+  const { error: e2 } = await admin.from("partida_jugadores").insert(
+    jugadores.map((j) => ({
+      partida_id: data.id,
+      user_id: j.usuario?.id ?? null,
+      nombre: j.nombre ?? "Jugador",
+      puntos: j.puntos ?? 0,
+      gano: j.gano,
+      posicion: modo === "cooperativo" ? null : (j.posicion ?? null),
+    })),
+  );
+  if (e2) throw e2;
+  return data.id;
+}

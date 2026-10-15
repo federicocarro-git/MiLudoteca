@@ -66,6 +66,7 @@ src/
       jugar/                      pestaña Jugar: crear sala, unirse con código, en curso (+ actions.ts)
         nueva/                      elegir el juego de la sala nueva
         historial/                  partidas terminadas, filtros ?juego= y ?con=
+        ranking/                    victorias entre amigos y cara a cara, filtro ?juego=
         amigos/                     código de amigo, solicitudes y lista (+ actions.ts)
       cuenta/                     nombre visible, código de amigo, cerrar sesión (+ actions.ts)
       juegos/nuevo/               alta manual + panel de búsqueda
@@ -88,7 +89,7 @@ src/
     resumenes/                    editor de resúmenes
     amigos/                       código (copiar/compartir), agregar, lista de amigos, avatar
     salas/                        sala en vivo, marcador, QR (svg en el servidor), invitar, agregar, terminar
-    partidas/                     tabla de resultado, notas, fotos, historial filtrado, borrar partida
+    partidas/                     tabla de resultado, notas, fotos, historial filtrado, ranking, borrar partida
     cuenta/                       formulario del nombre visible
     layout/                       barra inferior, encabezado de página, enlace "volver"
     markdown.tsx                  render de resúmenes (react-markdown + remark-gfm; estilos .md en globals.css)
@@ -125,6 +126,7 @@ src/
       consultas.ts                obtenerPartida(id), listarFotos(), obtenerHistorial(), resumenDePartidasDelJuego()
       resultado.ts                ganadoresPrevistos(), textoResultado(), duración y fecha (puras)
       historial.ts                opciones y filtros del historial (puras)
+      ranking.ts                  calcularRanking(), calcularCaraACara(), duelo(), nemesis() (puras)
       fotos.ts                    bucket, máximo y nombre de archivo <partida>/<autor>_<uuid>
       borrar-fotos.ts             borrarFotosDePartida() antes de borrar o cancelar una partida
     resumenes/
@@ -490,9 +492,9 @@ Ver `.env.example`.
 ## Fase 2: jugar con amigos (en curso)
 
 Plan, decisiones e hitos en `docs/PLAN.md`. Hecho: hito 9 (perfiles y
-amigos), hito 10 (salas en vivo) y hito 11 (cierre, historial, notas y
-fotos). Siguen el ranking, los catálogos de la mesa y la puntuación por
-rondas. Importar la colección de BGG sigue pendiente aparte.
+amigos), hito 10 (salas en vivo), hito 11 (cierre, historial, notas y
+fotos) y hito 12 (ranking y cara a cara). Siguen los catálogos de la mesa y
+la puntuación por rondas. Importar la colección de BGG sigue pendiente aparte.
 
 ### Amigos (`/jugar/amigos`)
 
@@ -556,6 +558,16 @@ rondas. Importar la colección de BGG sigue pendiente aparte.
   Muestra "N partidas · ganaste X".
 - Ficha del juego: "Jugar una partida" y "Lo jugaste N veces · la última, el
   ...", con link al historial filtrado.
+- Ranking (`/jugar/ranking`): sin tablas nuevas; se calcula en el navegador
+  con el historial (lo que RLS deja ver: las partidas que jugaste). Entran
+  vos y tus amigos actuales (nombres del perfil), solo partidas
+  **competitivas** (no cooperativas) y nunca invitados. Orden: victorias,
+  porcentaje, partidas, nombre. Cara a cara con cada amigo: en cada partida
+  gana el duelo quien ganó o, si ninguno, la mejor posición (`duelo`);
+  "némesis" = el amigo con más saldo en contra. Cada fila lleva al historial
+  filtrado (`?con=&juego=`).
+- e2e: `crearPartidaTerminada` (helpers) arma partidas terminadas con la API
+  admin, sin jugarlas.
 - e2e: al pasar de una sala a otra, Next deja la anterior montada y oculta:
   filtrar con `.filter({ visible: true })`. Y esperar a que una `Hoja` se
   cierre antes de tocar la página (mientras está abierta, el resto es inerte).

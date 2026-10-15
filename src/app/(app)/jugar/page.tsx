@@ -1,4 +1,4 @@
-import { ChevronRight, History, Plus, Users } from "lucide-react";
+import { ChevronRight, History, Plus, Trophy, Users } from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { Suspense } from "react";
@@ -49,6 +49,20 @@ export default function JugarPage() {
             <span className="block font-semibold">Historial</span>
             <span className="text-texto-suave block text-sm">
               Partidas terminadas, resultados, notas y fotos
+            </span>
+          </span>
+          <ChevronRight aria-hidden className="text-texto-suave size-5 shrink-0" />
+        </Link>
+
+        <Link
+          href="/jugar/ranking"
+          className="border-borde bg-superficie hover:border-primario flex min-h-16 items-center gap-3 rounded-2xl border p-4"
+        >
+          <Trophy aria-hidden className="text-primario size-6 shrink-0" />
+          <span className="flex-1">
+            <span className="block font-semibold">Ranking</span>
+            <span className="text-texto-suave block text-sm">
+              Victorias entre amigos y cara a cara
             </span>
           </span>
           <ChevronRight aria-hidden className="text-texto-suave size-5 shrink-0" />
