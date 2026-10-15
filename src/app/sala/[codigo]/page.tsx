@@ -71,7 +71,9 @@ async function SalaActiva({
           </p>
         </div>
       </header>
+      {/* key: si se pasa de una sala a otra, que no quede estado de la anterior. */}
       <SalaEnVivo
+        key={sala.id}
         sala={sala}
         jugadores={jugadores}
         yo={sesion.id}

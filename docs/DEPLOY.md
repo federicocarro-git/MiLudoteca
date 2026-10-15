@@ -64,6 +64,8 @@ nunca en el repo ni en un chat.
 - [ ] Agregar a ese usuario como amigo con el código.
 - [ ] Crear una sala, abrir el QR con otro celular y entrar como invitado:
       los puntos se tienen que ver en vivo en los dos.
+- [ ] Terminar la partida: el invitado pasa solo al resultado. Subir una
+      foto y verla en el historial.
 
 ## 4. Cuando llegue el token de BGG
 

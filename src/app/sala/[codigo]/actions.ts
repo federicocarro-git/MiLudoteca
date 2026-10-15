@@ -5,8 +5,10 @@ import { refresh } from "next/cache";
 import { redirect } from "next/navigation";
 import { getSesionActual, getUsuarioActual } from "@/lib/auth";
 import { esUuid } from "@/lib/juegos/consultas";
+import { borrarFotosDePartida } from "@/lib/partidas/borrar-fotos";
 import type { Resultado } from "@/lib/resultado";
 import { createClient } from "@/lib/supabase/server";
+import { terminarPartidaSchema, type TerminarPartida } from "@/lib/validations/partidas";
 import { codigoSalaSchema, nombreJugadorSchema, puntosSchema } from "@/lib/validations/salas";
 
 const SESION_VENCIDA = "Tu sesión venció. Volvé a abrir la sala.";
@@ -210,10 +212,36 @@ export async function cancelarSala(partidaId: string): Promise<Resultado<null>> 
   if (!(await getUsuarioActual())) return { ok: false, error: SESION_VENCIDA };
 
   const supabase = await createClient();
+  await borrarFotosDePartida(supabase, partidaId);
   const { data, error } = await supabase.from("partidas").delete().eq("id", partidaId).select("id");
   if (error || data.length === 0) {
     if (error) console.error("cancelarSala", partidaId, error);
     return { ok: false, error: "No se pudo cancelar la sala." };
   }
   redirect("/jugar");
+}
+
+/** El anfitrión termina la partida y queda decidido quién ganó. */
+export async function terminarPartida(
+  partidaId: string,
+  datos: TerminarPartida,
+): Promise<Resultado<null>> {
+  const parseo = terminarPartidaSchema.safeParse(datos);
+  if (!parseo.success) return { ok: false, error: parseo.error.issues[0].message };
+  if (!esUuid(partidaId)) return { ok: false, error: SALA_CERRADA };
+  if (!(await getUsuarioActual())) return { ok: false, error: SESION_VENCIDA };
+
+  const supabase = await createClient();
+  const { modo, ganadores, ganamos } = parseo.data;
+  const { error } = await supabase.rpc("terminar_partida", {
+    partida: partidaId,
+    modo,
+    ganadores,
+    ...(ganamos === null ? {} : { ganamos }),
+  });
+  if (error) {
+    console.error("terminarPartida", partidaId, error);
+    return { ok: false, error: "No se pudo terminar la partida. Probá de nuevo." };
+  }
+  redirect(`/partida/${partidaId}`);
 }

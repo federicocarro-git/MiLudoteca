@@ -121,11 +121,13 @@ test("con cuenta: unirse con el código, agregar amigos y jugadores sin celular"
   const dialogo = anfitrion.getByRole("dialog", { name: "Agregar jugadores" });
   await dialogo.getByRole("checkbox").check();
   await dialogo.getByRole("button", { name: "Agregar (1)" }).click();
+  await expect(dialogo).toBeHidden();
   await expect(fila(anfitrion, "Beto")).toBeVisible();
   await anfitrion.getByRole("button", { name: "Agregar", exact: true }).click();
   await expect(dialogo.getByText("No hay amigos para agregar.")).toBeVisible();
   await dialogo.getByLabel("Nombre del jugador").fill("Abuela");
   await dialogo.getByRole("button", { name: "Agregar jugador" }).click();
+  await expect(dialogo).toBeHidden();
   await expect(fila(anfitrion, "Abuela")).toContainText("sin celular");
   await anfitrion.getByRole("button", { name: "Sumar un punto a Abuela" }).click();
   await expect(anfitrion.getByLabel("Puntos de Abuela")).toHaveValue("1");

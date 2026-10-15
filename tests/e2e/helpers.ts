@@ -185,6 +185,12 @@ export async function borrarSalasDe(usuario: Usuario) {
     .in("partida_id", ids)
     .eq("invitado", true)
     .not("user_id", "is", null);
+  for (const id of ids) {
+    const { data: fotos } = await admin.storage.from("fotos-partidas").list(id);
+    if (fotos?.length) {
+      await admin.storage.from("fotos-partidas").remove(fotos.map((f) => `${id}/${f.name}`));
+    }
+  }
   await admin.from("partidas").delete().in("id", ids);
   await Promise.all((invitados ?? []).map((i) => admin.auth.admin.deleteUser(i.user_id!)));
 }

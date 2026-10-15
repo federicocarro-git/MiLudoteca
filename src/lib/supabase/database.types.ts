@@ -167,10 +167,12 @@ export type Database = {
       partida_jugadores: {
         Row: {
           actualizado_en: string;
+          gano: boolean;
           id: string;
           invitado: boolean;
           nombre: string;
           partida_id: string;
+          posicion: number | null;
           puntos: number;
           unido_en: string;
           user_id: string | null;
@@ -178,20 +180,24 @@ export type Database = {
         ComputedFields: never;
         Insert: {
           actualizado_en?: string;
+          gano?: boolean;
           id?: string;
           invitado?: boolean;
           nombre: string;
           partida_id: string;
+          posicion?: number | null;
           puntos?: number;
           unido_en?: string;
           user_id?: string | null;
         };
         Update: {
           actualizado_en?: string;
+          gano?: boolean;
           id?: string;
           invitado?: boolean;
           nombre?: string;
           partida_id?: string;
+          posicion?: number | null;
           puntos?: number;
           unido_en?: string;
           user_id?: string | null;
@@ -210,35 +216,44 @@ export type Database = {
         Row: {
           anfitrion_id: string | null;
           codigo: string;
+          cooperativo_ganado: boolean | null;
           creada_en: string;
           estado: string;
           id: string;
           juego_id: string | null;
           juego_imagen_url: string | null;
           juego_nombre: string;
+          modo_resultado: string | null;
+          notas: string | null;
           terminada_en: string | null;
         };
         ComputedFields: never;
         Insert: {
           anfitrion_id?: string | null;
           codigo: string;
+          cooperativo_ganado?: boolean | null;
           creada_en?: string;
           estado?: string;
           id?: string;
           juego_id?: string | null;
           juego_imagen_url?: string | null;
           juego_nombre: string;
+          modo_resultado?: string | null;
+          notas?: string | null;
           terminada_en?: string | null;
         };
         Update: {
           anfitrion_id?: string | null;
           codigo?: string;
+          cooperativo_ganado?: boolean | null;
           creada_en?: string;
           estado?: string;
           id?: string;
           juego_id?: string | null;
           juego_imagen_url?: string | null;
           juego_nombre?: string;
+          modo_resultado?: string | null;
+          notas?: string | null;
           terminada_en?: string | null;
         };
         Relationships: [
@@ -374,7 +389,13 @@ export type Database = {
       es_anonimo: { Args: Record<PropertyKey, never>; Returns: boolean };
       generar_codigo: { Args: { largo: number }; Returns: string };
       juego_en_partida: { Args: { partida: string }; Returns: boolean };
+      partida_de_foto: { Args: { ruta: string }; Returns: string };
       partida_en_curso: { Args: { partida: string }; Returns: boolean };
+      puede_subir_foto: { Args: { partida: string }; Returns: boolean };
+      terminar_partida: {
+        Args: { ganadores?: string[]; ganamos?: boolean; modo: string; partida: string };
+        Returns: undefined;
+      };
       unirse_a_partida: { Args: { codigo: string; nombre?: string }; Returns: string };
       ver_sala: {
         Args: { codigo: string };

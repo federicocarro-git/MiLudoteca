@@ -1,5 +1,6 @@
-import { CircleCheck, Clock, Gauge, Pencil, Users } from "lucide-react";
+import { CircleCheck, Clock, Gauge, History, Pencil, Users } from "lucide-react";
 import type { Metadata } from "next";
+import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
 import { AccionesCatalogo } from "@/components/juegos/acciones-catalogo";
@@ -10,6 +11,8 @@ import { BotonLink } from "@/components/ui/boton";
 import { formatearComplejidad, formatearDuracion, formatearJugadores } from "@/lib/formato";
 import { urlJuegoBgg } from "@/lib/game-data/bgg/enlaces";
 import { obtenerJuego } from "@/lib/juegos/consultas";
+import { resumenDePartidasDelJuego } from "@/lib/partidas/consultas";
+import { formatearFecha } from "@/lib/partidas/resultado";
 
 export const metadata: Metadata = { title: "Ficha" };
 
@@ -82,7 +85,12 @@ async function Ficha({ id, aviso }: { id: string; aviso: keyof typeof AVISOS | n
       {/* Cualquier juego con bgg_id: los de BGG y los manuales que lo guardan de referencia. */}
       {juego.bgg_id && <EnlaceBgg bggId={juego.bgg_id} className="print:hidden" />}
 
-      <BotonCrearSala juegoId={juego.id} className="print:hidden" />
+      <section className="space-y-2 print:hidden" aria-label="Partidas">
+        <BotonCrearSala juegoId={juego.id} />
+        <Suspense fallback={<p className="bg-borde h-5 w-48 animate-pulse rounded" />}>
+          <PartidasDelJuego juegoId={juego.id} />
+        </Suspense>
+      </section>
 
       <AccionesCatalogo
         juegoId={juego.id}
@@ -125,6 +133,25 @@ async function Ficha({ id, aviso }: { id: string; aviso: keyof typeof AVISOS | n
         </BotonLink>
       )}
     </article>
+  );
+}
+
+async function PartidasDelJuego({ juegoId }: { juegoId: string }) {
+  const { cantidad, ultima } = await resumenDePartidasDelJuego(juegoId);
+  if (cantidad === 0) {
+    return <p className="text-texto-suave text-sm">Todavía no lo jugaste con MiLudoteca.</p>;
+  }
+  return (
+    <p className="text-sm">
+      <Link
+        href={`/jugar/historial?juego=${juegoId}`}
+        className="text-primario inline-flex min-h-11 items-center gap-1 font-medium"
+      >
+        <History aria-hidden className="size-4" />
+        {cantidad === 1 ? "Lo jugaste 1 vez" : `Lo jugaste ${cantidad} veces`}
+        {ultima ? ` · la última, el ${formatearFecha(ultima)}` : ""}
+      </Link>
+    </p>
   );
 }
 

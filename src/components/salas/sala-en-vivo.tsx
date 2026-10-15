@@ -1,7 +1,8 @@
 "use client";
 
-import { Crown, DoorOpen, Loader2, QrCode, UserPlus, X } from "lucide-react";
+import { Crown, DoorOpen, Flag, Loader2, QrCode, UserPlus, X } from "lucide-react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useRef, useState, useTransition } from "react";
 import {
   actualizarPuntos,
@@ -12,11 +13,19 @@ import {
 import { Avatar } from "@/components/amigos/avatar";
 import { Boton } from "@/components/ui/boton";
 import { Hoja } from "@/components/ui/hoja";
-import { COLUMNAS_JUGADOR, puntajeMasAlto, type JugadorSala, type Sala } from "@/lib/salas/tipos";
+import {
+  COLUMNAS_JUGADOR,
+  puntajeMasAlto,
+  soltarConfirmados,
+  type JugadorSala,
+  type Pendiente,
+  type Sala,
+} from "@/lib/salas/tipos";
 import { createClient } from "@/lib/supabase/client";
 import { AgregarJugadores, type AmigoDisponible } from "./agregar-jugadores";
 import { InvitarASala } from "./invitar-a-sala";
 import { Marcador } from "./marcador";
+import { TerminarPartida } from "./terminar-partida";
 
 // Espera antes de guardar los puntos: los toques seguidos en +/− se mandan
 // juntos (siempre el valor final, no la diferencia).
@@ -43,44 +52,56 @@ export function SalaEnVivo({
   amigosDisponibles: AmigoDisponible[];
 }) {
   const soyAnfitrion = sala.anfitrion_id === yo;
-  // Lo último que se sabe del servidor (render inicial, Realtime o recarga).
+  const router = useRouter();
+  // Lo último que se sabe del servidor. Después del render inicial, solo
+  // cambia con las recargas (ordenadas): un refresh() de una acción puede
+  // traer datos más viejos que la última recarga, así que no se usa. Cada
+  // cambio en la sala igual manda un aviso que dispara una recarga.
   const [remotos, setRemotos] = useState(iniciales);
-  // Si el servidor vuelve a renderizar (refresh() de una acción), tomar lo nuevo.
-  const [inicialesPrevios, setInicialesPrevios] = useState(iniciales);
-  if (iniciales !== inicialesPrevios) {
-    setInicialesPrevios(iniciales);
-    setRemotos(iniciales);
-  }
-  // Puntos tocados acá que todavía no se guardaron: mandan sobre lo remoto,
-  // para que un evento viejo no pise lo que se acaba de tocar.
-  const [pendientes, setPendientes] = useState<Record<string, number>>({});
+  // Puntos tocados acá que el servidor todavía no confirmó: mandan sobre lo
+  // remoto, para que una respuesta vieja no pise lo que se acaba de tocar.
+  const [pendientes, setPendientes] = useState<Record<string, Pendiente>>({});
   const temporizadores = useRef(new Map<string, ReturnType<typeof setTimeout>>());
+  // Inicio de la última recarga aplicada: una que salió antes y llega después
+  // se descarta.
+  const ultimaRecarga = useRef(0);
   const jugadores = remotos.map((j) =>
-    j.id in pendientes ? { ...j, puntos: pendientes[j.id] } : j,
+    j.id in pendientes ? { ...j, puntos: pendientes[j.id].puntos } : j,
   );
 
   const [conexion, setConexion] = useState<Conexion>("conectando");
   const [fuera, setFuera] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [hoja, setHoja] = useState<"invitar" | "agregar" | "salir" | null>(null);
+  const [hoja, setHoja] = useState<"invitar" | "agregar" | "salir" | "terminar" | null>(null);
   const [quitando, setQuitando] = useState<JugadorSala | null>(null);
   const [pendiente, iniciar] = useTransition();
 
   const recargar = useCallback(async () => {
+    const inicio = performance.now();
     const supabase = createClient();
-    const { data, error } = await supabase
-      .from("partida_jugadores")
-      .select(COLUMNAS_JUGADOR)
-      .eq("partida_id", sala.id)
-      .order("unido_en");
-    if (error) return;
+    const [{ data, error }, { data: partida }] = await Promise.all([
+      supabase
+        .from("partida_jugadores")
+        .select(COLUMNAS_JUGADOR)
+        .eq("partida_id", sala.id)
+        .order("unido_en"),
+      supabase.from("partidas").select("estado").eq("id", sala.id).maybeSingle(),
+    ]);
+    if (error || inicio < ultimaRecarga.current) return;
+    ultimaRecarga.current = inicio;
+    // El anfitrión la terminó: a ver el resultado.
+    if (partida?.estado === "terminada") {
+      router.replace(`/partida/${sala.id}`);
+      return;
+    }
     // Si me sacaron o se canceló la sala, RLS ya no me devuelve mi fila.
     if (!data.some((j) => j.user_id === yo)) {
       setFuera(true);
       return;
     }
     setRemotos(data);
-  }, [sala.id, yo]);
+    setPendientes((p) => soltarConfirmados(p, inicio));
+  }, [sala.id, yo, router]);
 
   useEffect(() => {
     const supabase = createClient();
@@ -111,18 +132,20 @@ export function SalaEnVivo({
   }, [sala.id, recargar]);
 
   function cambiarPuntos(jugadorId: string, puntos: number) {
-    setPendientes((p) => ({ ...p, [jugadorId]: puntos }));
+    setPendientes((p) => ({ ...p, [jugadorId]: { puntos, guardadoEn: null } }));
     clearTimeout(temporizadores.current.get(jugadorId));
     temporizadores.current.set(
       jugadorId,
       setTimeout(async () => {
         const r = await actualizarPuntos(jugadorId, puntos);
-        if (r.ok) {
-          setRemotos((lista) => lista.map((j) => (j.id === jugadorId ? { ...j, puntos } : j)));
-        }
+        const guardadoEn = performance.now();
         // Si mientras tanto se tocó de nuevo, el próximo guardado se encarga.
         setPendientes((p) => {
-          if (p[jugadorId] !== puntos) return p;
+          if (p[jugadorId]?.puntos !== puntos || p[jugadorId].guardadoEn !== null) return p;
+          if (r.ok) {
+            // Sigue mandando hasta que llegue una recarga pedida después de esto.
+            return { ...p, [jugadorId]: { puntos, guardadoEn } };
+          }
           const resto = { ...p };
           delete resto[jugadorId];
           return resto;
@@ -260,6 +283,12 @@ export function SalaEnVivo({
         })}
       </ul>
 
+      {soyAnfitrion && (
+        <Boton className="w-full" onClick={() => setHoja("terminar")}>
+          <Flag aria-hidden className="size-4" /> Terminar partida
+        </Boton>
+      )}
+
       <div className="pt-2">
         <button
           type="button"
@@ -270,6 +299,22 @@ export function SalaEnVivo({
           {soyAnfitrion ? "Cancelar la sala" : "Salir de la sala"}
         </button>
       </div>
+
+      {soyAnfitrion && (
+        <Hoja
+          abierta={hoja === "terminar"}
+          onCerrar={() => setHoja(null)}
+          titulo="Terminar partida"
+        >
+          {hoja === "terminar" && (
+            <TerminarPartida
+              partidaId={sala.id}
+              jugadores={jugadores}
+              guardandoPuntos={Object.values(pendientes).some((p) => p.guardadoEn === null)}
+            />
+          )}
+        </Hoja>
+      )}
 
       <Hoja abierta={hoja === "invitar"} onCerrar={() => setHoja(null)} titulo="Invitar a la sala">
         <InvitarASala codigo={sala.codigo} url={url} qrSvg={qrSvg} />

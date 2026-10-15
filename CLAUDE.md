@@ -65,6 +65,7 @@ src/
       catalogo/                   catálogo personal + filtros + "¿A qué jugamos?"
       jugar/                      pestaña Jugar: crear sala, unirse con código, en curso (+ actions.ts)
         nueva/                      elegir el juego de la sala nueva
+        historial/                  partidas terminadas, filtros ?juego= y ?con=
         amigos/                     código de amigo, solicitudes y lista (+ actions.ts)
       cuenta/                     nombre visible, código de amigo, cerrar sesión (+ actions.ts)
       juegos/nuevo/               alta manual + panel de búsqueda
@@ -77,6 +78,7 @@ src/
         resumen/editar/             editor de resúmenes en markdown (+ actions.ts: guardarResumen)
         actions.ts                  actualizarCatalogo, agregarAlCatalogo, quitarDelCatalogo, actualizarJuego
     sala/[codigo]/                sala en vivo (fuera de (app): también para invitados; + actions.ts)
+    partida/[id]/                 resultado, notas y fotos (fuera de (app), como la sala; + actions.ts)
     manifest.ts                   manifiesto de la PWA
   components/
     ui/                           componentes genéricos (Boton, Campo, ...)
@@ -85,7 +87,8 @@ src/
     catalogo/                     grilla con filtros, panel de filtros, tarjeta y sorteo
     resumenes/                    editor de resúmenes
     amigos/                       código (copiar/compartir), agregar, lista de amigos, avatar
-    salas/                        sala en vivo, marcador, QR (svg en el servidor), invitar, agregar jugadores
+    salas/                        sala en vivo, marcador, QR (svg en el servidor), invitar, agregar, terminar
+    partidas/                     tabla de resultado, notas, fotos, historial filtrado, borrar partida
     cuenta/                       formulario del nombre visible
     layout/                       barra inferior, encabezado de página, enlace "volver"
     markdown.tsx                  render de resúmenes (react-markdown + remark-gfm; estilos .md en globals.css)
@@ -117,7 +120,13 @@ src/
       consultas.ts                obtenerMiPerfil() y obtenerAmistades(), con cache() por request
     salas/
       consultas.ts                obtenerSala(codigo), vistaPreviaSala(codigo), obtenerMisSalasEnCurso()
-      tipos.ts                    Sala, JugadorSala, puntajeMasAlto()
+      tipos.ts                    Sala, JugadorSala, puntajeMasAlto(), soltarConfirmados()
+    partidas/
+      consultas.ts                obtenerPartida(id), listarFotos(), obtenerHistorial(), resumenDePartidasDelJuego()
+      resultado.ts                ganadoresPrevistos(), textoResultado(), duración y fecha (puras)
+      historial.ts                opciones y filtros del historial (puras)
+      fotos.ts                    bucket, máximo y nombre de archivo <partida>/<autor>_<uuid>
+      borrar-fotos.ts             borrarFotosDePartida() antes de borrar o cancelar una partida
     resumenes/
       formato.ts                  barra de formato del editor (funciones puras) y plantillas
     formato.ts                    textos de jugadores, duración y complejidad
@@ -137,6 +146,7 @@ supabase/
   tests/rls.test.sql              tests pgTAP de RLS de la fase 1 (32 casos)
   tests/amigos.test.sql           perfiles y amistades (28 casos)
   tests/salas.test.sql            salas, jugadores e invitados anónimos (34 casos)
+  tests/cierre.test.sql           terminar partidas, notas, fotos y borrar (28 casos)
 tests/e2e/                        Playwright: un spec por área + helpers.ts (usuarios, juegos, Mailpit)
 .github/workflows/ci.yml          CI: lint/tipos/unitarios/build + pgTAP/integración/e2e con Supabase local
 docs/PLAN.md                      plan por hitos y decisiones
@@ -190,6 +200,18 @@ null`): así la ven todos aunque el juego sea manual y privado. Se crean con
 - **Invitados anónimos**: `signInAnonymously()`. Tienen `auth.uid()` pero no
   perfil, y una política **restrictiva** (`es_anonimo()`) les cierra juegos,
   catálogo, resúmenes, perfiles, amistades y el bucket de imágenes.
+- Cierre (`20261017000000_cierre_de_partidas.sql`): `terminar_partida(partida,
+modo, ganadores, ganamos)` (solo el anfitrión, en curso). Modos
+  `mas_puntos`, `menos_puntos` (gana el mejor; empatados, todos), `manual`
+  (los elegidos) y `cooperativo` (todos ganan o pierden). Guarda
+  `partida_jugadores.gano` y `posicion` (`dense_rank`; null en cooperativos)
+  y `partidas.modo_resultado`, `cooperativo_ganado`, `terminada_en`. Terminada,
+  nadie cambia puntos ni jugadores. `partidas.notas`: solo el anfitrión (grant
+  de la columna). El anfitrión borra partidas en curso (cancelar) o terminadas.
+- Storage `fotos-partidas`: público, carpeta `<partida>/`, archivo
+  `<autor>_<uuid>.webp`. Suben los jugadores con cuenta (hasta 12 por
+  partida, `puede_subir_foto()`); ven los que jugaron (también invitados);
+  borra el autor (`owner_id`) o el anfitrión.
 
 ### Alta de juegos (`/juegos/nuevo`)
 
@@ -468,8 +490,9 @@ Ver `.env.example`.
 ## Fase 2: jugar con amigos (en curso)
 
 Plan, decisiones e hitos en `docs/PLAN.md`. Hecho: hito 9 (perfiles y
-amigos) y hito 10 (salas en vivo). Siguen el cierre de partidas con
-historial, el ranking, los catálogos de la mesa y la puntuación por rondas. Importar la colección de BGG sigue pendiente aparte.
+amigos), hito 10 (salas en vivo) y hito 11 (cierre, historial, notas y
+fotos). Siguen el ranking, los catálogos de la mesa y la puntuación por
+rondas. Importar la colección de BGG sigue pendiente aparte.
 
 ### Amigos (`/jugar/amigos`)
 
@@ -500,14 +523,42 @@ historial, el ranking, los catálogos de la mesa y la puntuación por rondas. Im
   DELETE no se filtran). Si me sacan o se cancela la sala, RLS deja de
   devolver mi fila y se muestra "Ya no estás en esta sala".
 - Puntos: +/− o escribir el número; se guarda el **valor final** 400 ms
-  después del último toque (`actualizarPuntos`). Lo tocado y no guardado
-  (`pendientes`) manda sobre lo que llegue del servidor. Corona para quien va
+  después del último toque (`actualizarPuntos`). Lo tocado (`pendientes`)
+  manda sobre lo remoto hasta que llega una recarga **pedida después** de
+  guardarlo (`soltarConfirmados`), y una recarga que salió antes que la
+  última aplicada se descarta. Después del render inicial, los jugadores
+  solo cambian con recargas: un `refresh()` de una acción puede traer datos
+  más viejos. `key={sala.id}`: pasar de una sala a otra no arrastra estado. Corona para quien va
   ganando (`puntajeMasAlto`; nadie si están todos iguales).
 - QR: `qrcode` genera el SVG en el servidor (negro sobre blanco, también en
   modo oscuro). El link usa `urlDelSitio()`.
+- Terminar (`TerminarPartida`, solo el anfitrión): elegir el modo, ver quién
+  gana (`ganadoresPrevistos`, la misma regla que la base) y confirmar;
+  espera a que se guarden los puntos pendientes. `terminarPartida` redirige a
+  `/partida/<id>`; a los demás los lleva la recarga al ver `terminada`.
 - Supabase local levanta Realtime (`db:start` ya no lo excluye) y tiene
   `enable_anonymous_sign_ins = true`. En producción hay que activar los
   anónimos (ver `docs/AUTH.md`).
+
+### Partidas terminadas (`/partida/<id>`, `/jugar/historial`)
+
+- `/partida/[id]` está fuera de `(app)` y es ruta pública (los invitados ven
+  el resultado y una invitación a crear cuenta); RLS decide si existe. Si
+  sigue en curso, lleva a la sala.
+- Resultado ("Ganó Beto", "Empate", "Perdieron todos": `textoResultado`),
+  posiciones, duración, notas (`guardarNotas`, solo el anfitrión), fotos
+  (subidas desde el navegador como las del alta, `borrarFoto`) y, para el
+  anfitrión, "Jugar otra vez" y "Borrar partida" (`borrarPartida`, borra las
+  fotos primero).
+- Historial: todas las terminadas del usuario; filtros en el navegador
+  (`filtrarHistorial`) por juego (`juego_id`, o el nombre si el juego se
+  borró) y por persona (`?con=`), en la query string con `replaceState`.
+  Muestra "N partidas · ganaste X".
+- Ficha del juego: "Jugar una partida" y "Lo jugaste N veces · la última, el
+  ...", con link al historial filtrado.
+- e2e: al pasar de una sala a otra, Next deja la anterior montada y oculta:
+  filtrar con `.filter({ visible: true })`. Y esperar a que una `Hoja` se
+  cierre antes de tocar la página (mientras está abierta, el resto es inerte).
 
 Los resúmenes **no** se generan con IA (se descartó): "Cómo se juega" y "Hoja
 de turno" se escriben a mano. No agregar integraciones con la API de Claude ni
