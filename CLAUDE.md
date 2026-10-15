@@ -66,7 +66,7 @@ src/
       jugar/                      pestaña Jugar: crear sala, unirse con código, en curso (+ actions.ts)
         nueva/                      elegir el juego de la sala nueva
         historial/                  partidas terminadas, filtros ?juego= y ?con=
-        ranking/                    victorias entre amigos y cara a cara, filtro ?juego=
+        ranking/                    competitivo (victorias, cara a cara) y cooperativo (ganadas, duplas); ?modo= y ?juego=
         amigos/                     código de amigo, solicitudes y lista (+ actions.ts)
       cuenta/                     nombre visible, código de amigo, cerrar sesión (+ actions.ts)
       juegos/nuevo/               alta manual + panel de búsqueda
@@ -126,7 +126,8 @@ src/
       consultas.ts                obtenerPartida(id), listarFotos(), obtenerHistorial(), resumenDePartidasDelJuego()
       resultado.ts                ganadoresPrevistos(), textoResultado(), duración y fecha (puras)
       historial.ts                opciones y filtros del historial (puras)
-      ranking.ts                  calcularRanking(), calcularCaraACara(), duelo(), nemesis() (puras)
+      ranking.ts                  calcularRanking(), calcularCaraACara(), duelo(), nemesis(),
+                                  calcularRankingCooperativo(), calcularDuplas() (puras)
       fotos.ts                    bucket, máximo y nombre de archivo <partida>/<autor>_<uuid>
       borrar-fotos.ts             borrarFotosDePartida() antes de borrar o cancelar una partida
     resumenes/
@@ -560,12 +561,16 @@ la puntuación por rondas. Importar la colección de BGG sigue pendiente aparte.
   ...", con link al historial filtrado.
 - Ranking (`/jugar/ranking`): sin tablas nuevas; se calcula en el navegador
   con el historial (lo que RLS deja ver: las partidas que jugaste). Entran
-  vos y tus amigos actuales (nombres del perfil), solo partidas
-  **competitivas** (no cooperativas) y nunca invitados. Orden: victorias,
-  porcentaje, partidas, nombre. Cara a cara con cada amigo: en cada partida
-  gana el duelo quien ganó o, si ninguno, la mejor posición (`duelo`);
-  "némesis" = el amigo con más saldo en contra. Cada fila lleva al historial
-  filtrado (`?con=&juego=`).
+  vos y tus amigos actuales (nombres del perfil), nunca invitados. Dos modos
+  (`?modo=cooperativo`; el juego elegido sigue si también tiene partidas del
+  otro tipo):
+  - **Competitivo** (sin cooperativas): victorias, porcentaje, partidas.
+    Cara a cara con cada amigo: en cada partida gana el duelo quien ganó o,
+    si ninguno, la mejor posición (`duelo`); "némesis" = el amigo con más
+    saldo en contra. Cada fila lleva al historial (`?con=&juego=`).
+  - **Cooperativo**: partidas jugadas y ganadas por persona, y **duplas**
+    (cada par de personas que jugó junto: "Vos y Beto: jugaron 10 partidas y
+    ganaron 8"). Orden: ganadas, porcentaje, partidas.
 - e2e: `crearPartidaTerminada` (helpers) arma partidas terminadas con la API
   admin, sin jugarlas.
 - e2e: al pasar de una sala a otra, Next deja la anterior montada y oculta:

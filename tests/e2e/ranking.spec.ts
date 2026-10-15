@@ -44,7 +44,17 @@ test.beforeEach(async () => {
     { usuario: ana, gano: false, posicion: 2 },
     { usuario: beto, gano: true, posicion: 1 },
   ]);
-  // Cooperativo: no cuenta.
+  // Cooperativos (van en su propio ranking): uno ganado y uno perdido.
+  await crearPartidaTerminada(
+    ana,
+    { nombre: "Pandemic" },
+    [
+      { usuario: ana, gano: false },
+      { usuario: beto, gano: false },
+      { usuario: caro, gano: false },
+    ],
+    "cooperativo",
+  );
   await crearPartidaTerminada(
     ana,
     { nombre: "Pandemic" },
@@ -95,6 +105,35 @@ test("ranking de victorias, filtro por juego y cara a cara", async ({ page }) =>
   await caraACara.getByRole("link", { name: /Beto/ }).click();
   await expect(page).toHaveURL(/\/jugar\/historial\?con=.+&juego=/);
   await expect(page.getByText("1 partida · ganaste 0")).toBeVisible();
+});
+
+test("ranking cooperativo: ganadas por persona y duplas", async ({ page }) => {
+  await iniciarSesion(page, ana);
+  await page.goto("/jugar/ranking");
+  await page.waitForLoadState("networkidle");
+  await page.getByRole("button", { name: "Cooperativo" }).click();
+  await expect(page).toHaveURL(/\?modo=cooperativo/);
+
+  await expect(
+    page.getByRole("list", { name: "Ranking cooperativo" }).getByRole("listitem"),
+  ).toHaveText([
+    /Ana \(vos\).*2 partidas · 50%.*1ganada/,
+    /Caro.*2 partidas · 50%.*1ganada/,
+    /Beto.*1 partida · 0%.*0ganadas/,
+  ]);
+  await expect(page.getByRole("list", { name: "Duplas" }).getByRole("listitem")).toHaveText([
+    /Vos y Caro.*Jugaron 2 partidas y ganaron 1.*50%/,
+    /Vos y Beto.*Jugaron 1 partida y ganaron 0.*0%/,
+    /Beto y Caro.*Jugaron 1 partida y ganaron 0.*0%/,
+  ]);
+
+  // Al recargar, sigue en cooperativo (está en la URL).
+  await page.reload();
+  await expect(page.getByRole("button", { name: "Cooperativo" })).toHaveAttribute(
+    "aria-pressed",
+    "true",
+  );
+  await expect(page.getByRole("list", { name: "Duplas" })).toBeVisible();
 });
 
 test("sin partidas: estás vos solo y un mensaje en el cara a cara", async ({ page }) => {

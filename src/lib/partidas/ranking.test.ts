@@ -1,5 +1,12 @@
 import { describe, expect, it } from "vitest";
-import { calcularCaraACara, calcularRanking, duelo, nemesis } from "./ranking";
+import {
+  calcularCaraACara,
+  calcularDuplas,
+  calcularRanking,
+  calcularRankingCooperativo,
+  duelo,
+  nemesis,
+} from "./ranking";
 
 const YO = { id: "yo", nombre: "Yo" };
 const BETO = { id: "b", nombre: "Beto" };
@@ -101,5 +108,54 @@ describe("cara a cara y némesis", () => {
   it("sin saldo en contra no hay némesis", () => {
     const filas = calcularCaraACara(partidas.slice(0, 1), "yo", [BETO]);
     expect(nemesis(filas)).toBeNull();
+  });
+});
+
+describe("cooperativos", () => {
+  const coop = (id: string, juego: string, ganaron: boolean, ...ids: string[]) => ({
+    id,
+    juego_id: juego,
+    juego_nombre: juego,
+    modo_resultado: "cooperativo",
+    jugadores: [...ids.map((u) => j(u, ganaron, null)), j(null, ganaron, null, "Invitado")],
+  });
+  const coops = [
+    coop("c1", "pandemic", true, "yo", "b"),
+    coop("c2", "pandemic", true, "yo", "b", "c"),
+    coop("c3", "pandemic", false, "yo", "b"),
+    coop("c4", "spirit", true, "b", "c"),
+    ...partidas, // las competitivas no cuentan acá
+  ];
+
+  it("cuenta jugadas y ganadas por persona", () => {
+    const filas = calcularRankingCooperativo(coops, YO, [BETO, CARO]);
+    expect(filas.map((f) => [f.nombre, f.ganadas, f.partidas])).toEqual([
+      // Con las mismas ganadas, primero el mejor porcentaje. Caro y Yo suman
+      // el Pandemic ganado de la lista de arriba.
+      ["Caro", 3, 3],
+      ["Beto", 3, 4],
+      ["Yo", 3, 4],
+    ]);
+  });
+
+  it("arma las duplas, con vos primero", () => {
+    const duplas = calcularDuplas(coops, YO, [BETO, CARO], "pandemic");
+    expect(
+      duplas.map((d) => [
+        d.personas.map((p) => p.nombre).join(" y "),
+        d.ganadas,
+        d.juntas,
+        d.conmigo,
+      ]),
+    ).toEqual([
+      ["Yo y Caro", 2, 2, true],
+      ["Yo y Beto", 2, 3, true],
+      ["Beto y Caro", 1, 1, false],
+    ]);
+  });
+
+  it("filtra por juego", () => {
+    const duplas = calcularDuplas(coops, YO, [BETO, CARO], "spirit");
+    expect(duplas.map((d) => d.personas.map((p) => p.nombre))).toEqual([["Beto", "Caro"]]);
   });
 });

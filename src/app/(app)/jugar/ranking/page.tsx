@@ -15,14 +15,23 @@ export default function RankingPage({ searchParams }: PageProps<"/jugar/ranking"
       <EncabezadoPagina titulo="Ranking" />
       <Suspense fallback={<div className="bg-borde h-60 animate-pulse rounded-2xl" />}>
         {searchParams.then((sp) => (
-          <Ranking juego={typeof sp.juego === "string" ? sp.juego : null} />
+          <Ranking
+            juego={typeof sp.juego === "string" ? sp.juego : null}
+            modo={sp.modo === "cooperativo" ? "cooperativo" : "competitivo"}
+          />
         ))}
       </Suspense>
     </>
   );
 }
 
-async function Ranking({ juego }: { juego: string | null }) {
+async function Ranking({
+  juego,
+  modo,
+}: {
+  juego: string | null;
+  modo: "competitivo" | "cooperativo";
+}) {
   const [perfil, { amigos }, partidas] = await Promise.all([
     obtenerMiPerfil(),
     obtenerAmistades(),
@@ -35,6 +44,7 @@ async function Ranking({ juego }: { juego: string | null }) {
       yo={{ id: perfil.id, nombre: perfil.nombre }}
       amigos={amigos.map(({ id, nombre }) => ({ id, nombre }))}
       juegoInicial={juego}
+      modoInicial={modo}
     />
   );
 }
