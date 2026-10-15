@@ -150,6 +150,7 @@ src/
   proxy.ts                        refresco de sesión + redirección a /login (chequeo optimista)
 public/sw.js                      service worker (red primero; /offline sin conexión; nunca cachea datos)
 public/icons/                     íconos de la PWA (los genera scripts/generar-iconos.mjs)
+scripts/datos-de-prueba.mjs       crea/borra usuarios de prueba (@miludoteca.test) con juegos y amistades
 supabase/
   migrations/                     SQL versionado; la fuente de verdad del esquema
   templates/                      plantillas de mail de Auth (copiarlas al dashboard en producción)
