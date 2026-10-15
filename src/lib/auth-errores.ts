@@ -19,6 +19,22 @@ const MENSAJES: Record<string, string> = {
   link_invalido: "El link no es válido. Pedí uno nuevo.",
 };
 
+// Al entrar a una sala como invitado (signInAnonymously).
+const MENSAJES_INVITADO: Record<string, string> = {
+  anonymous_provider_disabled:
+    "Entrar como invitado no está habilitado todavía. Ingresá con tu cuenta o avisale al anfitrión.",
+  captcha_failed:
+    "Entrar como invitado está bloqueado por la verificación anti-bots. Ingresá con tu cuenta.",
+  over_request_rate_limit:
+    "Entraron demasiados invitados desde esta red. Probá en un rato o ingresá con tu cuenta.",
+};
+
+export function mensajeDeErrorInvitado(codigo: string | null | undefined, status?: number): string {
+  if (codigo && Object.hasOwn(MENSAJES_INVITADO, codigo)) return MENSAJES_INVITADO[codigo];
+  if (status === 429) return MENSAJES_INVITADO.over_request_rate_limit;
+  return "No se pudo entrar como invitado. Probá de nuevo.";
+}
+
 const GENERICO = "No pudimos completar el ingreso. Probá de nuevo.";
 
 export function mensajeDeErrorAuth(codigo: string | null | undefined): string {
