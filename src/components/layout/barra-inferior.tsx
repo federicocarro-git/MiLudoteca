@@ -1,6 +1,6 @@
 "use client";
 
-import { CircleUser, LibraryBig, SquarePlus, type LucideIcon } from "lucide-react";
+import { CircleUser, Dices, LibraryBig, SquarePlus, type LucideIcon } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
@@ -8,6 +8,7 @@ type Item = { href: string; etiqueta: string; Icono: LucideIcon };
 
 const ITEMS: Item[] = [
   { href: "/catalogo", etiqueta: "Catálogo", Icono: LibraryBig },
+  { href: "/jugar", etiqueta: "Jugar", Icono: Dices },
   { href: "/juegos/nuevo", etiqueta: "Agregar", Icono: SquarePlus },
   { href: "/cuenta", etiqueta: "Cuenta", Icono: CircleUser },
 ];

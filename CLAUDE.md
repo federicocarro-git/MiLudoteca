@@ -63,6 +63,9 @@ src/
     auth/confirm/route.ts         links de los mails (token_hash; también acepta code)
     (app)/                        rutas protegidas (layout que exige sesión)
       catalogo/                   catálogo personal + filtros + "¿A qué jugamos?"
+      jugar/                      pestaña Jugar (fase 2)
+        amigos/                     código de amigo, solicitudes y lista (+ actions.ts)
+      cuenta/                     nombre visible, código de amigo, cerrar sesión (+ actions.ts)
       juegos/nuevo/               alta manual + panel de búsqueda
       juegos/[id]/
         (pestanas)/                 layout con encabezado + pestañas (una ruta por pestaña):
@@ -79,6 +82,9 @@ src/
     juegos/                       formulario de alta, buscador, selector e imagen de juego, enlace-bgg.tsx
     catalogo/                     grilla con filtros, panel de filtros, tarjeta y sorteo
     resumenes/                    editor de resúmenes
+    amigos/                       código (copiar/compartir), agregar, lista de amigos, avatar
+    cuenta/                       formulario del nombre visible
+    layout/                       barra inferior, encabezado de página, enlace "volver"
     markdown.tsx                  render de resúmenes (react-markdown + remark-gfm; estilos .md en globals.css)
     <feature>/                    componentes de cada feature (catalogo/, juegos/, ...)
   lib/
@@ -104,6 +110,8 @@ src/
       comparar.ts                 mismosDatos() (¿se editó lo que vino de BGG?) y escaparLike()
       storage.ts                  rutaImagenPropia(): qué fotos del bucket se pueden borrar
       valores-formulario.ts       valores del formulario de juego (alta y edición)
+    amigos/
+      consultas.ts                obtenerMiPerfil() y obtenerAmistades(), con cache() por request
     resumenes/
       formato.ts                  barra de formato del editor (funciones puras) y plantillas
     formato.ts                    textos de jugadores, duración y complejidad
@@ -120,7 +128,8 @@ supabase/
   migrations/                     SQL versionado; la fuente de verdad del esquema
   templates/                      plantillas de mail de Auth (copiarlas al dashboard en producción)
   config.toml                     Supabase local (Auth ya configurado, ver docs/AUTH.md)
-  tests/rls.test.sql              tests pgTAP de RLS (32 casos)
+  tests/rls.test.sql              tests pgTAP de RLS de la fase 1 (32 casos)
+  tests/amigos.test.sql           perfiles y amistades (28 casos)
 tests/e2e/                        Playwright: un spec por área + helpers.ts (usuarios, juegos, Mailpit)
 .github/workflows/ci.yml          CI: lint/tipos/unitarios/build + pgTAP/integración/e2e con Supabase local
 docs/PLAN.md                      plan por hitos y decisiones
@@ -147,6 +156,18 @@ Ver `supabase/migrations/20261011000000_esquema_inicial.sql`.
   a los datos del juego. Es la fuente de la pantalla de catálogo y sus filtros.
 - Storage `imagenes-juegos`: público para lectura; cada usuario escribe en
   `<user_id>/...`.
+- `perfiles` (`20261015000000_perfiles_y_amigos.sql`): uno por cuenta, lo crea
+  un trigger de `auth.users` (también cuando un anónimo deja de serlo). Nombre
+  visible (el de Google o lo que va antes de la @, editable en Cuenta) y
+  `codigo_amigo` de 6 caracteres sin I, O, 0 ni 1 (`generar_codigo()`). Cada
+  uno ve el propio y los de sus amigos o solicitudes; solo se puede cambiar el
+  `nombre` (grant por columna). Los anónimos no tienen perfil.
+- `amistades`: una fila por par (índice único sobre el par ordenado), `estado`
+  `pendiente` o `aceptada`. Se crean **solo** con la función
+  `enviar_solicitud_amistad(codigo)` (security definer: busca por código sin
+  abrir `perfiles`; si el otro ya había pedido, acepta). Aceptar = update de
+  `estado` por el destinatario; borrar = rechazar, cancelar o dejar de ser
+  amigos. `es_amigo(otro)` es para las políticas de las tablas que vengan.
 
 ### Alta de juegos (`/juegos/nuevo`)
 
@@ -387,11 +408,12 @@ parser o el cliente.
 
 - Unitarios junto al código: `foo.ts` → `foo.test.ts`.
 - Nada de llamadas reales a BGG en los tests: fixtures XML + `fetch` simulado.
-- RLS: `supabase/tests/rls.test.sql` (pgTAP). Cada política nueva lleva su caso:
+- RLS: `supabase/tests/*.test.sql` (pgTAP, un archivo por área). Cada política nueva lleva su caso:
   lo que el dueño puede hacer **y** lo que otro usuario no. Los DELETE directos
   en `storage.objects` están bloqueados por Supabase: probarlos en los e2e.
 - e2e: cada test crea sus usuarios y datos con la API admin
-  (`tests/e2e/helpers.ts`) y los borra al final; los tests que comparten filas
+  (`tests/e2e/helpers.ts`: `prepararPerfil` fija el nombre y devuelve el
+  código; `hacerAmigos`) y los borra al final; los tests que comparten filas
   de BGG van en `describe.configure({ mode: "serial" })`. Los e2e compilan con
   `GAME_DATA_PROVIDER=mock` y `NEXT_PUBLIC_AUTH_GOOGLE=true`, y la app tiene
   que correr en `localhost:3000` (el `site_url` de Auth).
@@ -418,10 +440,23 @@ Ver `.env.example`.
 | `NEXT_PUBLIC_SITE_URL`                 | cliente y servidor | redirecciones de OAuth y magic link           |
 | `NEXT_PUBLIC_AUTH_GOOGLE`              | cliente            | `true` muestra el botón de Google             |
 
-## Fase 2 (no implementar sin pedido explícito)
+## Fase 2: jugar con amigos (en curso)
 
-Importar la colección de un usuario de BGG y registro de partidas. Qué queda
-preparado y qué falta: ver `docs/PLAN.md`.
+Plan, decisiones e hitos en `docs/PLAN.md`. Hecho: hito 9 (perfiles y
+amigos). Siguen las salas en vivo (con invitados anónimos), el cierre de
+partidas con historial, el ranking, los catálogos de la mesa y la puntuación
+por rondas. Importar la colección de BGG sigue pendiente aparte.
+
+### Amigos (`/jugar/amigos`)
+
+- Tu código con "Copiar" y "Compartir" (Web Share API; el link
+  `/jugar/amigos?codigo=XXXXXX` completa el formulario, también después del
+  login gracias a `?next=`).
+- "Mandar solicitud" (`agregarAmigo`) acepta minúsculas, espacios y guiones
+  (`normalizarCodigo`). Solicitudes recibidas (Aceptar/Rechazar), enviadas
+  (Cancelar) y amigos (dejar de serlo, con confirmación).
+- La tarjeta de Amigos en `/jugar` muestra cuántas solicitudes hay sin
+  responder.
 
 Los resúmenes **no** se generan con IA (se descartó): "Cómo se juega" y "Hoja
 de turno" se escriben a mano. No agregar integraciones con la API de Claude ni

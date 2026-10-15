@@ -146,3 +146,26 @@ export const ruta = (page: Page) => {
   const u = new URL(page.url());
   return u.pathname + u.search;
 };
+
+/** Pone un nombre fijo al perfil (lo crea el trigger) y devuelve su código de amigo. */
+export async function prepararPerfil(usuario: Usuario, nombre: string) {
+  const { data, error } = await admin
+    .from("perfiles")
+    .update({ nombre })
+    .eq("id", usuario.id)
+    .select("codigo_amigo")
+    .single();
+  if (error) throw error;
+  return data.codigo_amigo;
+}
+
+/** Amistad ya aceptada entre dos usuarios (para los tests que la dan por hecha). */
+export async function hacerAmigos(a: Usuario, b: Usuario) {
+  const { error } = await admin.from("amistades").insert({
+    solicitante_id: a.id,
+    destinatario_id: b.id,
+    estado: "aceptada",
+    aceptada_en: new Date().toISOString(),
+  });
+  if (error) throw error;
+}

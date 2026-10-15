@@ -23,6 +23,46 @@ export type Database = {
   };
   public: {
     Tables: {
+      amistades: {
+        Row: {
+          aceptada_en: string | null;
+          creado_en: string;
+          destinatario_id: string;
+          estado: string;
+          solicitante_id: string;
+        };
+        ComputedFields: never;
+        Insert: {
+          aceptada_en?: string | null;
+          creado_en?: string;
+          destinatario_id: string;
+          estado?: string;
+          solicitante_id: string;
+        };
+        Update: {
+          aceptada_en?: string | null;
+          creado_en?: string;
+          destinatario_id?: string;
+          estado?: string;
+          solicitante_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "amistades_destinatario_id_fkey";
+            columns: ["destinatario_id"];
+            isOneToOne: false;
+            referencedRelation: "perfiles";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "amistades_solicitante_id_fkey";
+            columns: ["solicitante_id"];
+            isOneToOne: false;
+            referencedRelation: "perfiles";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       catalogo_usuario: {
         Row: {
           actualizado_en: string;
@@ -124,6 +164,31 @@ export type Database = {
         };
         Relationships: [];
       };
+      perfiles: {
+        Row: {
+          actualizado_en: string;
+          codigo_amigo: string;
+          creado_en: string;
+          id: string;
+          nombre: string;
+        };
+        ComputedFields: never;
+        Insert: {
+          actualizado_en?: string;
+          codigo_amigo: string;
+          creado_en?: string;
+          id: string;
+          nombre: string;
+        };
+        Update: {
+          actualizado_en?: string;
+          codigo_amigo?: string;
+          creado_en?: string;
+          id?: string;
+          nombre?: string;
+        };
+        Relationships: [];
+      };
       resumenes: {
         Row: {
           actualizado_en: string;
@@ -194,7 +259,10 @@ export type Database = {
       };
     };
     Functions: {
-      [_ in never]: never;
+      asegurar_perfil: { Args: { nombre_inicial: string; usuario: string }; Returns: undefined };
+      enviar_solicitud_amistad: { Args: { codigo: string }; Returns: string };
+      es_amigo: { Args: { otro: string }; Returns: boolean };
+      generar_codigo: { Args: { largo: number }; Returns: string };
     };
     Enums: {
       [_ in never]: never;
