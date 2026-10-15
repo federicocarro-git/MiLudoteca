@@ -11,8 +11,10 @@ import { BotonLink } from "@/components/ui/boton";
 import { formatearComplejidad, formatearDuracion, formatearJugadores } from "@/lib/formato";
 import { urlJuegoBgg } from "@/lib/game-data/bgg/enlaces";
 import { obtenerJuego } from "@/lib/juegos/consultas";
+import { obtenerJuegosDeAmigos } from "@/lib/mesa/consultas";
+import { claveDeJuego } from "@/lib/mesa/juegos";
 import { resumenDePartidasDelJuego } from "@/lib/partidas/consultas";
-import { formatearFecha } from "@/lib/partidas/resultado";
+import { formatearFecha, unirNombres } from "@/lib/partidas/resultado";
 
 export const metadata: Metadata = { title: "Ficha" };
 
@@ -90,6 +92,9 @@ async function Ficha({ id, aviso }: { id: string; aviso: keyof typeof AVISOS | n
         <Suspense fallback={<p className="bg-borde h-5 w-48 animate-pulse rounded" />}>
           <PartidasDelJuego juegoId={juego.id} />
         </Suspense>
+        <Suspense>
+          <AmigosQueLoTienen juego={juego} />
+        </Suspense>
       </section>
 
       <AccionesCatalogo
@@ -151,6 +156,21 @@ async function PartidasDelJuego({ juegoId }: { juegoId: string }) {
         {cantidad === 1 ? "Lo jugaste 1 vez" : `Lo jugaste ${cantidad} veces`}
         {ultima ? ` · la última, el ${formatearFecha(ultima)}` : ""}
       </Link>
+    </p>
+  );
+}
+
+async function AmigosQueLoTienen({ juego }: { juego: { bgg_id: number | null; nombre: string } }) {
+  const clave = claveDeJuego(juego);
+  const coincide = (await obtenerJuegosDeAmigos()).find((j) => j.clave === clave);
+  if (!coincide) return null;
+  return (
+    <p className="flex items-center gap-1.5 text-sm">
+      <Users aria-hidden className="text-primario size-4" />
+      <span>
+        <span className="text-texto-suave">También lo tiene </span>
+        {unirNombres(coincide.duenos.map((d) => d.nombre))}
+      </span>
     </p>
   );
 }

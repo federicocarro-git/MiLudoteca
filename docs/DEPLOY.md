@@ -66,6 +66,8 @@ nunca en el repo ni en un chat.
       los puntos se tienen que ver en vivo en los dos.
 - [ ] Terminar la partida: el invitado pasa solo al resultado. Subir una
       foto y verla en el historial.
+- [ ] "¿Quién lo tiene?" muestra los juegos del amigo, y dejan de verse al
+      apagar "Mostrar mis juegos" en su Cuenta.
 
 ## 4. Cuando llegue el token de BGG
 

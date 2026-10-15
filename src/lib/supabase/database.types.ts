@@ -283,6 +283,7 @@ export type Database = {
       perfiles: {
         Row: {
           actualizado_en: string;
+          catalogo_visible: boolean;
           codigo_amigo: string;
           creado_en: string;
           id: string;
@@ -291,6 +292,7 @@ export type Database = {
         ComputedFields: never;
         Insert: {
           actualizado_en?: string;
+          catalogo_visible?: boolean;
           codigo_amigo: string;
           creado_en?: string;
           id: string;
@@ -298,6 +300,7 @@ export type Database = {
         };
         Update: {
           actualizado_en?: string;
+          catalogo_visible?: boolean;
           codigo_amigo?: string;
           creado_en?: string;
           id?: string;
@@ -376,6 +379,23 @@ export type Database = {
     };
     Functions: {
       asegurar_perfil: { Args: { nombre_inicial: string; usuario: string }; Returns: undefined };
+      cambiar_juego_de_sala: { Args: { juego: string; partida: string }; Returns: undefined };
+      catalogo_de_amigos: {
+        Args: Record<PropertyKey, never>;
+        Returns: {
+          bgg_id: number;
+          complejidad: number;
+          dueno_id: string;
+          dueno_nombre: string;
+          duracion_min: number;
+          imagen_url: string;
+          juego_id: string;
+          jugadores_max: number;
+          jugadores_min: number;
+          nombre: string;
+          tipos: string[];
+        }[];
+      };
       crear_partida: {
         Args: { juego: string };
         Returns: {
@@ -389,6 +409,22 @@ export type Database = {
       es_anonimo: { Args: Record<PropertyKey, never>; Returns: boolean };
       generar_codigo: { Args: { largo: number }; Returns: string };
       juego_en_partida: { Args: { partida: string }; Returns: boolean };
+      juegos_de_la_mesa: {
+        Args: { partida: string };
+        Returns: {
+          bgg_id: number;
+          complejidad: number;
+          dueno_id: string;
+          dueno_nombre: string;
+          duracion_min: number;
+          imagen_url: string;
+          juego_id: string;
+          jugadores_max: number;
+          jugadores_min: number;
+          nombre: string;
+          tipos: string[];
+        }[];
+      };
       partida_de_foto: { Args: { ruta: string }; Returns: string };
       partida_en_curso: { Args: { partida: string }; Returns: boolean };
       puede_subir_foto: { Args: { partida: string }; Returns: boolean };

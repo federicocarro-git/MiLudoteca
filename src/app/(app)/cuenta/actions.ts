@@ -41,3 +41,21 @@ export async function actualizarNombre(
   refresh();
   return { ok: true, data: null };
 }
+
+/** Si tus amigos y quienes juegan con vos en una sala ven tu catálogo. */
+export async function cambiarVisibilidadCatalogo(visible: boolean): Promise<Resultado<null>> {
+  const usuario = await getUsuarioActual();
+  if (!usuario) return { ok: false, error: "Tu sesión venció. Volvé a ingresar." };
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("perfiles")
+    .update({ catalogo_visible: visible === true })
+    .eq("id", usuario.id)
+    .select("id");
+  if (error || data.length === 0) {
+    if (error) console.error("cambiarVisibilidadCatalogo", error);
+    return { ok: false, error: "No se pudo guardar. Probá de nuevo." };
+  }
+  refresh();
+  return { ok: true, data: null };
+}

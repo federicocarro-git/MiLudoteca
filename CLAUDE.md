@@ -67,8 +67,9 @@ src/
         nueva/                      elegir el juego de la sala nueva
         historial/                  partidas terminadas, filtros ?juego= y ?con=
         ranking/                    competitivo (victorias, cara a cara) y cooperativo (ganadas, duplas); ?modo= y ?juego=
+        quien-lo-tiene/             juegos de los amigos (buscador y filtro por amigo)
         amigos/                     código de amigo, solicitudes y lista (+ actions.ts)
-      cuenta/                     nombre visible, código de amigo, cerrar sesión (+ actions.ts)
+      cuenta/                     nombre visible, código de amigo, mostrar mis juegos, cerrar sesión (+ actions.ts)
       juegos/nuevo/               alta manual + panel de búsqueda
       juegos/[id]/
         (pestanas)/                 layout con encabezado + pestañas (una ruta por pestaña):
@@ -88,9 +89,10 @@ src/
     catalogo/                     grilla con filtros, panel de filtros, tarjeta y sorteo
     resumenes/                    editor de resúmenes
     amigos/                       código (copiar/compartir), agregar, lista de amigos, avatar
-    salas/                        sala en vivo, marcador, QR (svg en el servidor), invitar, agregar, terminar
+    salas/                        sala en vivo, marcador, QR (svg en el servidor), invitar, agregar, terminar, sorteo de la mesa
+    mesa/                         "¿Quién lo tiene?"
     partidas/                     tabla de resultado, notas, fotos, historial filtrado, ranking, borrar partida
-    cuenta/                       formulario del nombre visible
+    cuenta/                       formulario del nombre visible e interruptor "Mostrar mis juegos"
     layout/                       barra inferior, encabezado de página, enlace "volver"
     markdown.tsx                  render de resúmenes (react-markdown + remark-gfm; estilos .md en globals.css)
     <feature>/                    componentes de cada feature (catalogo/, juegos/, ...)
@@ -130,6 +132,9 @@ src/
                                   calcularRankingCooperativo(), calcularDuplas() (puras)
       fotos.ts                    bucket, máximo y nombre de archivo <partida>/<autor>_<uuid>
       borrar-fotos.ts             borrarFotosDePartida() antes de borrar o cancelar una partida
+    mesa/
+      juegos.ts                   agruparPorJuego(), claveDeJuego(), juegosParaLaMesa(), filtros (puras)
+      consultas.ts                obtenerJuegosDeAmigos() (rpc catalogo_de_amigos, con cache())
     resumenes/
       formato.ts                  barra de formato del editor (funciones puras) y plantillas
     formato.ts                    textos de jugadores, duración y complejidad
@@ -150,6 +155,7 @@ supabase/
   tests/amigos.test.sql           perfiles y amistades (28 casos)
   tests/salas.test.sql            salas, jugadores e invitados anónimos (34 casos)
   tests/cierre.test.sql           terminar partidas, notas, fotos y borrar (28 casos)
+  tests/mesa.test.sql             catálogos de amigos y de la mesa, cambiar el juego (16 casos)
 tests/e2e/                        Playwright: un spec por área + helpers.ts (usuarios, juegos, Mailpit)
 .github/workflows/ci.yml          CI: lint/tipos/unitarios/build + pgTAP/integración/e2e con Supabase local
 docs/PLAN.md                      plan por hitos y decisiones
@@ -215,6 +221,14 @@ modo, ganadores, ganamos)` (solo el anfitrión, en curso). Modos
   `<autor>_<uuid>.webp`. Suben los jugadores con cuenta (hasta 12 por
   partida, `puede_subir_foto()`); ven los que jugaron (también invitados);
   borra el autor (`owner_id`) o el anfitrión.
+- Catálogos de la mesa (`20261018000000_catalogos_de_la_mesa.sql`):
+  `perfiles.catalogo_visible` (por defecto `true`; grant de la columna).
+  `catalogo_de_amigos()` y `juegos_de_la_mesa(partida)` son security definer
+  y devuelven **solo** datos del juego y de quién lo tiene (nunca notas ni
+  puntuación); las tablas siguen cerradas por RLS. En la mesa entra el
+  catálogo propio siempre y el de los demás si lo muestran; la consulta
+  quien esté en la sala (también un invitado). `cambiar_juego_de_sala`: solo
+  el anfitrión, en curso, por un juego de `juegos_de_la_mesa`.
 
 ### Alta de juegos (`/juegos/nuevo`)
 
@@ -494,8 +508,8 @@ Ver `.env.example`.
 
 Plan, decisiones e hitos en `docs/PLAN.md`. Hecho: hito 9 (perfiles y
 amigos), hito 10 (salas en vivo), hito 11 (cierre, historial, notas y
-fotos) y hito 12 (ranking y cara a cara). Siguen los catálogos de la mesa y
-la puntuación por rondas. Importar la colección de BGG sigue pendiente aparte.
+fotos), hito 12 (ranking y cara a cara) y hito 13 (catálogos de la mesa).
+Sigue la puntuación por rondas. Importar la colección de BGG sigue pendiente aparte.
 
 ### Amigos (`/jugar/amigos`)
 
@@ -576,6 +590,24 @@ la puntuación por rondas. Importar la colección de BGG sigue pendiente aparte.
 - e2e: al pasar de una sala a otra, Next deja la anterior montada y oculta:
   filtrar con `.filter({ visible: true })`. Y esperar a que una `Hoja` se
   cierre antes de tocar la página (mientras está abierta, el resto es inerte).
+
+### Catálogos de la mesa
+
+- El mismo juego en distintos catálogos se junta por `bgg_id` o, si no
+  tiene, por nombre normalizado (`claveDeJuego`). `agruparPorJuego` se queda
+  con el nombre más repetido (empate: el que tiene mayúsculas) y completa los
+  datos que falten con las otras copias.
+- "¿Quién lo tiene?" (`/jugar/quien-lo-tiene`): buscador sin tildes y filtro
+  por amigo, en el navegador. En la Ficha: "También lo tiene Beto y Caro".
+- Cuenta → "Mostrar mis juegos" (`cambiarVisibilidadCatalogo`, optimista).
+- Sala → "¿A qué jugamos?" (`SorteoMesa`): pide `juegos_de_la_mesa` desde
+  el navegador al abrir, filtra por la cantidad de jugadores de la sala
+  (`juegosParaLaMesa`; sin el dato no entra, como en el catálogo) y una
+  duración máxima opcional, y sortea con `elegirAlAzar`. El anfitrión puede
+  "Jugar este" (`cambiarJuegoDeSala`); a los demás se les actualiza el
+  encabezado porque la recarga nota el `juego_id` nuevo y hace
+  `router.refresh()`. "Jugar otra vez" en el resultado aparece solo si el
+  anfitrión puede ver el juego (no si era un manual de un amigo).
 
 Los resúmenes **no** se generan con IA (se descartó): "Cómo se juega" y "Hoja
 de turno" se escriben a mano. No agregar integraciones con la API de Claude ni

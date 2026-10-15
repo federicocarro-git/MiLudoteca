@@ -245,3 +245,24 @@ export async function terminarPartida(
   }
   redirect(`/partida/${partidaId}`);
 }
+
+/** El anfitrión cambia el juego de la sala por uno de la mesa. */
+export async function cambiarJuegoDeSala(
+  partidaId: string,
+  juegoId: string,
+): Promise<Resultado<null>> {
+  if (!esUuid(partidaId) || !esUuid(juegoId)) return { ok: false, error: "Ese juego no existe." };
+  if (!(await getUsuarioActual())) return { ok: false, error: SESION_VENCIDA };
+
+  const supabase = await createClient();
+  const { error } = await supabase.rpc("cambiar_juego_de_sala", {
+    partida: partidaId,
+    juego: juegoId,
+  });
+  if (error) {
+    console.error("cambiarJuegoDeSala", partidaId, juegoId, error);
+    return { ok: false, error: "No se pudo cambiar el juego. Probá de nuevo." };
+  }
+  refresh();
+  return { ok: true, data: null };
+}

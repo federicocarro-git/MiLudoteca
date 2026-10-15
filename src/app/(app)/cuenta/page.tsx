@@ -3,6 +3,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { Suspense } from "react";
 import { FormularioNombre } from "@/components/cuenta/formulario-nombre";
+import { VisibilidadCatalogo } from "@/components/cuenta/visibilidad-catalogo";
 import { EncabezadoPagina } from "@/components/layout/encabezado-pagina";
 import { Boton } from "@/components/ui/boton";
 import { obtenerMiPerfil } from "@/lib/amigos/consultas";
@@ -60,6 +61,7 @@ async function Perfil() {
         </span>
         <ChevronRight aria-hidden className="text-texto-suave size-5" />
       </Link>
+      <VisibilidadCatalogo visible={perfil.catalogo_visible} />
     </>
   );
 }

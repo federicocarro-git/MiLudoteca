@@ -2,7 +2,12 @@ import "server-only";
 import { cache } from "react";
 import { createClient } from "@/lib/supabase/server";
 
-export type Perfil = { id: string; nombre: string; codigo_amigo: string };
+export type Perfil = {
+  id: string;
+  nombre: string;
+  codigo_amigo: string;
+  catalogo_visible: boolean;
+};
 
 /** Perfil del usuario actual (null si no hay sesión). Lee cookies: dentro de <Suspense>. */
 export const obtenerMiPerfil = cache(async (): Promise<Perfil | null> => {
@@ -12,7 +17,7 @@ export const obtenerMiPerfil = cache(async (): Promise<Perfil | null> => {
   if (!id) return null;
   const { data, error } = await supabase
     .from("perfiles")
-    .select("id, nombre, codigo_amigo")
+    .select("id, nombre, codigo_amigo, catalogo_visible")
     .eq("id", id)
     .maybeSingle();
   if (error) throw error;

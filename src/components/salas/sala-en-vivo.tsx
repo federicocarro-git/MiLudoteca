@@ -1,6 +1,6 @@
 "use client";
 
-import { Crown, DoorOpen, Flag, Loader2, QrCode, UserPlus, X } from "lucide-react";
+import { Crown, Dices, DoorOpen, Flag, Loader2, QrCode, UserPlus, X } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useRef, useState, useTransition } from "react";
@@ -25,6 +25,7 @@ import { createClient } from "@/lib/supabase/client";
 import { AgregarJugadores, type AmigoDisponible } from "./agregar-jugadores";
 import { InvitarASala } from "./invitar-a-sala";
 import { Marcador } from "./marcador";
+import { SorteoMesa } from "./sorteo-mesa";
 import { TerminarPartida } from "./terminar-partida";
 
 // Espera antes de guardar los puntos: los toques seguidos en +/− se mandan
@@ -65,6 +66,8 @@ export function SalaEnVivo({
   // Inicio de la última recarga aplicada: una que salió antes y llega después
   // se descarta.
   const ultimaRecarga = useRef(0);
+  // El juego de la sala que se está mostrando (para notar si el anfitrión lo cambia).
+  const juegoActual = useRef(sala.juego_id);
   const jugadores = remotos.map((j) =>
     j.id in pendientes ? { ...j, puntos: pendientes[j.id].puntos } : j,
   );
@@ -72,7 +75,9 @@ export function SalaEnVivo({
   const [conexion, setConexion] = useState<Conexion>("conectando");
   const [fuera, setFuera] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [hoja, setHoja] = useState<"invitar" | "agregar" | "salir" | "terminar" | null>(null);
+  const [hoja, setHoja] = useState<"invitar" | "agregar" | "salir" | "terminar" | "sortear" | null>(
+    null,
+  );
   const [quitando, setQuitando] = useState<JugadorSala | null>(null);
   const [pendiente, iniciar] = useTransition();
 
@@ -85,7 +90,7 @@ export function SalaEnVivo({
         .select(COLUMNAS_JUGADOR)
         .eq("partida_id", sala.id)
         .order("unido_en"),
-      supabase.from("partidas").select("estado").eq("id", sala.id).maybeSingle(),
+      supabase.from("partidas").select("estado, juego_id").eq("id", sala.id).maybeSingle(),
     ]);
     if (error || inicio < ultimaRecarga.current) return;
     ultimaRecarga.current = inicio;
@@ -93,6 +98,11 @@ export function SalaEnVivo({
     if (partida?.estado === "terminada") {
       router.replace(`/partida/${sala.id}`);
       return;
+    }
+    // El anfitrión cambió el juego: volver a pedir la página (el encabezado).
+    if (partida && partida.juego_id !== juegoActual.current) {
+      juegoActual.current = partida.juego_id;
+      router.refresh();
     }
     // Si me sacaron o se canceló la sala, RLS ya no me devuelve mi fila.
     if (!data.some((j) => j.user_id === yo)) {
@@ -205,7 +215,10 @@ export function SalaEnVivo({
               ? "Conectando…"
               : "Sin conexión en vivo: se actualiza cada 15 segundos"}
         </p>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
+          <Boton variante="secundario" onClick={() => setHoja("sortear")}>
+            <Dices aria-hidden className="size-4" /> ¿A qué jugamos?
+          </Boton>
           <Boton variante="secundario" onClick={() => setHoja("invitar")}>
             <QrCode aria-hidden className="size-4" /> Invitar
           </Boton>
@@ -315,6 +328,18 @@ export function SalaEnVivo({
           )}
         </Hoja>
       )}
+
+      <Hoja abierta={hoja === "sortear"} onCerrar={() => setHoja(null)} titulo="¿A qué jugamos?">
+        {hoja === "sortear" && (
+          <SorteoMesa
+            partidaId={sala.id}
+            juegoActualId={sala.juego_id}
+            jugadores={jugadores.length}
+            soyAnfitrion={soyAnfitrion}
+            onListo={() => setHoja(null)}
+          />
+        )}
+      </Hoja>
 
       <Hoja abierta={hoja === "invitar"} onCerrar={() => setHoja(null)} titulo="Invitar a la sala">
         <InvitarASala codigo={sala.codigo} url={url} qrSvg={qrSvg} />

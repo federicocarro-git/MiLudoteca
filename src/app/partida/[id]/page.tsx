@@ -11,6 +11,7 @@ import { TablaResultado } from "@/components/partidas/tabla-resultado";
 import { BotonCrearSala } from "@/components/salas/boton-crear-sala";
 import { getSesionActual } from "@/lib/auth";
 import { formatearDuracion } from "@/lib/formato";
+import { obtenerJuego } from "@/lib/juegos/consultas";
 import { listarFotos, obtenerPartida } from "@/lib/partidas/consultas";
 import {
   NOMBRE_MODO,
@@ -73,7 +74,12 @@ async function ContenidoPartida({ id }: { id: string }) {
 
   const yo = sesion?.id ?? null;
   const soyAnfitrion = yo !== null && partida.anfitrion_id === yo;
-  const fotos = await listarFotos(partida.id);
+  const [fotos, juegoVisible] = await Promise.all([
+    listarFotos(partida.id),
+    // "Jugar otra vez" solo si el anfitrión puede ver el juego (no si la sala
+    // se pasó a un juego manual de un amigo).
+    soyAnfitrion && partida.juego_id ? obtenerJuego(partida.juego_id) : null,
+  ]);
   const minutos = minutosDePartida(partida.creada_en, partida.terminada_en);
   const cooperativo = partida.modo_resultado === "cooperativo";
   const resultado = textoResultado({ ...partida, jugadores });
@@ -142,7 +148,7 @@ async function ContenidoPartida({ id }: { id: string }) {
         />
       </section>
 
-      {soyAnfitrion && partida.juego_id && (
+      {soyAnfitrion && juegoVisible && partida.juego_id && (
         <BotonCrearSala juegoId={partida.juego_id}>Jugar otra vez</BotonCrearSala>
       )}
 
