@@ -91,7 +91,7 @@ test("escribir con la barra de formato, vista previa, borrador y guardar", async
   await page.waitForURL(`**/juegos/${id}/hoja-de-turno?guardado=1`);
   await expect(page.getByText("Guardaste el resumen.")).toBeVisible();
   await expect(page.locator(".md-hoja input[type=checkbox]")).toHaveCount(2);
-  expect(await page.evaluate((k) => localStorage.getItem(k), clave)).toBeNull();
+  await expect.poll(() => page.evaluate((k) => localStorage.getItem(k), clave)).toBeNull();
 
   const { data } = await admin
     .from("resumenes")

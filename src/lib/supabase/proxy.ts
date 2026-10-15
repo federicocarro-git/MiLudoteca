@@ -29,7 +29,9 @@ export async function updateSession(request: NextRequest) {
   // No meter código entre createServerClient y getClaims(): getClaims()
   // es lo que valida el JWT y dispara el refresco de la sesión.
   const { data } = await supabase.auth.getClaims();
-  const conSesion = Boolean(data?.claims);
+  // Un invitado anónimo (de una sala) cuenta como sin sesión: solo entra a
+  // /sala/... y puede ir al login a usar su cuenta.
+  const conSesion = Boolean(data?.claims) && data?.claims.is_anonymous !== true;
   const { pathname, search } = request.nextUrl;
 
   if (!conSesion && !esRutaPublica(pathname)) {

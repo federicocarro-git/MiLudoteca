@@ -1,37 +1,98 @@
-import { ChevronRight, Users } from "lucide-react";
+import { ChevronRight, Plus, Users } from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { Suspense } from "react";
 import { EncabezadoPagina } from "@/components/layout/encabezado-pagina";
+import { UnirseConCodigo } from "@/components/salas/unirse-con-codigo";
+import { BotonLink } from "@/components/ui/boton";
 import { obtenerAmistades } from "@/lib/amigos/consultas";
+import { obtenerMisSalasEnCurso } from "@/lib/salas/consultas";
 
 export const metadata: Metadata = { title: "Jugar" };
+
+const TARJETA = "border-borde bg-superficie space-y-3 rounded-2xl border p-4";
 
 export default function JugarPage() {
   return (
     <>
       <EncabezadoPagina titulo="Jugar" />
-      <ul className="space-y-3">
-        <li>
-          <Link
-            href="/jugar/amigos"
-            className="border-borde bg-superficie hover:border-primario flex min-h-16 items-center gap-3 rounded-2xl border p-4"
-          >
-            <Users aria-hidden className="text-primario size-6 shrink-0" />
-            <span className="flex-1">
-              <span className="block font-semibold">Amigos</span>
-              <span className="text-texto-suave block text-sm">
-                Tu código, solicitudes y lista de amigos
-              </span>
+      <div className="space-y-4">
+        <section className={TARJETA} aria-labelledby="titulo-nueva">
+          <h2 id="titulo-nueva" className="font-semibold">
+            Nueva partida
+          </h2>
+          <p className="text-texto-suave text-sm">
+            Elegí un juego, invitá a la mesa con un QR y cada uno anota sus puntos desde su celular.
+          </p>
+          <BotonLink href="/jugar/nueva">
+            <Plus aria-hidden className="size-4" /> Crear una sala
+          </BotonLink>
+        </section>
+
+        <Suspense>
+          <SalasEnCurso />
+        </Suspense>
+
+        <section className={TARJETA} aria-labelledby="titulo-unirse">
+          <h2 id="titulo-unirse" className="font-semibold">
+            Unirse con un código
+          </h2>
+          <UnirseConCodigo />
+        </section>
+
+        <Link
+          href="/jugar/amigos"
+          className="border-borde bg-superficie hover:border-primario flex min-h-16 items-center gap-3 rounded-2xl border p-4"
+        >
+          <Users aria-hidden className="text-primario size-6 shrink-0" />
+          <span className="flex-1">
+            <span className="block font-semibold">Amigos</span>
+            <span className="text-texto-suave block text-sm">
+              Tu código, solicitudes y lista de amigos
             </span>
-            <Suspense>
-              <SolicitudesPendientes />
-            </Suspense>
-            <ChevronRight aria-hidden className="text-texto-suave size-5 shrink-0" />
-          </Link>
-        </li>
-      </ul>
+          </span>
+          <Suspense>
+            <SolicitudesPendientes />
+          </Suspense>
+          <ChevronRight aria-hidden className="text-texto-suave size-5 shrink-0" />
+        </Link>
+      </div>
     </>
+  );
+}
+
+async function SalasEnCurso() {
+  const salas = await obtenerMisSalasEnCurso();
+  if (salas.length === 0) return null;
+  return (
+    <section className={TARJETA} aria-labelledby="titulo-en-curso">
+      <h2 id="titulo-en-curso" className="font-semibold">
+        Partidas en curso
+      </h2>
+      <ul className="space-y-2">
+        {salas.map((s) => (
+          <li key={s.codigo}>
+            <Link
+              href={`/sala/${s.codigo}`}
+              className="border-borde hover:border-primario flex min-h-14 items-center gap-3 rounded-xl border p-3"
+            >
+              <span className="relative flex size-2.5 shrink-0" aria-hidden>
+                <span className="absolute inline-flex size-full animate-ping rounded-full bg-green-500 opacity-60 motion-reduce:animate-none" />
+                <span className="relative inline-flex size-2.5 rounded-full bg-green-600" />
+              </span>
+              <span className="min-w-0 flex-1">
+                <span className="block truncate font-medium">{s.juego_nombre}</span>
+                <span className="text-texto-suave block text-sm">
+                  {s.jugadores === 1 ? "1 jugador" : `${s.jugadores} jugadores`}
+                  {s.soyAnfitrion ? " · sos anfitrión" : ""} · {s.codigo}
+                </span>
+              </span>
+              <ChevronRight aria-hidden className="text-texto-suave size-5" />
+            </Link>
+          </li>
+        ))}
+      </ul>
+    </section>
   );
 }
 

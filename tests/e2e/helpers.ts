@@ -35,6 +35,7 @@ export async function crearUsuario(prefijo = "e2e"): Promise<Usuario> {
 /** Borra el usuario (en cascada: catálogo, juegos manuales y resúmenes). */
 export async function borrarUsuario(usuario: Usuario | undefined) {
   if (!usuario) return;
+  await borrarSalasDe(usuario);
   const { data } = await admin.storage.from("imagenes-juegos").list(usuario.id);
   if (data?.length) {
     await admin.storage.from("imagenes-juegos").remove(data.map((a) => `${usuario.id}/${a.name}`));
@@ -168,4 +169,29 @@ export async function hacerAmigos(a: Usuario, b: Usuario) {
     aceptada_en: new Date().toISOString(),
   });
   if (error) throw error;
+}
+
+/**
+ * Borra las salas que creó el usuario y los invitados anónimos que entraron
+ * a ellas (si no, quedan en auth.users).
+ */
+export async function borrarSalasDe(usuario: Usuario) {
+  const { data: salas } = await admin.from("partidas").select("id").eq("anfitrion_id", usuario.id);
+  if (!salas?.length) return;
+  const ids = salas.map((s) => s.id);
+  const { data: invitados } = await admin
+    .from("partida_jugadores")
+    .select("user_id")
+    .in("partida_id", ids)
+    .eq("invitado", true)
+    .not("user_id", "is", null);
+  await admin.from("partidas").delete().in("id", ids);
+  await Promise.all((invitados ?? []).map((i) => admin.auth.admin.deleteUser(i.user_id!)));
+}
+
+/** Código de la sala abierta en la página (sale de la URL /sala/XXXXXX). */
+export function codigoDeSala(page: Page) {
+  const codigo = new URL(page.url()).pathname.split("/").pop();
+  if (!codigo || !/^[A-Z2-9]{6}$/.test(codigo)) throw new Error(`No es una sala: ${page.url()}`);
+  return codigo;
 }

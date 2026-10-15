@@ -16,7 +16,12 @@ nunca en el repo ni en un chat.
    ```
 
    Esto crea las tablas, la vista, las políticas RLS y el bucket
-   `imagenes-juegos`.
+   `imagenes-juegos`. Cada vez que se mergean migraciones nuevas, volver a
+   correr `npx supabase db push`.
+
+   Las salas usan **Realtime Broadcast** desde la base (`realtime.send`) en
+   canales públicos: no hay que activar nada, salvo que en Realtime →
+   Settings se haya desactivado el acceso a canales públicos.
 
 3. Opcional, para verificar las políticas en el proyecto real:
    `npx supabase test db --linked`.
@@ -56,6 +61,9 @@ nunca en el repo ni en un chat.
 - [ ] Escribir un resumen e imprimir la hoja de turno.
 - [ ] Instalar la app ("Agregar a pantalla de inicio") y abrirla sin conexión: tiene que mostrar "Sin conexión".
 - [ ] Con un segundo usuario, confirmar que no ve nada del primero.
+- [ ] Agregar a ese usuario como amigo con el código.
+- [ ] Crear una sala, abrir el QR con otro celular y entrar como invitado:
+      los puntos se tienen que ver en vivo en los dos.
 
 ## 4. Cuando llegue el token de BGG
 

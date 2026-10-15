@@ -32,6 +32,7 @@ test("pedir, aceptar y dejar de ser amigos", async ({ browser }) => {
   await paginaA.getByRole("link", { name: /Amigos/ }).click();
   await expect(paginaA.getByText(codigoDeA, { exact: true })).toBeVisible();
   await expect(paginaA.getByText("Todavía no tenés amigos")).toBeVisible();
+  await paginaA.waitForLoadState("networkidle");
 
   // A escribe el código de B, en minúsculas y con un guion.
   const campo = paginaA.getByLabel("Código de tu amigo");
@@ -70,6 +71,7 @@ test("pedir, aceptar y dejar de ser amigos", async ({ browser }) => {
 test("rechazar una solicitud y cancelar una enviada", async ({ page }) => {
   await iniciarSesion(page, a);
   await page.goto(`/jugar/amigos?codigo=${codigoDeB}`);
+  await page.waitForLoadState("networkidle");
   // El link compartido completa el código.
   await expect(page.getByLabel("Código de tu amigo")).toHaveValue(codigoDeB);
   await page.getByRole("button", { name: "Mandar solicitud" }).click();
@@ -87,6 +89,8 @@ test("rechazar una solicitud y cancelar una enviada", async ({ page }) => {
 test("el código propio no sirve y una solicitud cruzada se acepta sola", async ({ page }) => {
   await iniciarSesion(page, a);
   await page.goto("/jugar/amigos");
+  // Que React hidrate antes de escribir (si no, el input controlado se vacía).
+  await page.waitForLoadState("networkidle");
   await page.getByLabel("Código de tu amigo").fill(codigoDeA);
   await page.getByRole("button", { name: "Mandar solicitud" }).click();
   await expect(page.getByText("Ese es tu propio código.")).toBeVisible();
@@ -103,6 +107,7 @@ test("cambiar el nombre en Cuenta", async ({ page }) => {
   await iniciarSesion(page, a);
   await page.getByRole("link", { name: "Cuenta", exact: true }).click();
   await expect(page.getByText(codigoDeA)).toBeVisible();
+  await page.waitForLoadState("networkidle");
   const nombre = page.getByLabel("Tu nombre");
   await expect(nombre).toHaveValue("Ana");
   await nombre.fill("   ");

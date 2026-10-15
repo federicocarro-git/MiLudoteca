@@ -1,5 +1,6 @@
-// Rutas a las que se puede entrar sin sesión.
-const PREFIJOS_PUBLICOS = ["/login", "/auth", "/offline"];
+// Rutas a las que se puede entrar sin sesión. /sala/<código> es a donde lleva
+// el QR: ahí se elige entrar como invitado o con la cuenta.
+const PREFIJOS_PUBLICOS = ["/login", "/auth", "/offline", "/sala"];
 
 export function esRutaPublica(pathname: string): boolean {
   return PREFIJOS_PUBLICOS.some(

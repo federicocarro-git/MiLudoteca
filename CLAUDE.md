@@ -63,7 +63,8 @@ src/
     auth/confirm/route.ts         links de los mails (token_hash; también acepta code)
     (app)/                        rutas protegidas (layout que exige sesión)
       catalogo/                   catálogo personal + filtros + "¿A qué jugamos?"
-      jugar/                      pestaña Jugar (fase 2)
+      jugar/                      pestaña Jugar: crear sala, unirse con código, en curso (+ actions.ts)
+        nueva/                      elegir el juego de la sala nueva
         amigos/                     código de amigo, solicitudes y lista (+ actions.ts)
       cuenta/                     nombre visible, código de amigo, cerrar sesión (+ actions.ts)
       juegos/nuevo/               alta manual + panel de búsqueda
@@ -75,6 +76,7 @@ src/
         editar/                     editar datos de un juego manual propio
         resumen/editar/             editor de resúmenes en markdown (+ actions.ts: guardarResumen)
         actions.ts                  actualizarCatalogo, agregarAlCatalogo, quitarDelCatalogo, actualizarJuego
+    sala/[codigo]/                sala en vivo (fuera de (app): también para invitados; + actions.ts)
     manifest.ts                   manifiesto de la PWA
   components/
     ui/                           componentes genéricos (Boton, Campo, ...)
@@ -83,6 +85,7 @@ src/
     catalogo/                     grilla con filtros, panel de filtros, tarjeta y sorteo
     resumenes/                    editor de resúmenes
     amigos/                       código (copiar/compartir), agregar, lista de amigos, avatar
+    salas/                        sala en vivo, marcador, QR (svg en el servidor), invitar, agregar jugadores
     cuenta/                       formulario del nombre visible
     layout/                       barra inferior, encabezado de página, enlace "volver"
     markdown.tsx                  render de resúmenes (react-markdown + remark-gfm; estilos .md en globals.css)
@@ -112,11 +115,14 @@ src/
       valores-formulario.ts       valores del formulario de juego (alta y edición)
     amigos/
       consultas.ts                obtenerMiPerfil() y obtenerAmistades(), con cache() por request
+    salas/
+      consultas.ts                obtenerSala(codigo), vistaPreviaSala(codigo), obtenerMisSalasEnCurso()
+      tipos.ts                    Sala, JugadorSala, puntajeMasAlto()
     resumenes/
       formato.ts                  barra de formato del editor (funciones puras) y plantillas
     formato.ts                    textos de jugadores, duración y complejidad
     imagenes.ts                   achica las fotos en el navegador (máx. 1200 px, WebP)
-    auth.ts                       getUsuarioActual() (lee cookies: dentro de <Suspense>)
+    auth.ts                       getUsuarioActual() (sin anónimos) y getSesionActual() (con anónimos, solo salas)
     auth-errores.ts               códigos de error de Supabase Auth → mensajes en español
     resultado.ts                  tipo Resultado<T> que devuelven las Server Actions
     sitio.ts                      urlDelSitio() para los links de OAuth y de los mails
@@ -130,6 +136,7 @@ supabase/
   config.toml                     Supabase local (Auth ya configurado, ver docs/AUTH.md)
   tests/rls.test.sql              tests pgTAP de RLS de la fase 1 (32 casos)
   tests/amigos.test.sql           perfiles y amistades (28 casos)
+  tests/salas.test.sql            salas, jugadores e invitados anónimos (34 casos)
 tests/e2e/                        Playwright: un spec por área + helpers.ts (usuarios, juegos, Mailpit)
 .github/workflows/ci.yml          CI: lint/tipos/unitarios/build + pgTAP/integración/e2e con Supabase local
 docs/PLAN.md                      plan por hitos y decisiones
@@ -168,6 +175,21 @@ Ver `supabase/migrations/20261011000000_esquema_inicial.sql`.
   abrir `perfiles`; si el otro ya había pedido, acepta). Aceptar = update de
   `estado` por el destinatario; borrar = rechazar, cancelar o dejar de ser
   amigos. `es_amigo(otro)` es para las políticas de las tablas que vengan.
+- `partidas` (`20261016000000_salas.sql`): una por sala. `codigo` de 6 (único
+  entre las `en_curso`), anfitrión y el juego **copiado** (`juego_nombre`,
+  `juego_imagen_url`; `juego_id` queda como referencia con `on delete set
+null`): así la ven todos aunque el juego sea manual y privado. Se crean con
+  `crear_partida(juego)` y el anfitrión las cancela (delete) en curso.
+- `partida_jugadores`: `user_id` (null = juega sin celular), `nombre`,
+  `invitado` (sin cuenta: anónimo o sin celular; no suma al ranking) y
+  `puntos` (total, ±1.000.000). Hasta 20 por sala (trigger). Con cuenta, el
+  nombre sale del perfil. Cada uno cambia sus puntos (grant solo de `puntos`);
+  el anfitrión, los de todos, agrega amigos o jugadores sin celular y saca a
+  otros. Se entra con `unirse_a_partida(codigo, nombre)`; `ver_sala(codigo)`
+  (también para `anon`) es la vista previa antes de entrar.
+- **Invitados anónimos**: `signInAnonymously()`. Tienen `auth.uid()` pero no
+  perfil, y una política **restrictiva** (`es_anonimo()`) les cierra juegos,
+  catálogo, resúmenes, perfiles, amistades y el bucket de imágenes.
 
 ### Alta de juegos (`/juegos/nuevo`)
 
@@ -413,13 +435,16 @@ parser o el cliente.
   en `storage.objects` están bloqueados por Supabase: probarlos en los e2e.
 - e2e: cada test crea sus usuarios y datos con la API admin
   (`tests/e2e/helpers.ts`: `prepararPerfil` fija el nombre y devuelve el
-  código; `hacerAmigos`) y los borra al final; los tests que comparten filas
+  código; `hacerAmigos`; `borrarUsuario` también borra sus salas y los
+  invitados anónimos) y los borra al final; los tests que comparten filas
   de BGG van en `describe.configure({ mode: "serial" })`. Los e2e compilan con
   `GAME_DATA_PROVIDER=mock` y `NEXT_PUBLIC_AUTH_GOOGLE=true`, y la app tiene
   que correr en `localhost:3000` (el `site_url` de Auth).
 - Selectores: preferir `getByRole`/`getByLabel` con `exact: true` (varios
   textos se repiten: "Nombre"/"Buscar por nombre", "8 juegos"/"Ver 8 juegos").
   Ojo con las pestañas visitadas que Next deja montadas y ocultas.
+- Antes de escribir en un input controlado justo después de `goto`, esperar
+  la hidratación (`waitForLoadState("networkidle")`): si no, React lo vacía.
 
 ### Git
 
@@ -443,9 +468,8 @@ Ver `.env.example`.
 ## Fase 2: jugar con amigos (en curso)
 
 Plan, decisiones e hitos en `docs/PLAN.md`. Hecho: hito 9 (perfiles y
-amigos). Siguen las salas en vivo (con invitados anónimos), el cierre de
-partidas con historial, el ranking, los catálogos de la mesa y la puntuación
-por rondas. Importar la colección de BGG sigue pendiente aparte.
+amigos) y hito 10 (salas en vivo). Siguen el cierre de partidas con
+historial, el ranking, los catálogos de la mesa y la puntuación por rondas. Importar la colección de BGG sigue pendiente aparte.
 
 ### Amigos (`/jugar/amigos`)
 
@@ -457,6 +481,33 @@ por rondas. Importar la colección de BGG sigue pendiente aparte.
   (Cancelar) y amigos (dejar de serlo, con confirmación).
 - La tarjeta de Amigos en `/jugar` muestra cuántas solicitudes hay sin
   responder.
+
+### Salas (`/jugar/nueva` → `/sala/<código>`)
+
+- Se crea desde Jugar (elegir un juego del catálogo) o con "Jugar una
+  partida" en la Ficha (`crearSala`). Unirse: el QR o el link
+  (`/sala/<código>`), o el código en Jugar (`irASala` valida que exista).
+- `/sala/[codigo]` está fuera de `(app)` (sin barra inferior) y es **ruta
+  pública** en `rutas.ts`. Sin sesión o como anónimo: vista previa y "Entrar
+  como invitado" (`entrarComoInvitado`: `signInAnonymously` + unirse) o
+  ingresar con la cuenta (`?next=`). Con cuenta: "Unirme a la sala".
+- El proxy trata a un anónimo como **sin sesión**: fuera de `/sala` lo manda
+  al login, y en el login puede usar su cuenta.
+- En vivo (`SalaEnVivo`): un trigger manda un Broadcast (`realtime.send`) al
+  canal `sala:<id>` en cada cambio, **sin datos**; el cliente vuelve a pedir
+  los jugadores con RLS. Además recarga cada 15 s y al volver a la pestaña.
+  No usamos `postgres_changes`: con RLS no entregaba los cambios (y los
+  DELETE no se filtran). Si me sacan o se cancela la sala, RLS deja de
+  devolver mi fila y se muestra "Ya no estás en esta sala".
+- Puntos: +/− o escribir el número; se guarda el **valor final** 400 ms
+  después del último toque (`actualizarPuntos`). Lo tocado y no guardado
+  (`pendientes`) manda sobre lo que llegue del servidor. Corona para quien va
+  ganando (`puntajeMasAlto`; nadie si están todos iguales).
+- QR: `qrcode` genera el SVG en el servidor (negro sobre blanco, también en
+  modo oscuro). El link usa `urlDelSitio()`.
+- Supabase local levanta Realtime (`db:start` ya no lo excluye) y tiene
+  `enable_anonymous_sign_ins = true`. En producción hay que activar los
+  anónimos (ver `docs/AUTH.md`).
 
 Los resúmenes **no** se generan con IA (se descartó): "Cómo se juega" y "Hoja
 de turno" se escriben a mano. No agregar integraciones con la API de Claude ni

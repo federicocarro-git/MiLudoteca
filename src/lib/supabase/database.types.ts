@@ -164,6 +164,107 @@ export type Database = {
         };
         Relationships: [];
       };
+      partida_jugadores: {
+        Row: {
+          actualizado_en: string;
+          id: string;
+          invitado: boolean;
+          nombre: string;
+          partida_id: string;
+          puntos: number;
+          unido_en: string;
+          user_id: string | null;
+        };
+        ComputedFields: never;
+        Insert: {
+          actualizado_en?: string;
+          id?: string;
+          invitado?: boolean;
+          nombre: string;
+          partida_id: string;
+          puntos?: number;
+          unido_en?: string;
+          user_id?: string | null;
+        };
+        Update: {
+          actualizado_en?: string;
+          id?: string;
+          invitado?: boolean;
+          nombre?: string;
+          partida_id?: string;
+          puntos?: number;
+          unido_en?: string;
+          user_id?: string | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "partida_jugadores_partida_id_fkey";
+            columns: ["partida_id"];
+            isOneToOne: false;
+            referencedRelation: "partidas";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      partidas: {
+        Row: {
+          anfitrion_id: string | null;
+          codigo: string;
+          creada_en: string;
+          estado: string;
+          id: string;
+          juego_id: string | null;
+          juego_imagen_url: string | null;
+          juego_nombre: string;
+          terminada_en: string | null;
+        };
+        ComputedFields: never;
+        Insert: {
+          anfitrion_id?: string | null;
+          codigo: string;
+          creada_en?: string;
+          estado?: string;
+          id?: string;
+          juego_id?: string | null;
+          juego_imagen_url?: string | null;
+          juego_nombre: string;
+          terminada_en?: string | null;
+        };
+        Update: {
+          anfitrion_id?: string | null;
+          codigo?: string;
+          creada_en?: string;
+          estado?: string;
+          id?: string;
+          juego_id?: string | null;
+          juego_imagen_url?: string | null;
+          juego_nombre?: string;
+          terminada_en?: string | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "partidas_anfitrion_id_fkey";
+            columns: ["anfitrion_id"];
+            isOneToOne: false;
+            referencedRelation: "perfiles";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "partidas_juego_id_fkey";
+            columns: ["juego_id"];
+            isOneToOne: false;
+            referencedRelation: "juegos";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "partidas_juego_id_fkey";
+            columns: ["juego_id"];
+            isOneToOne: false;
+            referencedRelation: "mi_catalogo";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       perfiles: {
         Row: {
           actualizado_en: string;
@@ -260,9 +361,32 @@ export type Database = {
     };
     Functions: {
       asegurar_perfil: { Args: { nombre_inicial: string; usuario: string }; Returns: undefined };
+      crear_partida: {
+        Args: { juego: string };
+        Returns: {
+          codigo: string;
+          id: string;
+        }[];
+      };
       enviar_solicitud_amistad: { Args: { codigo: string }; Returns: string };
       es_amigo: { Args: { otro: string }; Returns: boolean };
+      es_anfitrion: { Args: { partida: string }; Returns: boolean };
+      es_anonimo: { Args: Record<PropertyKey, never>; Returns: boolean };
       generar_codigo: { Args: { largo: number }; Returns: string };
+      juego_en_partida: { Args: { partida: string }; Returns: boolean };
+      partida_en_curso: { Args: { partida: string }; Returns: boolean };
+      unirse_a_partida: { Args: { codigo: string; nombre?: string }; Returns: string };
+      ver_sala: {
+        Args: { codigo: string };
+        Returns: {
+          anfitrion: string;
+          juego_imagen_url: string;
+          juego_nombre: string;
+          jugadores: number;
+          partida_id: string;
+          ya_estoy: boolean;
+        }[];
+      };
     };
     Enums: {
       [_ in never]: never;

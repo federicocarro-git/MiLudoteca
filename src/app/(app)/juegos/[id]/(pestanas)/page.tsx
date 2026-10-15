@@ -5,6 +5,7 @@ import { Suspense } from "react";
 import { AccionesCatalogo } from "@/components/juegos/acciones-catalogo";
 import { EnlaceBgg } from "@/components/juegos/enlace-bgg";
 import { ImagenJuego } from "@/components/juegos/imagen-juego";
+import { BotonCrearSala } from "@/components/salas/boton-crear-sala";
 import { BotonLink } from "@/components/ui/boton";
 import { formatearComplejidad, formatearDuracion, formatearJugadores } from "@/lib/formato";
 import { urlJuegoBgg } from "@/lib/game-data/bgg/enlaces";
@@ -80,6 +81,8 @@ async function Ficha({ id, aviso }: { id: string; aviso: keyof typeof AVISOS | n
 
       {/* Cualquier juego con bgg_id: los de BGG y los manuales que lo guardan de referencia. */}
       {juego.bgg_id && <EnlaceBgg bggId={juego.bgg_id} className="print:hidden" />}
+
+      <BotonCrearSala juegoId={juego.id} className="print:hidden" />
 
       <AccionesCatalogo
         juegoId={juego.id}

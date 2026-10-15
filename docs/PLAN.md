@@ -188,14 +188,14 @@ vivo.
 
 ### Hitos
 
-| #   | Hito                     | Qué incluye                                                                                                                                       |
-| --- | ------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 9   | Perfiles y amigos        | `perfiles` (nombre visible, código de amigo), `amistades` (solicitud y aceptación), pantalla de Amigos, nombre editable en Cuenta, pestaña Jugar. |
-| 10  | Salas en vivo            | Crear sala con un juego, código y QR, invitar amigos, unirse con cuenta o como invitado, puntos totales en vivo con Supabase Realtime.            |
-| 11  | Cierre, historial, fotos | Ganador (o cooperativo), historial filtrable, fotos y notas de la partida, partidas jugadas en la Ficha.                                          |
-| 12  | Ranking y rivalidades    | Victorias, partidas y porcentaje entre amigos (general y por juego); cara a cara con cada amigo.                                                  |
-| 13  | Catálogos de la mesa     | "¿Quién lo tiene?" (juegos de tus amigos) y "¿A qué jugamos?" entre los catálogos de los presentes en la sala.                                    |
-| 14  | Puntuación por rondas    | Rondas en la sala y hojas de puntuación por juego (categorías con suma automática).                                                               |
+| #   | Hito                        | Qué incluye                                                                                                                                       |
+| --- | --------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 9   | Perfiles y amigos (_hecho_) | `perfiles` (nombre visible, código de amigo), `amistades` (solicitud y aceptación), pantalla de Amigos, nombre editable en Cuenta, pestaña Jugar. |
+| 10  | Salas en vivo (_hecho_)     | Crear sala con un juego, código y QR, invitar amigos, unirse con cuenta o como invitado, puntos totales en vivo con Supabase Realtime.            |
+| 11  | Cierre, historial, fotos    | Ganador (o cooperativo), historial filtrable, fotos y notas de la partida, partidas jugadas en la Ficha.                                          |
+| 12  | Ranking y rivalidades       | Victorias, partidas y porcentaje entre amigos (general y por juego); cara a cara con cada amigo.                                                  |
+| 13  | Catálogos de la mesa        | "¿Quién lo tiene?" (juegos de tus amigos) y "¿A qué jugamos?" entre los catálogos de los presentes en la sala.                                    |
+| 14  | Puntuación por rondas       | Rondas en la sala y hojas de puntuación por juego (categorías con suma automática).                                                               |
 
 ### Pendiente aparte
 
