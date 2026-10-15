@@ -9,6 +9,7 @@ import { borrarFotosDePartida } from "@/lib/partidas/borrar-fotos";
 import type { Resultado } from "@/lib/resultado";
 import { createClient } from "@/lib/supabase/server";
 import { terminarPartidaSchema, type TerminarPartida } from "@/lib/validations/partidas";
+import { configurarPuntajeSchema, type ConfigurarPuntaje } from "@/lib/validations/puntaje";
 import { codigoSalaSchema, nombreJugadorSchema, puntosSchema } from "@/lib/validations/salas";
 
 const SESION_VENCIDA = "Tu sesión venció. Volvé a abrir la sala.";
@@ -262,6 +263,88 @@ export async function cambiarJuegoDeSala(
   if (error) {
     console.error("cambiarJuegoDeSala", partidaId, juegoId, error);
     return { ok: false, error: "No se pudo cambiar el juego. Probá de nuevo." };
+  }
+  refresh();
+  return { ok: true, data: null };
+}
+
+/** Un casillero de la hoja (ronda o categoría). null lo borra. */
+export async function anotarPuntos(
+  jugadorId: string,
+  columna: number,
+  puntos: number | null,
+): Promise<Resultado<null>> {
+  if (puntos !== null) {
+    const parseo = puntosSchema.safeParse(puntos);
+    if (!parseo.success) return { ok: false, error: parseo.error.issues[0].message };
+  }
+  if (!esUuid(jugadorId) || !Number.isInteger(columna) || columna < 0 || columna > 49) {
+    return { ok: false, error: "Ese casillero no existe." };
+  }
+  if (!(await getSesionActual())) return { ok: false, error: SESION_VENCIDA };
+
+  const supabase = await createClient();
+  const { error } = await supabase.rpc("anotar_puntos", {
+    jugador: jugadorId,
+    columna,
+    ...(puntos === null ? {} : { puntos }),
+  });
+  if (error) {
+    console.error("anotarPuntos", jugadorId, columna, error);
+    return { ok: false, error: "No se pudieron guardar los puntos." };
+  }
+  return { ok: true, data: null };
+}
+
+/** Otra ronda en la hoja (cualquiera de la sala). */
+export async function agregarRonda(partidaId: string): Promise<Resultado<null>> {
+  if (!esUuid(partidaId)) return { ok: false, error: SALA_CERRADA };
+  if (!(await getSesionActual())) return { ok: false, error: SESION_VENCIDA };
+  const supabase = await createClient();
+  const { error } = await supabase.rpc("agregar_ronda", { partida: partidaId });
+  if (error) {
+    console.error("agregarRonda", partidaId, error);
+    return { ok: false, error: "No se pudo agregar la ronda (son 50 como máximo)." };
+  }
+  return { ok: true, data: null };
+}
+
+/**
+ * El anfitrión elige cómo se anota (antes de que haya puntos). Con una hoja de
+ * categorías, puede guardarla para la próxima vez que juegue ese juego.
+ */
+export async function configurarPuntaje(
+  partidaId: string,
+  datos: ConfigurarPuntaje,
+): Promise<Resultado<null>> {
+  const parseo = configurarPuntajeSchema.safeParse(datos);
+  if (!parseo.success) return { ok: false, error: parseo.error.issues[0].message };
+  if (!esUuid(partidaId)) return { ok: false, error: SALA_CERRADA };
+  if (!(await getUsuarioActual())) return { ok: false, error: SESION_VENCIDA };
+
+  const { tipo, categorias, guardarPara } = parseo.data;
+  const supabase = await createClient();
+  const { error } = await supabase.rpc("configurar_puntaje", {
+    partida: partidaId,
+    tipo,
+    categorias: tipo === "categorias" ? categorias : [],
+  });
+  if (error) {
+    console.error("configurarPuntaje", partidaId, error);
+    return {
+      ok: false,
+      error:
+        error.hint === "ya_hay_puntos"
+          ? "Ya hay puntos cargados: la forma de anotar se elige antes de empezar."
+          : "No se pudo cambiar. Probá de nuevo.",
+    };
+  }
+  if (tipo === "categorias" && guardarPara) {
+    // Si falla (por ejemplo, el juego es de un amigo), la sala igual queda lista.
+    const { error: errorHoja } = await supabase
+      .from("hojas_de_puntuacion")
+      .upsert({ juego_id: guardarPara, categorias }, { onConflict: "juego_id,autor_id" });
+    if (errorHoja) console.error("configurarPuntaje: guardar hoja", guardarPara, errorHoja);
   }
   refresh();
   return { ok: true, data: null };

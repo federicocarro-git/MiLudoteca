@@ -5,7 +5,7 @@ import { createClient } from "@/lib/supabase/server";
 import { BUCKET_FOTOS, autorDeFoto } from "./fotos";
 
 const COLUMNAS_PARTIDA =
-  "id, codigo, juego_id, juego_nombre, juego_imagen_url, anfitrion_id, estado, creada_en, terminada_en, modo_resultado, cooperativo_ganado, notas";
+  "id, codigo, juego_id, juego_nombre, juego_imagen_url, anfitrion_id, estado, creada_en, terminada_en, modo_resultado, cooperativo_ganado, notas, tipo_puntaje, rondas, categorias";
 const COLUMNAS_JUGADOR = "id, user_id, nombre, invitado, puntos, gano, posicion, unido_en";
 
 /** Ordena por posición (los cooperativos y empates, por puntos y llegada). */
@@ -26,13 +26,19 @@ export const obtenerPartida = cache(async (id: string) => {
   const supabase = await createClient();
   const { data, error } = await supabase
     .from("partidas")
-    .select(`${COLUMNAS_PARTIDA}, partida_jugadores(${COLUMNAS_JUGADOR})`)
+    .select(
+      `${COLUMNAS_PARTIDA}, partida_jugadores(${COLUMNAS_JUGADOR}), partida_anotaciones(jugador_id, columna, puntos)`,
+    )
     .eq("id", id)
     .maybeSingle();
   if (error) throw error;
   if (!data) return null;
-  const { partida_jugadores, ...partida } = data;
-  return { partida, jugadores: ordenarJugadores(partida_jugadores) };
+  const { partida_jugadores, partida_anotaciones, ...partida } = data;
+  return {
+    partida,
+    jugadores: ordenarJugadores(partida_jugadores),
+    anotaciones: partida_anotaciones,
+  };
 });
 
 export type Partida = NonNullable<Awaited<ReturnType<typeof obtenerPartida>>>;

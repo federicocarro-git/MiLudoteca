@@ -1,5 +1,12 @@
 import { describe, expect, it } from "vitest";
-import { puntajeMasAlto, soltarConfirmados } from "./tipos";
+import {
+  casillerosVisibles,
+  filasDeLaHoja,
+  leerCategorias,
+  puntajeMasAlto,
+  soltarConfirmados,
+  totalesDeLaHoja,
+} from "./tipos";
 
 describe("puntajeMasAlto", () => {
   it("marca a quien va ganando, también empates", () => {
@@ -45,5 +52,56 @@ describe("soltarConfirmados", () => {
   it("devuelve el mismo objeto si no cambia nada", () => {
     const pendientes = { a: { puntos: 5, guardadoEn: null } };
     expect(soltarConfirmados(pendientes, 200)).toBe(pendientes);
+  });
+});
+
+describe("hoja por rondas o categorías", () => {
+  it("arma las filas", () => {
+    expect(filasDeLaHoja({ tipo_puntaje: "rondas", rondas: 3, categorias: [] })).toEqual([
+      "Ronda 1",
+      "Ronda 2",
+      "Ronda 3",
+    ]);
+    expect(
+      filasDeLaHoja({ tipo_puntaje: "categorias", rondas: 1, categorias: ["Militar", "Ciencia"] }),
+    ).toEqual(["Militar", "Ciencia"]);
+    expect(filasDeLaHoja({ tipo_puntaje: "total", rondas: 1, categorias: [] })).toEqual([]);
+  });
+
+  it("los cambios sin confirmar mandan, y null borra el casillero", () => {
+    const casilleros = casillerosVisibles(
+      [
+        { jugador_id: "a", columna: 0, puntos: 5 },
+        { jugador_id: "a", columna: 1, puntos: 2 },
+        { jugador_id: "b", columna: 0, puntos: 7 },
+      ],
+      {
+        "a:1": { puntos: null, guardadoEn: null },
+        "b:1": { puntos: 4, guardadoEn: null },
+      },
+    );
+    expect([...casilleros]).toEqual([
+      ["a:0", 5],
+      ["b:0", 7],
+      ["b:1", 4],
+    ]);
+    const totales = totalesDeLaHoja([{ id: "a" }, { id: "b" }, { id: "c" }], casilleros);
+    expect([...totales]).toEqual([
+      ["a", 5],
+      ["b", 11],
+      ["c", 0],
+    ]);
+  });
+
+  it("lee categorías por línea o por comas, sin vacías ni repetidas", () => {
+    expect(leerCategorias(" Militar\nCiencia, ciencia ,\n\nComercio ")).toEqual([
+      "Militar",
+      "Ciencia",
+      "Comercio",
+    ]);
+    expect(leerCategorias("x".repeat(40))).toEqual(["x".repeat(30)]);
+    expect(leerCategorias(Array.from({ length: 25 }, (_, i) => `C${i}`).join("\n"))).toHaveLength(
+      20,
+    );
   });
 });

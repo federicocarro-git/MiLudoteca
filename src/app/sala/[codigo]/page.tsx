@@ -10,7 +10,13 @@ import { SalaEnVivo } from "@/components/salas/sala-en-vivo";
 import { EntrarComoInvitado, UnirmeConMiCuenta } from "@/components/salas/unirse-a-sala";
 import { obtenerAmistades } from "@/lib/amigos/consultas";
 import { getSesionActual, type SesionActual } from "@/lib/auth";
-import { obtenerSala, vistaPreviaSala, type VistaPrevia } from "@/lib/salas/consultas";
+import { obtenerJuego } from "@/lib/juegos/consultas";
+import {
+  obtenerHojaGuardada,
+  obtenerSala,
+  vistaPreviaSala,
+  type VistaPrevia,
+} from "@/lib/salas/consultas";
 import { urlDelSitio } from "@/lib/sitio";
 import { codigoSalaSchema } from "@/lib/validations/salas";
 
@@ -45,13 +51,17 @@ async function ContenidoSala({ codigo: crudo }: { codigo: string }) {
 async function SalaActiva({
   sala,
   jugadores,
+  anotaciones,
   sesion,
 }: Awaited<NonNullable<ReturnType<typeof obtenerSala>>> & { sesion: SesionActual }) {
   const url = `${urlDelSitio()}/sala/${sala.codigo}`;
   const soyAnfitrion = sala.anfitrion_id === sesion.id;
-  const [qrSvg, amistades] = await Promise.all([
+  const [qrSvg, amistades, juegoVisible, hojaGuardada] = await Promise.all([
     svgQrSala(url),
     soyAnfitrion ? obtenerAmistades() : null,
+    // La hoja se guarda por juego: solo si el anfitrión lo puede ver.
+    soyAnfitrion && sala.juego_id ? obtenerJuego(sala.juego_id) : null,
+    soyAnfitrion && sala.juego_id ? obtenerHojaGuardada(sala.juego_id) : null,
   ]);
 
   return (
@@ -76,10 +86,13 @@ async function SalaActiva({
         key={sala.id}
         sala={sala}
         jugadores={jugadores}
+        anotaciones={anotaciones}
         yo={sesion.id}
         url={url}
         qrSvg={qrSvg}
         amigosDisponibles={amistades?.amigos.map(({ id, nombre }) => ({ id, nombre })) ?? []}
+        hojaGuardada={hojaGuardada}
+        juegoParaHoja={juegoVisible ? sala.juego_id : null}
       />
       {sesion.anonimo && (
         <p className="text-texto-suave mt-6 text-center text-xs">

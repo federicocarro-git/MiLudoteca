@@ -9,10 +9,12 @@ import { FotosPartida } from "@/components/partidas/fotos-partida";
 import { NotasPartida } from "@/components/partidas/notas-partida";
 import { TablaResultado } from "@/components/partidas/tabla-resultado";
 import { BotonCrearSala } from "@/components/salas/boton-crear-sala";
+import { HojaDePuntos } from "@/components/salas/hoja-de-puntos";
 import { getSesionActual } from "@/lib/auth";
 import { formatearDuracion } from "@/lib/formato";
 import { obtenerJuego } from "@/lib/juegos/consultas";
 import { listarFotos, obtenerPartida } from "@/lib/partidas/consultas";
+import { casillerosVisibles, filasDeLaHoja } from "@/lib/salas/tipos";
 import {
   NOMBRE_MODO,
   formatearFecha,
@@ -56,7 +58,7 @@ async function ContenidoPartida({ id }: { id: string }) {
     );
   }
 
-  const { partida, jugadores } = datos;
+  const { partida, jugadores, anotaciones } = datos;
   // Si alguien abre el link de una sala que sigue en curso, a la sala.
   if (partida.estado === "en_curso") {
     return (
@@ -127,6 +129,20 @@ async function ContenidoPartida({ id }: { id: string }) {
       </section>
 
       <TablaResultado jugadores={jugadores} cooperativo={cooperativo} yo={yo} />
+
+      {partida.tipo_puntaje !== "total" && (
+        <section className="space-y-2" aria-labelledby="titulo-hoja">
+          <h2 id="titulo-hoja" className="font-semibold">
+            {partida.tipo_puntaje === "rondas" ? "Rondas" : "Hoja de puntuación"}
+          </h2>
+          <HojaDePuntos
+            filas={filasDeLaHoja(partida)}
+            jugadores={jugadores}
+            casilleros={casillerosVisibles(anotaciones, {})}
+            totales={new Map(jugadores.map((j) => [j.id, j.puntos]))}
+          />
+        </section>
+      )}
 
       <section className={TARJETA} aria-labelledby="titulo-notas">
         <h2 id="titulo-notas" className="font-semibold">

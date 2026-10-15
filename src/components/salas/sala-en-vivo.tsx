@@ -1,11 +1,23 @@
 "use client";
 
-import { Crown, Dices, DoorOpen, Flag, Loader2, QrCode, UserPlus, X } from "lucide-react";
+import {
+  Crown,
+  Dices,
+  DoorOpen,
+  Flag,
+  ListOrdered,
+  Loader2,
+  QrCode,
+  UserPlus,
+  X,
+} from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useRef, useState, useTransition } from "react";
 import {
   actualizarPuntos,
+  agregarRonda,
+  anotarPuntos,
   cancelarSala,
   quitarJugador,
   salirDeSala,
@@ -14,15 +26,24 @@ import { Avatar } from "@/components/amigos/avatar";
 import { Boton } from "@/components/ui/boton";
 import { Hoja } from "@/components/ui/hoja";
 import {
+  COLUMNAS_ANOTACION,
   COLUMNAS_JUGADOR,
+  casillerosVisibles,
+  claveCasillero,
+  filasDeLaHoja,
   puntajeMasAlto,
   soltarConfirmados,
+  totalesDeLaHoja,
+  type Anotacion,
+  type ConfigPuntaje,
   type JugadorSala,
   type Pendiente,
   type Sala,
 } from "@/lib/salas/tipos";
 import { createClient } from "@/lib/supabase/client";
 import { AgregarJugadores, type AmigoDisponible } from "./agregar-jugadores";
+import { ConfigurarPuntaje } from "./configurar-puntaje";
+import { HojaDePuntos } from "./hoja-de-puntos";
 import { InvitarASala } from "./invitar-a-sala";
 import { Marcador } from "./marcador";
 import { SorteoMesa } from "./sorteo-mesa";
@@ -40,17 +61,25 @@ type Conexion = "conectando" | "en_vivo" | "sin_conexion";
 export function SalaEnVivo({
   sala,
   jugadores: iniciales,
+  anotaciones: anotacionesIniciales,
   yo,
   url,
   qrSvg,
   amigosDisponibles,
+  hojaGuardada,
+  juegoParaHoja,
 }: {
   sala: Sala;
   jugadores: JugadorSala[];
+  anotaciones: Anotacion[];
   yo: string;
   url: string;
   qrSvg: string;
   amigosDisponibles: AmigoDisponible[];
+  /** Categorías que el anfitrión guardó para este juego. */
+  hojaGuardada: string[] | null;
+  /** Juego al que el anfitrión le puede guardar la hoja (null si no lo ve). */
+  juegoParaHoja: string | null;
 }) {
   const soyAnfitrion = sala.anfitrion_id === yo;
   const router = useRouter();
@@ -68,29 +97,56 @@ export function SalaEnVivo({
   const ultimaRecarga = useRef(0);
   // El juego de la sala que se está mostrando (para notar si el anfitrión lo cambia).
   const juegoActual = useRef(sala.juego_id);
+  // Cómo se anota y los casilleros de la hoja (rondas o categorías), con sus
+  // cambios sin confirmar (null = casillero borrado).
+  const [config, setConfig] = useState<ConfigPuntaje>({
+    tipo_puntaje: sala.tipo_puntaje,
+    rondas: sala.rondas,
+    categorias: sala.categorias,
+  });
+  const [anotaciones, setAnotaciones] = useState(anotacionesIniciales);
+  const [pendientesCasilleros, setPendientesCasilleros] = useState<
+    Record<string, Pendiente<number | null>>
+  >({});
+  const conHoja = config.tipo_puntaje !== "total";
+  const casilleros = casillerosVisibles(anotaciones, pendientesCasilleros);
+  const totales = totalesDeLaHoja(remotos, casilleros);
   const jugadores = remotos.map((j) =>
-    j.id in pendientes ? { ...j, puntos: pendientes[j.id].puntos } : j,
+    conHoja
+      ? { ...j, puntos: totales.get(j.id) ?? 0 }
+      : j.id in pendientes
+        ? { ...j, puntos: pendientes[j.id].puntos }
+        : j,
   );
+  const hayPuntos = remotos.some((j) => j.puntos !== 0) || anotaciones.length > 0;
+  const guardandoPuntos =
+    Object.values(pendientes).some((p) => p.guardadoEn === null) ||
+    Object.values(pendientesCasilleros).some((p) => p.guardadoEn === null);
 
   const [conexion, setConexion] = useState<Conexion>("conectando");
   const [fuera, setFuera] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [hoja, setHoja] = useState<"invitar" | "agregar" | "salir" | "terminar" | "sortear" | null>(
-    null,
-  );
+  const [hoja, setHoja] = useState<
+    "invitar" | "agregar" | "salir" | "terminar" | "sortear" | "puntaje" | null
+  >(null);
   const [quitando, setQuitando] = useState<JugadorSala | null>(null);
   const [pendiente, iniciar] = useTransition();
 
   const recargar = useCallback(async () => {
     const inicio = performance.now();
     const supabase = createClient();
-    const [{ data, error }, { data: partida }] = await Promise.all([
+    const [{ data, error }, { data: partida }, { data: casillerosRemotos }] = await Promise.all([
       supabase
         .from("partida_jugadores")
         .select(COLUMNAS_JUGADOR)
         .eq("partida_id", sala.id)
         .order("unido_en"),
-      supabase.from("partidas").select("estado, juego_id").eq("id", sala.id).maybeSingle(),
+      supabase
+        .from("partidas")
+        .select("estado, juego_id, tipo_puntaje, rondas, categorias")
+        .eq("id", sala.id)
+        .maybeSingle(),
+      supabase.from("partida_anotaciones").select(COLUMNAS_ANOTACION).eq("partida_id", sala.id),
     ]);
     if (error || inicio < ultimaRecarga.current) return;
     ultimaRecarga.current = inicio;
@@ -111,6 +167,23 @@ export function SalaEnVivo({
     }
     setRemotos(data);
     setPendientes((p) => soltarConfirmados(p, inicio));
+    if (partida) {
+      setConfig((c) =>
+        c.tipo_puntaje === partida.tipo_puntaje &&
+        c.rondas === partida.rondas &&
+        c.categorias.join("\n") === partida.categorias.join("\n")
+          ? c
+          : {
+              tipo_puntaje: partida.tipo_puntaje,
+              rondas: partida.rondas,
+              categorias: partida.categorias,
+            },
+      );
+    }
+    if (casillerosRemotos) {
+      setAnotaciones(casillerosRemotos);
+      setPendientesCasilleros((p) => soltarConfirmados(p, inicio));
+    }
   }, [sala.id, yo, router]);
 
   useEffect(() => {
@@ -158,6 +231,29 @@ export function SalaEnVivo({
           }
           const resto = { ...p };
           delete resto[jugadorId];
+          return resto;
+        });
+        setError(r.ok ? null : r.error);
+        if (!r.ok) void recargar();
+      }, ESPERA_GUARDADO_MS),
+    );
+  }
+
+  function cambiarCasillero(jugadorId: string, columna: number, puntos: number | null) {
+    const clave = claveCasillero(jugadorId, columna);
+    setPendientesCasilleros((p) => ({ ...p, [clave]: { puntos, guardadoEn: null } }));
+    const timer = `casillero:${clave}`;
+    clearTimeout(temporizadores.current.get(timer));
+    temporizadores.current.set(
+      timer,
+      setTimeout(async () => {
+        const r = await anotarPuntos(jugadorId, columna, puntos);
+        const guardadoEn = performance.now();
+        setPendientesCasilleros((p) => {
+          if (p[clave]?.puntos !== puntos || p[clave].guardadoEn !== null) return p;
+          if (r.ok) return { ...p, [clave]: { puntos, guardadoEn } };
+          const resto = { ...p };
+          delete resto[clave];
           return resto;
         });
         setError(r.ok ? null : r.error);
@@ -223,6 +319,11 @@ export function SalaEnVivo({
             <QrCode aria-hidden className="size-4" /> Invitar
           </Boton>
           {soyAnfitrion && (
+            <Boton variante="secundario" onClick={() => setHoja("puntaje")}>
+              <ListOrdered aria-hidden className="size-4" /> Cómo se anota
+            </Boton>
+          )}
+          {soyAnfitrion && (
             <Boton variante="secundario" onClick={() => setHoja("agregar")}>
               <UserPlus aria-hidden className="size-4" /> Agregar
             </Boton>
@@ -269,7 +370,7 @@ export function SalaEnVivo({
                   <p className="text-texto-suave text-xs">{etiquetas.join(" · ")}</p>
                 )}
               </div>
-              {editable ? (
+              {editable && !conHoja ? (
                 <Marcador
                   puntos={j.puntos}
                   nombre={j.nombre}
@@ -295,6 +396,24 @@ export function SalaEnVivo({
           );
         })}
       </ul>
+
+      {conHoja && (
+        <HojaDePuntos
+          filas={filasDeLaHoja(config)}
+          jugadores={jugadores}
+          casilleros={casilleros}
+          totales={totales}
+          editable={(jugadorId) =>
+            soyAnfitrion || jugadores.some((j) => j.id === jugadorId && j.user_id === yo)
+          }
+          onCambiar={cambiarCasillero}
+          onAgregarRonda={
+            config.tipo_puntaje === "rondas" && config.rondas < 50
+              ? () => ejecutar(() => agregarRonda(sala.id))
+              : undefined
+          }
+        />
+      )}
 
       {soyAnfitrion && (
         <Boton className="w-full" onClick={() => setHoja("terminar")}>
@@ -323,7 +442,25 @@ export function SalaEnVivo({
             <TerminarPartida
               partidaId={sala.id}
               jugadores={jugadores}
-              guardandoPuntos={Object.values(pendientes).some((p) => p.guardadoEn === null)}
+              guardandoPuntos={guardandoPuntos}
+            />
+          )}
+        </Hoja>
+      )}
+
+      {soyAnfitrion && (
+        <Hoja abierta={hoja === "puntaje"} onCerrar={() => setHoja(null)} titulo="Cómo se anota">
+          {hoja === "puntaje" && (
+            <ConfigurarPuntaje
+              partidaId={sala.id}
+              config={config}
+              juegoId={juegoParaHoja}
+              hojaGuardada={hojaGuardada}
+              hayPuntos={hayPuntos}
+              onListo={() => {
+                setHoja(null);
+                void recargar();
+              }}
             />
           )}
         </Hoja>

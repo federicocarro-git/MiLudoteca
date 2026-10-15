@@ -2,31 +2,41 @@ import "server-only";
 import { cache } from "react";
 import { createClient } from "@/lib/supabase/server";
 import { codigoSalaSchema } from "@/lib/validations/salas";
-import { COLUMNAS_JUGADOR, type JugadorSala, type Sala } from "./tipos";
+import {
+  COLUMNAS_ANOTACION,
+  COLUMNAS_JUGADOR,
+  type Anotacion,
+  type JugadorSala,
+  type Sala,
+} from "./tipos";
 
 const COLUMNAS_SALA =
-  "id, codigo, juego_id, juego_nombre, juego_imagen_url, anfitrion_id, estado, creada_en";
+  "id, codigo, juego_id, juego_nombre, juego_imagen_url, anfitrion_id, estado, creada_en, tipo_puntaje, rondas, categorias";
 
 /**
  * Sala en curso con ese código, si el usuario actual juega en ella (RLS).
  * Lee cookies: usar dentro de <Suspense>.
  */
 export const obtenerSala = cache(
-  async (codigo: string): Promise<{ sala: Sala; jugadores: JugadorSala[] } | null> => {
+  async (
+    codigo: string,
+  ): Promise<{ sala: Sala; jugadores: JugadorSala[]; anotaciones: Anotacion[] } | null> => {
     const parseo = codigoSalaSchema.safeParse(codigo);
     if (!parseo.success) return null;
     const supabase = await createClient();
     const { data, error } = await supabase
       .from("partidas")
-      .select(`${COLUMNAS_SALA}, partida_jugadores(${COLUMNAS_JUGADOR})`)
+      .select(
+        `${COLUMNAS_SALA}, partida_jugadores(${COLUMNAS_JUGADOR}), partida_anotaciones(${COLUMNAS_ANOTACION})`,
+      )
       .eq("codigo", parseo.data)
       .eq("estado", "en_curso")
       .order("unido_en", { referencedTable: "partida_jugadores" })
       .maybeSingle();
     if (error) throw error;
     if (!data) return null;
-    const { partida_jugadores, ...sala } = data;
-    return { sala, jugadores: partida_jugadores };
+    const { partida_jugadores, partida_anotaciones, ...sala } = data;
+    return { sala, jugadores: partida_jugadores, anotaciones: partida_anotaciones };
   },
 );
 
@@ -70,4 +80,23 @@ export async function obtenerMisSalasEnCurso(): Promise<SalaEnCurso[]> {
     jugadores: partida_jugadores[0]?.count ?? 0,
     soyAnfitrion: anfitrion_id === yo,
   }));
+}
+
+/** Categorías que el usuario guardó para este juego (para empezar la hoja). */
+export async function obtenerHojaGuardada(juegoId: string): Promise<string[] | null> {
+  const supabase = await createClient();
+  const { data: claims } = await supabase.auth.getClaims();
+  const yo = claims?.claims.sub;
+  if (!yo) return null;
+  const { data, error } = await supabase
+    .from("hojas_de_puntuacion")
+    .select("categorias")
+    .eq("juego_id", juegoId)
+    .eq("autor_id", yo)
+    .maybeSingle();
+  if (error) {
+    console.error("obtenerHojaGuardada", juegoId, error);
+    return null;
+  }
+  return data?.categorias ?? null;
 }

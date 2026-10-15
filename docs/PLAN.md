@@ -195,7 +195,7 @@ vivo.
 | 11  | Cierre, historial, fotos (_hecho_) | Ganador (o cooperativo), historial filtrable, fotos y notas de la partida, partidas jugadas en la Ficha.                                          |
 | 12  | Ranking y rivalidades (_hecho_)    | Victorias, partidas y porcentaje entre amigos (general y por juego); cara a cara con cada amigo.                                                  |
 | 13  | Catálogos de la mesa (_hecho_)     | "¿Quién lo tiene?" (juegos de tus amigos) y "¿A qué jugamos?" entre los catálogos de los presentes en la sala.                                    |
-| 14  | Puntuación por rondas              | Rondas en la sala y hojas de puntuación por juego (categorías con suma automática).                                                               |
+| 14  | Puntuación por rondas (_hecho_)    | Rondas en la sala y hojas de puntuación por juego (categorías con suma automática).                                                               |
 
 ### Pendiente aparte
 

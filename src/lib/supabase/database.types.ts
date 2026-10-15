@@ -106,6 +106,43 @@ export type Database = {
           },
         ];
       };
+      hojas_de_puntuacion: {
+        Row: {
+          actualizado_en: string;
+          autor_id: string;
+          categorias: string[];
+          juego_id: string;
+        };
+        ComputedFields: never;
+        Insert: {
+          actualizado_en?: string;
+          autor_id?: string;
+          categorias: string[];
+          juego_id: string;
+        };
+        Update: {
+          actualizado_en?: string;
+          autor_id?: string;
+          categorias?: string[];
+          juego_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "hojas_de_puntuacion_juego_id_fkey";
+            columns: ["juego_id"];
+            isOneToOne: false;
+            referencedRelation: "juegos";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "hojas_de_puntuacion_juego_id_fkey";
+            columns: ["juego_id"];
+            isOneToOne: false;
+            referencedRelation: "mi_catalogo";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       juegos: {
         Row: {
           actualizado_en: string;
@@ -164,6 +201,43 @@ export type Database = {
         };
         Relationships: [];
       };
+      partida_anotaciones: {
+        Row: {
+          columna: number;
+          jugador_id: string;
+          partida_id: string;
+          puntos: number;
+        };
+        ComputedFields: never;
+        Insert: {
+          columna: number;
+          jugador_id: string;
+          partida_id: string;
+          puntos: number;
+        };
+        Update: {
+          columna?: number;
+          jugador_id?: string;
+          partida_id?: string;
+          puntos?: number;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "partida_anotaciones_jugador_id_fkey";
+            columns: ["jugador_id"];
+            isOneToOne: false;
+            referencedRelation: "partida_jugadores";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "partida_anotaciones_partida_id_fkey";
+            columns: ["partida_id"];
+            isOneToOne: false;
+            referencedRelation: "partidas";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       partida_jugadores: {
         Row: {
           actualizado_en: string;
@@ -215,6 +289,7 @@ export type Database = {
       partidas: {
         Row: {
           anfitrion_id: string | null;
+          categorias: string[];
           codigo: string;
           cooperativo_ganado: boolean | null;
           creada_en: string;
@@ -225,11 +300,14 @@ export type Database = {
           juego_nombre: string;
           modo_resultado: string | null;
           notas: string | null;
+          rondas: number;
           terminada_en: string | null;
+          tipo_puntaje: string;
         };
         ComputedFields: never;
         Insert: {
           anfitrion_id?: string | null;
+          categorias?: string[];
           codigo: string;
           cooperativo_ganado?: boolean | null;
           creada_en?: string;
@@ -240,10 +318,13 @@ export type Database = {
           juego_nombre: string;
           modo_resultado?: string | null;
           notas?: string | null;
+          rondas?: number;
           terminada_en?: string | null;
+          tipo_puntaje?: string;
         };
         Update: {
           anfitrion_id?: string | null;
+          categorias?: string[];
           codigo?: string;
           cooperativo_ganado?: boolean | null;
           creada_en?: string;
@@ -254,7 +335,9 @@ export type Database = {
           juego_nombre?: string;
           modo_resultado?: string | null;
           notas?: string | null;
+          rondas?: number;
           terminada_en?: string | null;
+          tipo_puntaje?: string;
         };
         Relationships: [
           {
@@ -378,6 +461,11 @@ export type Database = {
       };
     };
     Functions: {
+      agregar_ronda: { Args: { partida: string }; Returns: undefined };
+      anotar_puntos: {
+        Args: { columna: number; jugador: string; puntos?: number };
+        Returns: undefined;
+      };
       asegurar_perfil: { Args: { nombre_inicial: string; usuario: string }; Returns: undefined };
       cambiar_juego_de_sala: { Args: { juego: string; partida: string }; Returns: undefined };
       catalogo_de_amigos: {
@@ -395,6 +483,10 @@ export type Database = {
           nombre: string;
           tipos: string[];
         }[];
+      };
+      configurar_puntaje: {
+        Args: { categorias?: string[]; partida: string; tipo: string };
+        Returns: undefined;
       };
       crear_partida: {
         Args: { juego: string };
@@ -432,6 +524,7 @@ export type Database = {
         Args: { ganadores?: string[]; ganamos?: boolean; modo: string; partida: string };
         Returns: undefined;
       };
+      tipo_puntaje: { Args: { partida: string }; Returns: string };
       unirse_a_partida: { Args: { codigo: string; nombre?: string }; Returns: string };
       ver_sala: {
         Args: { codigo: string };

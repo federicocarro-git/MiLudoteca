@@ -89,7 +89,8 @@ src/
     catalogo/                     grilla con filtros, panel de filtros, tarjeta y sorteo
     resumenes/                    editor de resúmenes
     amigos/                       código (copiar/compartir), agregar, lista de amigos, avatar
-    salas/                        sala en vivo, marcador, QR (svg en el servidor), invitar, agregar, terminar, sorteo de la mesa
+    salas/                        sala en vivo, marcador, hoja de puntos (rondas/categorías), cómo se anota,
+                                  QR (svg en el servidor), invitar, agregar, terminar, sorteo de la mesa
     mesa/                         "¿Quién lo tiene?"
     partidas/                     tabla de resultado, notas, fotos, historial filtrado, ranking, borrar partida
     cuenta/                       formulario del nombre visible e interruptor "Mostrar mis juegos"
@@ -122,8 +123,10 @@ src/
     amigos/
       consultas.ts                obtenerMiPerfil() y obtenerAmistades(), con cache() por request
     salas/
-      consultas.ts                obtenerSala(codigo), vistaPreviaSala(codigo), obtenerMisSalasEnCurso()
-      tipos.ts                    Sala, JugadorSala, puntajeMasAlto(), soltarConfirmados()
+      consultas.ts                obtenerSala(codigo) (con anotaciones), vistaPreviaSala(codigo),
+                                  obtenerMisSalasEnCurso(), obtenerHojaGuardada(juego)
+      tipos.ts                    Sala, JugadorSala, puntajeMasAlto(), soltarConfirmados(), y de la hoja:
+                                  filasDeLaHoja(), casillerosVisibles(), totalesDeLaHoja(), leerCategorias()
     partidas/
       consultas.ts                obtenerPartida(id), listarFotos(), obtenerHistorial(), resumenDePartidasDelJuego()
       resultado.ts                ganadoresPrevistos(), textoResultado(), duración y fecha (puras)
@@ -156,6 +159,7 @@ supabase/
   tests/salas.test.sql            salas, jugadores e invitados anónimos (34 casos)
   tests/cierre.test.sql           terminar partidas, notas, fotos y borrar (28 casos)
   tests/mesa.test.sql             catálogos de amigos y de la mesa, cambiar el juego (16 casos)
+  tests/puntaje.test.sql          rondas, categorías, anotar y hojas guardadas (26 casos)
 tests/e2e/                        Playwright: un spec por área + helpers.ts (usuarios, juegos, Mailpit)
 .github/workflows/ci.yml          CI: lint/tipos/unitarios/build + pgTAP/integración/e2e con Supabase local
 docs/PLAN.md                      plan por hitos y decisiones
@@ -229,6 +233,18 @@ modo, ganadores, ganamos)` (solo el anfitrión, en curso). Modos
   catálogo propio siempre y el de los demás si lo muestran; la consulta
   quien esté en la sala (también un invitado). `cambiar_juego_de_sala`: solo
   el anfitrión, en curso, por un juego de `juegos_de_la_mesa`.
+- Puntaje (`20261019000000_puntaje_por_rondas.sql`): `partidas.tipo_puntaje`
+  (`total`, `rondas`, `categorias`), `rondas` (1 a 50) y `categorias` (hasta
+  20, copiadas en la sala). `partida_anotaciones` (`jugador_id`, `columna`,
+  `puntos`): un casillero por ronda o categoría; se lee con RLS (los de la
+  sala) y se escribe **solo** con `anotar_puntos(jugador, columna, puntos)`
+  (cada uno los suyos, el anfitrión todos; `null` borra), que recalcula
+  `partida_jugadores.puntos` como la suma: cierre, historial y ranking no
+  cambian. Con rondas o categorías el total no se escribe a mano (la política
+  de update exige `tipo_puntaje() = 'total'`). `configurar_puntaje` (solo el
+  anfitrión y antes de que haya puntos; si no, `hint = 'ya_hay_puntos'`) y
+  `agregar_ronda` (cualquiera de la sala). `hojas_de_puntuacion`: categorías
+  guardadas por `(juego_id, autor_id)`, privadas como los resúmenes.
 
 ### Alta de juegos (`/juegos/nuevo`)
 
@@ -508,8 +524,9 @@ Ver `.env.example`.
 
 Plan, decisiones e hitos en `docs/PLAN.md`. Hecho: hito 9 (perfiles y
 amigos), hito 10 (salas en vivo), hito 11 (cierre, historial, notas y
-fotos), hito 12 (ranking y cara a cara) y hito 13 (catálogos de la mesa).
-Sigue la puntuación por rondas. Importar la colección de BGG sigue pendiente aparte.
+fotos), hito 12 (ranking y cara a cara), hito 13 (catálogos de la mesa) y
+hito 14 (puntuación por rondas y hojas de puntuación). La fase 2 está
+completa. Importar la colección de BGG sigue pendiente aparte.
 
 ### Amigos (`/jugar/amigos`)
 
@@ -553,6 +570,16 @@ Sigue la puntuación por rondas. Importar la colección de BGG sigue pendiente a
   gana (`ganadoresPrevistos`, la misma regla que la base) y confirmar;
   espera a que se guarden los puntos pendientes. `terminarPartida` redirige a
   `/partida/<id>`; a los demás los lleva la recarga al ver `terminada`.
+- Cómo se anota (`ConfigurarPuntaje`, solo el anfitrión, antes de empezar):
+  Total, Por rondas o Hoja de puntuación (categorías una por línea,
+  `leerCategorias`; precarga la hoja guardada para ese juego y ofrece
+  guardarla si el anfitrión ve el juego). Con rondas o categorías,
+  `HojaDePuntos` reemplaza al marcador: una fila por ronda o categoría, una
+  columna por jugador (scroll horizontal, primera columna fija) y el total
+  abajo. Cada casillero se guarda como los puntos (400 ms, valor final,
+  `anotarPuntos`), con sus propios pendientes; el total se calcula en el
+  navegador con lo visible (`totalesDeLaHoja`). "Agregar ronda" para
+  cualquiera. El resultado muestra la hoja de solo lectura.
 - Supabase local levanta Realtime (`db:start` ya no lo excluye) y tiene
   `enable_anonymous_sign_ins = true`. En producción hay que activar los
   anónimos (ver `docs/AUTH.md`).

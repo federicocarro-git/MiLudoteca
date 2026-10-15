@@ -65,8 +65,12 @@ test("¿Quién lo tiene?: juegos de los amigos y ocultar el catálogo", async ({
   await paginaCaro.waitForLoadState("networkidle");
   const interruptor = paginaCaro.getByRole("switch", { name: /Mostrar mis juegos/ });
   await expect(interruptor).toBeChecked();
-  await interruptor.uncheck();
-  await expect(interruptor).not.toBeChecked();
+  // Si el click llega antes de que React hidrate, el interruptor vuelve a
+  // quedar prendido: reintentar hasta que el cambio quede.
+  await expect(async () => {
+    await interruptor.uncheck();
+    await expect(interruptor).not.toBeChecked({ timeout: 2000 });
+  }).toPass();
   await paginaCaro.reload();
   await expect(paginaCaro.getByRole("switch", { name: /Mostrar mis juegos/ })).not.toBeChecked();
 
