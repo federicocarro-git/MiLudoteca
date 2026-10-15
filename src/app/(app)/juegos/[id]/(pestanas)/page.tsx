@@ -1,14 +1,20 @@
-import { CircleCheck, Clock, Gauge, Pencil, Users } from "lucide-react";
+import { CircleCheck, Clock, Gauge, History, Pencil, Users } from "lucide-react";
 import type { Metadata } from "next";
+import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
 import { AccionesCatalogo } from "@/components/juegos/acciones-catalogo";
 import { EnlaceBgg } from "@/components/juegos/enlace-bgg";
 import { ImagenJuego } from "@/components/juegos/imagen-juego";
+import { BotonCrearSala } from "@/components/salas/boton-crear-sala";
 import { BotonLink } from "@/components/ui/boton";
 import { formatearComplejidad, formatearDuracion, formatearJugadores } from "@/lib/formato";
 import { urlJuegoBgg } from "@/lib/game-data/bgg/enlaces";
 import { obtenerJuego } from "@/lib/juegos/consultas";
+import { obtenerJuegosDeAmigos } from "@/lib/mesa/consultas";
+import { claveDeJuego } from "@/lib/mesa/juegos";
+import { resumenDePartidasDelJuego } from "@/lib/partidas/consultas";
+import { formatearFecha, unirNombres } from "@/lib/partidas/resultado";
 
 export const metadata: Metadata = { title: "Ficha" };
 
@@ -81,6 +87,16 @@ async function Ficha({ id, aviso }: { id: string; aviso: keyof typeof AVISOS | n
       {/* Cualquier juego con bgg_id: los de BGG y los manuales que lo guardan de referencia. */}
       {juego.bgg_id && <EnlaceBgg bggId={juego.bgg_id} className="print:hidden" />}
 
+      <section className="space-y-2 print:hidden" aria-label="Partidas">
+        <BotonCrearSala juegoId={juego.id} />
+        <Suspense fallback={<p className="bg-borde h-5 w-48 animate-pulse rounded" />}>
+          <PartidasDelJuego juegoId={juego.id} />
+        </Suspense>
+        <Suspense>
+          <AmigosQueLoTienen juego={juego} />
+        </Suspense>
+      </section>
+
       <AccionesCatalogo
         juegoId={juego.id}
         catalogo={catalogo ? { puntuacion: catalogo.puntuacion, notas: catalogo.notas } : null}
@@ -122,6 +138,40 @@ async function Ficha({ id, aviso }: { id: string; aviso: keyof typeof AVISOS | n
         </BotonLink>
       )}
     </article>
+  );
+}
+
+async function PartidasDelJuego({ juegoId }: { juegoId: string }) {
+  const { cantidad, ultima } = await resumenDePartidasDelJuego(juegoId);
+  if (cantidad === 0) {
+    return <p className="text-texto-suave text-sm">Todavía no lo jugaste con MiLudoteca.</p>;
+  }
+  return (
+    <p className="text-sm">
+      <Link
+        href={`/jugar/historial?juego=${juegoId}`}
+        className="text-primario inline-flex min-h-11 items-center gap-1 font-medium"
+      >
+        <History aria-hidden className="size-4" />
+        {cantidad === 1 ? "Lo jugaste 1 vez" : `Lo jugaste ${cantidad} veces`}
+        {ultima ? ` · la última, el ${formatearFecha(ultima)}` : ""}
+      </Link>
+    </p>
+  );
+}
+
+async function AmigosQueLoTienen({ juego }: { juego: { bgg_id: number | null; nombre: string } }) {
+  const clave = claveDeJuego(juego);
+  const coincide = (await obtenerJuegosDeAmigos()).find((j) => j.clave === clave);
+  if (!coincide) return null;
+  return (
+    <p className="flex items-center gap-1.5 text-sm">
+      <Users aria-hidden className="text-primario size-4" />
+      <span>
+        <span className="text-texto-suave">También lo tiene </span>
+        {unirNombres(coincide.duenos.map((d) => d.nombre))}
+      </span>
+    </p>
   );
 }
 

@@ -1,0 +1,565 @@
+"use client";
+
+import {
+  Crown,
+  Dices,
+  DoorOpen,
+  Flag,
+  ListOrdered,
+  Loader2,
+  QrCode,
+  UserPlus,
+  X,
+} from "lucide-react";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { useCallback, useEffect, useRef, useState, useTransition } from "react";
+import {
+  actualizarPuntos,
+  agregarRonda,
+  anotarPuntos,
+  cancelarSala,
+  quitarJugador,
+  salirDeSala,
+} from "@/app/sala/[codigo]/actions";
+import { Avatar } from "@/components/amigos/avatar";
+import { Boton } from "@/components/ui/boton";
+import { Hoja } from "@/components/ui/hoja";
+import {
+  COLUMNAS_ANOTACION,
+  COLUMNAS_JUGADOR,
+  casillerosVisibles,
+  claveCasillero,
+  filasDeLaHoja,
+  puntajeMasAlto,
+  soltarConfirmados,
+  totalesDeLaHoja,
+  type Anotacion,
+  type ConfigPuntaje,
+  type JugadorSala,
+  type Pendiente,
+  type Sala,
+} from "@/lib/salas/tipos";
+import { createClient } from "@/lib/supabase/client";
+import { AgregarJugadores, type AmigoDisponible } from "./agregar-jugadores";
+import { ConfigurarPuntaje } from "./configurar-puntaje";
+import { HojaDePuntos } from "./hoja-de-puntos";
+import { InvitarASala } from "./invitar-a-sala";
+import { Marcador } from "./marcador";
+import { SorteoMesa } from "./sorteo-mesa";
+import { TerminarPartida } from "./terminar-partida";
+
+// Espera antes de guardar los puntos: los toques seguidos en +/− se mandan
+// juntos (siempre el valor final, no la diferencia).
+const ESPERA_GUARDADO_MS = 400;
+// Por si se pierde algún aviso de Realtime.
+const RECARGA_PERIODICA_MS = 15_000;
+
+type Conexion = "conectando" | "en_vivo" | "sin_conexion";
+
+/** La sala mientras se juega: jugadores, puntos en vivo y acciones. */
+export function SalaEnVivo({
+  sala,
+  jugadores: iniciales,
+  anotaciones: anotacionesIniciales,
+  yo,
+  url,
+  qrSvg,
+  amigosDisponibles,
+  hojaGuardada,
+  juegoParaHoja,
+}: {
+  sala: Sala;
+  jugadores: JugadorSala[];
+  anotaciones: Anotacion[];
+  yo: string;
+  url: string;
+  qrSvg: string;
+  amigosDisponibles: AmigoDisponible[];
+  /** Categorías que el anfitrión guardó para este juego. */
+  hojaGuardada: string[] | null;
+  /** Juego al que el anfitrión le puede guardar la hoja (null si no lo ve). */
+  juegoParaHoja: string | null;
+}) {
+  const soyAnfitrion = sala.anfitrion_id === yo;
+  const router = useRouter();
+  // Lo último que se sabe del servidor. Después del render inicial, solo
+  // cambia con las recargas (ordenadas): un refresh() de una acción puede
+  // traer datos más viejos que la última recarga, así que no se usa. Cada
+  // cambio en la sala igual manda un aviso que dispara una recarga.
+  const [remotos, setRemotos] = useState(iniciales);
+  // Puntos tocados acá que el servidor todavía no confirmó: mandan sobre lo
+  // remoto, para que una respuesta vieja no pise lo que se acaba de tocar.
+  const [pendientes, setPendientes] = useState<Record<string, Pendiente>>({});
+  const temporizadores = useRef(new Map<string, ReturnType<typeof setTimeout>>());
+  // Inicio de la última recarga aplicada: una que salió antes y llega después
+  // se descarta.
+  const ultimaRecarga = useRef(0);
+  // El juego de la sala que se está mostrando (para notar si el anfitrión lo cambia).
+  const juegoActual = useRef(sala.juego_id);
+  // Cómo se anota y los casilleros de la hoja (rondas o categorías), con sus
+  // cambios sin confirmar (null = casillero borrado).
+  const [config, setConfig] = useState<ConfigPuntaje>({
+    tipo_puntaje: sala.tipo_puntaje,
+    rondas: sala.rondas,
+    categorias: sala.categorias,
+  });
+  const [anotaciones, setAnotaciones] = useState(anotacionesIniciales);
+  const [pendientesCasilleros, setPendientesCasilleros] = useState<
+    Record<string, Pendiente<number | null>>
+  >({});
+  const conHoja = config.tipo_puntaje !== "total";
+  const casilleros = casillerosVisibles(anotaciones, pendientesCasilleros);
+  const totales = totalesDeLaHoja(remotos, casilleros);
+  const jugadores = remotos.map((j) =>
+    conHoja
+      ? { ...j, puntos: totales.get(j.id) ?? 0 }
+      : j.id in pendientes
+        ? { ...j, puntos: pendientes[j.id].puntos }
+        : j,
+  );
+  const hayPuntos = remotos.some((j) => j.puntos !== 0) || anotaciones.length > 0;
+  const guardandoPuntos =
+    Object.values(pendientes).some((p) => p.guardadoEn === null) ||
+    Object.values(pendientesCasilleros).some((p) => p.guardadoEn === null);
+
+  const [conexion, setConexion] = useState<Conexion>("conectando");
+  const [fuera, setFuera] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [hoja, setHoja] = useState<
+    "invitar" | "agregar" | "salir" | "terminar" | "sortear" | "puntaje" | null
+  >(null);
+  const [quitando, setQuitando] = useState<JugadorSala | null>(null);
+  const [pendiente, iniciar] = useTransition();
+
+  const recargar = useCallback(async () => {
+    const inicio = performance.now();
+    const supabase = createClient();
+    const [{ data, error }, { data: partida }, { data: casillerosRemotos }] = await Promise.all([
+      supabase
+        .from("partida_jugadores")
+        .select(COLUMNAS_JUGADOR)
+        .eq("partida_id", sala.id)
+        .order("unido_en"),
+      supabase
+        .from("partidas")
+        .select("estado, juego_id, tipo_puntaje, rondas, categorias")
+        .eq("id", sala.id)
+        .maybeSingle(),
+      supabase.from("partida_anotaciones").select(COLUMNAS_ANOTACION).eq("partida_id", sala.id),
+    ]);
+    if (error || inicio < ultimaRecarga.current) return;
+    ultimaRecarga.current = inicio;
+    // El anfitrión la terminó: a ver el resultado.
+    if (partida?.estado === "terminada") {
+      router.replace(`/partida/${sala.id}`);
+      return;
+    }
+    // El anfitrión cambió el juego: volver a pedir la página (el encabezado).
+    if (partida && partida.juego_id !== juegoActual.current) {
+      juegoActual.current = partida.juego_id;
+      router.refresh();
+    }
+    // Si me sacaron o se canceló la sala, RLS ya no me devuelve mi fila.
+    if (!data.some((j) => j.user_id === yo)) {
+      setFuera(true);
+      return;
+    }
+    setRemotos(data);
+    setPendientes((p) => soltarConfirmados(p, inicio));
+    if (partida) {
+      setConfig((c) =>
+        c.tipo_puntaje === partida.tipo_puntaje &&
+        c.rondas === partida.rondas &&
+        c.categorias.join("\n") === partida.categorias.join("\n")
+          ? c
+          : {
+              tipo_puntaje: partida.tipo_puntaje,
+              rondas: partida.rondas,
+              categorias: partida.categorias,
+            },
+      );
+    }
+    if (casillerosRemotos) {
+      setAnotaciones(casillerosRemotos);
+      setPendientesCasilleros((p) => soltarConfirmados(p, inicio));
+    }
+  }, [sala.id, yo, router]);
+
+  useEffect(() => {
+    const supabase = createClient();
+    const canal = supabase
+      .channel(`sala:${sala.id}`)
+      // La base avisa cada cambio (trigger avisar_cambio_en_sala); los datos
+      // se vuelven a pedir con RLS.
+      .on("broadcast", { event: "cambio" }, () => void recargar())
+      .subscribe((estado) => {
+        if (estado === "SUBSCRIBED") {
+          setConexion("en_vivo");
+          // Lo que haya cambiado mientras se conectaba.
+          void recargar();
+        } else if (estado === "CHANNEL_ERROR" || estado === "TIMED_OUT" || estado === "CLOSED") {
+          setConexion("sin_conexion");
+        }
+      });
+    const intervalo = setInterval(() => void recargar(), RECARGA_PERIODICA_MS);
+    const alVolver = () => document.visibilityState === "visible" && void recargar();
+    document.addEventListener("visibilitychange", alVolver);
+    const timers = temporizadores.current;
+    return () => {
+      clearInterval(intervalo);
+      document.removeEventListener("visibilitychange", alVolver);
+      timers.forEach(clearTimeout);
+      void supabase.removeChannel(canal);
+    };
+  }, [sala.id, recargar]);
+
+  function cambiarPuntos(jugadorId: string, puntos: number) {
+    setPendientes((p) => ({ ...p, [jugadorId]: { puntos, guardadoEn: null } }));
+    clearTimeout(temporizadores.current.get(jugadorId));
+    temporizadores.current.set(
+      jugadorId,
+      setTimeout(async () => {
+        const r = await actualizarPuntos(jugadorId, puntos);
+        const guardadoEn = performance.now();
+        // Si mientras tanto se tocó de nuevo, el próximo guardado se encarga.
+        setPendientes((p) => {
+          if (p[jugadorId]?.puntos !== puntos || p[jugadorId].guardadoEn !== null) return p;
+          if (r.ok) {
+            // Sigue mandando hasta que llegue una recarga pedida después de esto.
+            return { ...p, [jugadorId]: { puntos, guardadoEn } };
+          }
+          const resto = { ...p };
+          delete resto[jugadorId];
+          return resto;
+        });
+        setError(r.ok ? null : r.error);
+        if (!r.ok) void recargar();
+      }, ESPERA_GUARDADO_MS),
+    );
+  }
+
+  function cambiarCasillero(jugadorId: string, columna: number, puntos: number | null) {
+    const clave = claveCasillero(jugadorId, columna);
+    setPendientesCasilleros((p) => ({ ...p, [clave]: { puntos, guardadoEn: null } }));
+    const timer = `casillero:${clave}`;
+    clearTimeout(temporizadores.current.get(timer));
+    temporizadores.current.set(
+      timer,
+      setTimeout(async () => {
+        const r = await anotarPuntos(jugadorId, columna, puntos);
+        const guardadoEn = performance.now();
+        setPendientesCasilleros((p) => {
+          if (p[clave]?.puntos !== puntos || p[clave].guardadoEn !== null) return p;
+          if (r.ok) return { ...p, [clave]: { puntos, guardadoEn } };
+          const resto = { ...p };
+          delete resto[clave];
+          return resto;
+        });
+        setError(r.ok ? null : r.error);
+        if (!r.ok) void recargar();
+      }, ESPERA_GUARDADO_MS),
+    );
+  }
+
+  function ejecutar(
+    accion: () => Promise<{ ok: boolean; error?: string }>,
+    alTerminar?: () => void,
+  ) {
+    iniciar(async () => {
+      const r = await accion();
+      setError(r.ok ? null : (r.error ?? null));
+      if (r.ok) alTerminar?.();
+    });
+  }
+
+  if (fuera) {
+    return (
+      <section className="border-borde bg-superficie space-y-3 rounded-2xl border p-6 text-center">
+        <DoorOpen aria-hidden className="text-primario mx-auto size-10" />
+        <h2 className="font-semibold">Ya no estás en esta sala</h2>
+        <p className="text-texto-suave text-sm">La sala se canceló o te sacaron.</p>
+        <Link
+          href="/jugar"
+          className="text-primario inline-flex min-h-11 items-center font-semibold"
+        >
+          Ir a Jugar
+        </Link>
+      </section>
+    );
+  }
+
+  const lideres = puntajeMasAlto(jugadores);
+
+  return (
+    <div className="space-y-4">
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <p className="text-texto-suave flex items-center gap-1.5 text-xs font-medium" role="status">
+          <span
+            aria-hidden
+            className={`size-2 rounded-full ${
+              conexion === "en_vivo"
+                ? "bg-green-600"
+                : conexion === "conectando"
+                  ? "bg-amber-500"
+                  : "bg-red-600"
+            }`}
+          />
+          {conexion === "en_vivo"
+            ? "En vivo"
+            : conexion === "conectando"
+              ? "Conectando…"
+              : "Sin conexión en vivo: se actualiza cada 15 segundos"}
+        </p>
+        <div className="flex flex-wrap gap-2">
+          <Boton variante="secundario" onClick={() => setHoja("sortear")}>
+            <Dices aria-hidden className="size-4" /> ¿A qué jugamos?
+          </Boton>
+          <Boton variante="secundario" onClick={() => setHoja("invitar")}>
+            <QrCode aria-hidden className="size-4" /> Invitar
+          </Boton>
+          {soyAnfitrion && (
+            <Boton variante="secundario" onClick={() => setHoja("puntaje")}>
+              <ListOrdered aria-hidden className="size-4" /> Cómo se anota
+            </Boton>
+          )}
+          {soyAnfitrion && (
+            <Boton variante="secundario" onClick={() => setHoja("agregar")}>
+              <UserPlus aria-hidden className="size-4" /> Agregar
+            </Boton>
+          )}
+        </div>
+      </div>
+
+      <p
+        aria-live="polite"
+        className="text-sm font-medium text-red-700 empty:hidden dark:text-red-400"
+      >
+        {error}
+      </p>
+
+      <ul className="space-y-2" aria-label="Jugadores">
+        {jugadores.map((j) => {
+          const esYo = j.user_id === yo;
+          const editable = esYo || soyAnfitrion;
+          const etiquetas = [
+            esYo && "vos",
+            j.user_id && j.user_id === sala.anfitrion_id && "anfitrión",
+            j.invitado && (j.user_id ? "invitado" : "sin celular"),
+          ].filter(Boolean);
+          return (
+            <li
+              key={j.id}
+              aria-label={j.nombre}
+              className={`bg-superficie flex items-center gap-3 rounded-2xl border p-3 ${
+                esYo ? "border-primario" : "border-borde"
+              }`}
+            >
+              <Avatar nombre={j.nombre} />
+              <div className="min-w-0 flex-1">
+                <p className="flex items-center gap-1.5 font-medium">
+                  <span className="truncate">{j.nombre}</span>
+                  {lideres.has(j.id) && (
+                    <Crown
+                      aria-label="Va ganando"
+                      className="size-4 shrink-0 fill-amber-400 text-amber-500"
+                    />
+                  )}
+                </p>
+                {etiquetas.length > 0 && (
+                  <p className="text-texto-suave text-xs">{etiquetas.join(" · ")}</p>
+                )}
+              </div>
+              {editable && !conHoja ? (
+                <Marcador
+                  puntos={j.puntos}
+                  nombre={j.nombre}
+                  onCambiar={(n) => cambiarPuntos(j.id, n)}
+                />
+              ) : (
+                <p className="w-20 text-center text-2xl font-bold tabular-nums">
+                  <span className="sr-only">Puntos: </span>
+                  {j.puntos}
+                </p>
+              )}
+              {soyAnfitrion && !esYo && (
+                <button
+                  type="button"
+                  onClick={() => setQuitando(j)}
+                  aria-label={`Sacar a ${j.nombre}`}
+                  className="text-texto-suave -mr-1 inline-flex size-11 items-center justify-center rounded-xl hover:text-red-700 dark:hover:text-red-400"
+                >
+                  <X aria-hidden className="size-5" />
+                </button>
+              )}
+            </li>
+          );
+        })}
+      </ul>
+
+      {conHoja && (
+        <HojaDePuntos
+          filas={filasDeLaHoja(config)}
+          jugadores={jugadores}
+          casilleros={casilleros}
+          totales={totales}
+          editable={(jugadorId) =>
+            soyAnfitrion || jugadores.some((j) => j.id === jugadorId && j.user_id === yo)
+          }
+          onCambiar={cambiarCasillero}
+          onAgregarRonda={
+            config.tipo_puntaje === "rondas" && config.rondas < 50
+              ? () => ejecutar(() => agregarRonda(sala.id))
+              : undefined
+          }
+        />
+      )}
+
+      {soyAnfitrion && (
+        <Boton className="w-full" onClick={() => setHoja("terminar")}>
+          <Flag aria-hidden className="size-4" /> Terminar partida
+        </Boton>
+      )}
+
+      <div className="pt-2">
+        <button
+          type="button"
+          onClick={() => setHoja("salir")}
+          className="text-texto-suave inline-flex min-h-11 items-center gap-1.5 text-sm hover:text-red-700 dark:hover:text-red-400"
+        >
+          <DoorOpen aria-hidden className="size-4" />
+          {soyAnfitrion ? "Cancelar la sala" : "Salir de la sala"}
+        </button>
+      </div>
+
+      {soyAnfitrion && (
+        <Hoja
+          abierta={hoja === "terminar"}
+          onCerrar={() => setHoja(null)}
+          titulo="Terminar partida"
+        >
+          {hoja === "terminar" && (
+            <TerminarPartida
+              partidaId={sala.id}
+              jugadores={jugadores}
+              guardandoPuntos={guardandoPuntos}
+            />
+          )}
+        </Hoja>
+      )}
+
+      {soyAnfitrion && (
+        <Hoja abierta={hoja === "puntaje"} onCerrar={() => setHoja(null)} titulo="Cómo se anota">
+          {hoja === "puntaje" && (
+            <ConfigurarPuntaje
+              partidaId={sala.id}
+              config={config}
+              juegoId={juegoParaHoja}
+              hojaGuardada={hojaGuardada}
+              hayPuntos={hayPuntos}
+              onListo={() => {
+                setHoja(null);
+                void recargar();
+              }}
+            />
+          )}
+        </Hoja>
+      )}
+
+      <Hoja abierta={hoja === "sortear"} onCerrar={() => setHoja(null)} titulo="¿A qué jugamos?">
+        {hoja === "sortear" && (
+          <SorteoMesa
+            partidaId={sala.id}
+            juegoActualId={sala.juego_id}
+            jugadores={jugadores.length}
+            soyAnfitrion={soyAnfitrion}
+            onListo={() => setHoja(null)}
+          />
+        )}
+      </Hoja>
+
+      <Hoja abierta={hoja === "invitar"} onCerrar={() => setHoja(null)} titulo="Invitar a la sala">
+        <InvitarASala codigo={sala.codigo} url={url} qrSvg={qrSvg} />
+      </Hoja>
+
+      {soyAnfitrion && (
+        <Hoja
+          abierta={hoja === "agregar"}
+          onCerrar={() => setHoja(null)}
+          titulo="Agregar jugadores"
+        >
+          {hoja === "agregar" && (
+            <AgregarJugadores
+              partidaId={sala.id}
+              amigos={amigosDisponibles.filter((a) => !jugadores.some((j) => j.user_id === a.id))}
+              onListo={() => setHoja(null)}
+            />
+          )}
+        </Hoja>
+      )}
+
+      <Hoja
+        abierta={hoja === "salir"}
+        onCerrar={() => setHoja(null)}
+        titulo={soyAnfitrion ? "¿Cancelar la sala?" : "¿Salir de la sala?"}
+      >
+        <div className="space-y-4">
+          <p className="text-sm">
+            {soyAnfitrion
+              ? "Se borra la sala con todos sus jugadores y puntos. No se puede deshacer."
+              : "Vas a dejar de ver la sala. Podés volver a entrar con el código mientras siga en curso."}
+          </p>
+          <div className="flex gap-3">
+            <Boton variante="secundario" className="flex-1" onClick={() => setHoja(null)}>
+              Volver
+            </Boton>
+            <Boton
+              className="flex-1 bg-red-700 hover:bg-red-800"
+              disabled={pendiente}
+              onClick={() =>
+                ejecutar(() =>
+                  soyAnfitrion ? cancelarSala(sala.id) : salirDeSala(sala.id, sala.codigo),
+                )
+              }
+            >
+              {pendiente && <Loader2 aria-hidden className="size-4 animate-spin" />}
+              {soyAnfitrion ? "Cancelar la sala" : "Salir"}
+            </Boton>
+          </div>
+        </div>
+      </Hoja>
+
+      <Hoja
+        abierta={quitando !== null}
+        onCerrar={() => setQuitando(null)}
+        titulo="¿Sacar al jugador?"
+      >
+        {quitando && (
+          <div className="space-y-4">
+            <p className="text-sm">
+              <strong>{quitando.nombre}</strong> deja la sala y se pierden sus puntos.
+            </p>
+            <div className="flex gap-3">
+              <Boton variante="secundario" className="flex-1" onClick={() => setQuitando(null)}>
+                Volver
+              </Boton>
+              <Boton
+                className="flex-1 bg-red-700 hover:bg-red-800"
+                disabled={pendiente}
+                onClick={() =>
+                  ejecutar(
+                    () => quitarJugador(quitando.id),
+                    () => setQuitando(null),
+                  )
+                }
+              >
+                {pendiente && <Loader2 aria-hidden className="size-4 animate-spin" />}
+                Sacar
+              </Boton>
+            </div>
+          </div>
+        )}
+      </Hoja>
+    </div>
+  );
+}

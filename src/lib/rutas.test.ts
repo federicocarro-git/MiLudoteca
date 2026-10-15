@@ -2,11 +2,14 @@ import { describe, expect, it } from "vitest";
 import { RUTA_INICIO, destinoSeguro, esRutaPublica } from "./rutas";
 
 describe("esRutaPublica", () => {
-  it.each(["/login", "/auth/callback", "/offline"])("%s es pública", (ruta) => {
-    expect(esRutaPublica(ruta)).toBe(true);
-  });
+  it.each(["/login", "/auth/callback", "/offline", "/sala/K7Q4MX", "/partida/abc"])(
+    "%s es pública",
+    (ruta) => {
+      expect(esRutaPublica(ruta)).toBe(true);
+    },
+  );
 
-  it.each(["/", "/catalogo", "/juegos/nuevo", "/loginx", "/authorizar"])(
+  it.each(["/", "/catalogo", "/juegos/nuevo", "/jugar", "/salas", "/loginx", "/authorizar"])(
     "%s requiere sesión",
     (ruta) => {
       expect(esRutaPublica(ruta)).toBe(false);

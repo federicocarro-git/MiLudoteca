@@ -111,9 +111,10 @@ export function EditorResumen({
     }
   }, [claveBorrador, inicial]);
 
-  // Guarda el borrador local mientras se escribe.
+  // Guarda el borrador local mientras se escribe. Mientras se guarda, no: la
+  // acción ya lo borró y un temporizador viejo lo volvería a escribir.
   useEffect(() => {
-    if (borradorPendiente) return; // no pisar uno que todavía no se recuperó
+    if (borradorPendiente || guardando) return; // ni pisar uno que todavía no se recuperó
     const t = setTimeout(() => {
       escribirBorrador(
         claveBorrador,
@@ -121,7 +122,7 @@ export function EditorResumen({
       );
     }, 400);
     return () => clearTimeout(t);
-  }, [claveBorrador, textos, hayCambios, borradorPendiente]);
+  }, [claveBorrador, textos, hayCambios, borradorPendiente, guardando]);
 
   // Al ocultar o cerrar la página (cambiar de app, recargar, el sistema mata
   // la pestaña), guardar ya, sin esperar el debounce.

@@ -23,6 +23,46 @@ export type Database = {
   };
   public: {
     Tables: {
+      amistades: {
+        Row: {
+          aceptada_en: string | null;
+          creado_en: string;
+          destinatario_id: string;
+          estado: string;
+          solicitante_id: string;
+        };
+        ComputedFields: never;
+        Insert: {
+          aceptada_en?: string | null;
+          creado_en?: string;
+          destinatario_id: string;
+          estado?: string;
+          solicitante_id: string;
+        };
+        Update: {
+          aceptada_en?: string | null;
+          creado_en?: string;
+          destinatario_id?: string;
+          estado?: string;
+          solicitante_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "amistades_destinatario_id_fkey";
+            columns: ["destinatario_id"];
+            isOneToOne: false;
+            referencedRelation: "perfiles";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "amistades_solicitante_id_fkey";
+            columns: ["solicitante_id"];
+            isOneToOne: false;
+            referencedRelation: "perfiles";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       catalogo_usuario: {
         Row: {
           actualizado_en: string;
@@ -59,6 +99,43 @@ export type Database = {
           },
           {
             foreignKeyName: "catalogo_usuario_juego_id_fkey";
+            columns: ["juego_id"];
+            isOneToOne: false;
+            referencedRelation: "mi_catalogo";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      hojas_de_puntuacion: {
+        Row: {
+          actualizado_en: string;
+          autor_id: string;
+          categorias: string[];
+          juego_id: string;
+        };
+        ComputedFields: never;
+        Insert: {
+          actualizado_en?: string;
+          autor_id?: string;
+          categorias: string[];
+          juego_id: string;
+        };
+        Update: {
+          actualizado_en?: string;
+          autor_id?: string;
+          categorias?: string[];
+          juego_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "hojas_de_puntuacion_juego_id_fkey";
+            columns: ["juego_id"];
+            isOneToOne: false;
+            referencedRelation: "juegos";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "hojas_de_puntuacion_juego_id_fkey";
             columns: ["juego_id"];
             isOneToOne: false;
             referencedRelation: "mi_catalogo";
@@ -121,6 +198,196 @@ export type Database = {
           nombre?: string;
           origen?: string;
           tipos?: string[];
+        };
+        Relationships: [];
+      };
+      partida_anotaciones: {
+        Row: {
+          columna: number;
+          jugador_id: string;
+          partida_id: string;
+          puntos: number;
+        };
+        ComputedFields: never;
+        Insert: {
+          columna: number;
+          jugador_id: string;
+          partida_id: string;
+          puntos: number;
+        };
+        Update: {
+          columna?: number;
+          jugador_id?: string;
+          partida_id?: string;
+          puntos?: number;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "partida_anotaciones_jugador_id_fkey";
+            columns: ["jugador_id"];
+            isOneToOne: false;
+            referencedRelation: "partida_jugadores";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "partida_anotaciones_partida_id_fkey";
+            columns: ["partida_id"];
+            isOneToOne: false;
+            referencedRelation: "partidas";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      partida_jugadores: {
+        Row: {
+          actualizado_en: string;
+          gano: boolean;
+          id: string;
+          invitado: boolean;
+          nombre: string;
+          partida_id: string;
+          posicion: number | null;
+          puntos: number;
+          unido_en: string;
+          user_id: string | null;
+        };
+        ComputedFields: never;
+        Insert: {
+          actualizado_en?: string;
+          gano?: boolean;
+          id?: string;
+          invitado?: boolean;
+          nombre: string;
+          partida_id: string;
+          posicion?: number | null;
+          puntos?: number;
+          unido_en?: string;
+          user_id?: string | null;
+        };
+        Update: {
+          actualizado_en?: string;
+          gano?: boolean;
+          id?: string;
+          invitado?: boolean;
+          nombre?: string;
+          partida_id?: string;
+          posicion?: number | null;
+          puntos?: number;
+          unido_en?: string;
+          user_id?: string | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "partida_jugadores_partida_id_fkey";
+            columns: ["partida_id"];
+            isOneToOne: false;
+            referencedRelation: "partidas";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      partidas: {
+        Row: {
+          anfitrion_id: string | null;
+          categorias: string[];
+          codigo: string;
+          cooperativo_ganado: boolean | null;
+          creada_en: string;
+          estado: string;
+          id: string;
+          juego_id: string | null;
+          juego_imagen_url: string | null;
+          juego_nombre: string;
+          modo_resultado: string | null;
+          notas: string | null;
+          rondas: number;
+          terminada_en: string | null;
+          tipo_puntaje: string;
+        };
+        ComputedFields: never;
+        Insert: {
+          anfitrion_id?: string | null;
+          categorias?: string[];
+          codigo: string;
+          cooperativo_ganado?: boolean | null;
+          creada_en?: string;
+          estado?: string;
+          id?: string;
+          juego_id?: string | null;
+          juego_imagen_url?: string | null;
+          juego_nombre: string;
+          modo_resultado?: string | null;
+          notas?: string | null;
+          rondas?: number;
+          terminada_en?: string | null;
+          tipo_puntaje?: string;
+        };
+        Update: {
+          anfitrion_id?: string | null;
+          categorias?: string[];
+          codigo?: string;
+          cooperativo_ganado?: boolean | null;
+          creada_en?: string;
+          estado?: string;
+          id?: string;
+          juego_id?: string | null;
+          juego_imagen_url?: string | null;
+          juego_nombre?: string;
+          modo_resultado?: string | null;
+          notas?: string | null;
+          rondas?: number;
+          terminada_en?: string | null;
+          tipo_puntaje?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "partidas_anfitrion_id_fkey";
+            columns: ["anfitrion_id"];
+            isOneToOne: false;
+            referencedRelation: "perfiles";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "partidas_juego_id_fkey";
+            columns: ["juego_id"];
+            isOneToOne: false;
+            referencedRelation: "juegos";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "partidas_juego_id_fkey";
+            columns: ["juego_id"];
+            isOneToOne: false;
+            referencedRelation: "mi_catalogo";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      perfiles: {
+        Row: {
+          actualizado_en: string;
+          catalogo_visible: boolean;
+          codigo_amigo: string;
+          creado_en: string;
+          id: string;
+          nombre: string;
+        };
+        ComputedFields: never;
+        Insert: {
+          actualizado_en?: string;
+          catalogo_visible?: boolean;
+          codigo_amigo: string;
+          creado_en?: string;
+          id: string;
+          nombre: string;
+        };
+        Update: {
+          actualizado_en?: string;
+          catalogo_visible?: boolean;
+          codigo_amigo?: string;
+          creado_en?: string;
+          id?: string;
+          nombre?: string;
         };
         Relationships: [];
       };
@@ -194,7 +461,82 @@ export type Database = {
       };
     };
     Functions: {
-      [_ in never]: never;
+      agregar_ronda: { Args: { partida: string }; Returns: undefined };
+      anotar_puntos: {
+        Args: { columna: number; jugador: string; puntos?: number };
+        Returns: undefined;
+      };
+      asegurar_perfil: { Args: { nombre_inicial: string; usuario: string }; Returns: undefined };
+      cambiar_juego_de_sala: { Args: { juego: string; partida: string }; Returns: undefined };
+      catalogo_de_amigos: {
+        Args: Record<PropertyKey, never>;
+        Returns: {
+          bgg_id: number;
+          complejidad: number;
+          dueno_id: string;
+          dueno_nombre: string;
+          duracion_min: number;
+          imagen_url: string;
+          juego_id: string;
+          jugadores_max: number;
+          jugadores_min: number;
+          nombre: string;
+          tipos: string[];
+        }[];
+      };
+      configurar_puntaje: {
+        Args: { categorias?: string[]; partida: string; tipo: string };
+        Returns: undefined;
+      };
+      crear_partida: {
+        Args: { juego: string };
+        Returns: {
+          codigo: string;
+          id: string;
+        }[];
+      };
+      enviar_solicitud_amistad: { Args: { codigo: string }; Returns: string };
+      es_amigo: { Args: { otro: string }; Returns: boolean };
+      es_anfitrion: { Args: { partida: string }; Returns: boolean };
+      es_anonimo: { Args: Record<PropertyKey, never>; Returns: boolean };
+      generar_codigo: { Args: { largo: number }; Returns: string };
+      juego_en_partida: { Args: { partida: string }; Returns: boolean };
+      juegos_de_la_mesa: {
+        Args: { partida: string };
+        Returns: {
+          bgg_id: number;
+          complejidad: number;
+          dueno_id: string;
+          dueno_nombre: string;
+          duracion_min: number;
+          imagen_url: string;
+          juego_id: string;
+          jugadores_max: number;
+          jugadores_min: number;
+          nombre: string;
+          tipos: string[];
+        }[];
+      };
+      partida_de_foto: { Args: { ruta: string }; Returns: string };
+      partida_en_curso: { Args: { partida: string }; Returns: boolean };
+      puede_subir_foto: { Args: { partida: string }; Returns: boolean };
+      terminar_partida: {
+        Args: { ganadores?: string[]; ganamos?: boolean; modo: string; partida: string };
+        Returns: undefined;
+      };
+      tipo_puntaje: { Args: { partida: string }; Returns: string };
+      unirse_a_partida: { Args: { codigo: string; nombre?: string }; Returns: string };
+      ver_sala: {
+        Args: { codigo: string };
+        Returns: {
+          anfitrion: string;
+          juego_imagen_url: string;
+          juego_nombre: string;
+          jugadores: number;
+          partida_id: string;
+          ya_estoy: boolean;
+        }[];
+      };
     };
     Enums: {
       [_ in never]: never;

@@ -164,9 +164,42 @@ Cada hito termina con lint, typecheck y tests en verde, y un commit.
   Se quitó `resumenes.origen` (migración `20261013000000_quitar_origen_resumenes.sql`)
   y la carpeta reservada `src/lib/resumen-ia/` de la arquitectura.
 
-## Fase 2 (preparado, no implementado)
+## Fase 2: jugar con amigos
 
-| Funcionalidad             | Qué ya queda listo                                                                          | Qué falta                                                                                                                                              |
-| ------------------------- | ------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| Importar colección de BGG | `BggProvider` ya maneja 202 (el endpoint `collection` lo usa mucho) y la cache en `juegos`. | Método `importarColeccion(usuario)` en el provider de BGG, pedidos de `thing` en lotes, pantalla de progreso y alta masiva en `catalogo_usuario`.      |
-| Registro de partidas      | Nada en la base todavía (se agrega como migración nueva).                                   | Tablas `partidas (id, user_id, juego_id, jugada_en, duracion, notas)` y `partida_jugadores (partida_id, nombre, puntaje, gano)` con RLS por `user_id`. |
+Pedido después de publicar la fase 1. Reemplaza el "registro de partidas"
+individual que estaba previsto: las partidas ahora son salas multiusuario en
+vivo.
+
+### Decisiones
+
+- **Invitados sin cuenta**: entran a una sala escaneando el QR o con el código
+  y un nombre temporal. No se les guarda historial propio; el nombre queda en
+  la partida para los demás. Técnicamente son usuarios anónimos de Supabase
+  Auth (`signInAnonymously`), así RLS y Realtime funcionan igual; una política
+  restrictiva les cierra todo lo que no es su sala.
+- **Puntaje**: total por jugador. Por rondas, más adelante (hito 14).
+- **Cooperativos**: al cerrar, "ganamos todos" o "perdimos todos".
+- **Ganador**: por defecto el puntaje más alto; opción "menor puntaje gana",
+  empate o elegirlo a mano.
+- **Navegación**: Catálogo · Jugar · Agregar · Cuenta. Amigos, Historial y
+  Ranking van dentro de Jugar.
+- **Código de amigo**: 6 caracteres sin letras ambiguas (sin I, O, 0, 1). Se
+  comparte el código, nunca el mail.
+
+### Hitos
+
+| #   | Hito                               | Qué incluye                                                                                                                                       |
+| --- | ---------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 9   | Perfiles y amigos (_hecho_)        | `perfiles` (nombre visible, código de amigo), `amistades` (solicitud y aceptación), pantalla de Amigos, nombre editable en Cuenta, pestaña Jugar. |
+| 10  | Salas en vivo (_hecho_)            | Crear sala con un juego, código y QR, invitar amigos, unirse con cuenta o como invitado, puntos totales en vivo con Supabase Realtime.            |
+| 11  | Cierre, historial, fotos (_hecho_) | Ganador (o cooperativo), historial filtrable, fotos y notas de la partida, partidas jugadas en la Ficha.                                          |
+| 12  | Ranking y rivalidades (_hecho_)    | Victorias, partidas y porcentaje entre amigos (general y por juego); cara a cara con cada amigo.                                                  |
+| 13  | Catálogos de la mesa (_hecho_)     | "¿Quién lo tiene?" (juegos de tus amigos) y "¿A qué jugamos?" entre los catálogos de los presentes en la sala.                                    |
+| 14  | Puntuación por rondas (_hecho_)    | Rondas en la sala y hojas de puntuación por juego (categorías con suma automática).                                                               |
+
+### Pendiente aparte
+
+- **Importar la colección de BGG**: `BggProvider` ya maneja el 202 (el
+  endpoint `collection` lo usa mucho) y la cache en `juegos`. Falta
+  `importarColeccion(usuario)`, pedidos de `thing` en lotes, pantalla de
+  progreso y alta masiva en `catalogo_usuario`.

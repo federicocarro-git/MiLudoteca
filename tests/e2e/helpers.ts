@@ -35,6 +35,7 @@ export async function crearUsuario(prefijo = "e2e"): Promise<Usuario> {
 /** Borra el usuario (en cascada: catálogo, juegos manuales y resúmenes). */
 export async function borrarUsuario(usuario: Usuario | undefined) {
   if (!usuario) return;
+  await borrarSalasDe(usuario);
   const { data } = await admin.storage.from("imagenes-juegos").list(usuario.id);
   if (data?.length) {
     await admin.storage.from("imagenes-juegos").remove(data.map((a) => `${usuario.id}/${a.name}`));
@@ -146,3 +147,102 @@ export const ruta = (page: Page) => {
   const u = new URL(page.url());
   return u.pathname + u.search;
 };
+
+/** Pone un nombre fijo al perfil (lo crea el trigger) y devuelve su código de amigo. */
+export async function prepararPerfil(usuario: Usuario, nombre: string) {
+  const { data, error } = await admin
+    .from("perfiles")
+    .update({ nombre })
+    .eq("id", usuario.id)
+    .select("codigo_amigo")
+    .single();
+  if (error) throw error;
+  return data.codigo_amigo;
+}
+
+/** Amistad ya aceptada entre dos usuarios (para los tests que la dan por hecha). */
+export async function hacerAmigos(a: Usuario, b: Usuario) {
+  const { error } = await admin.from("amistades").insert({
+    solicitante_id: a.id,
+    destinatario_id: b.id,
+    estado: "aceptada",
+    aceptada_en: new Date().toISOString(),
+  });
+  if (error) throw error;
+}
+
+/**
+ * Borra las salas que creó el usuario y los invitados anónimos que entraron
+ * a ellas (si no, quedan en auth.users).
+ */
+export async function borrarSalasDe(usuario: Usuario) {
+  const { data: salas } = await admin.from("partidas").select("id").eq("anfitrion_id", usuario.id);
+  if (!salas?.length) return;
+  const ids = salas.map((s) => s.id);
+  const { data: invitados } = await admin
+    .from("partida_jugadores")
+    .select("user_id")
+    .in("partida_id", ids)
+    .eq("invitado", true)
+    .not("user_id", "is", null);
+  for (const id of ids) {
+    const { data: fotos } = await admin.storage.from("fotos-partidas").list(id);
+    if (fotos?.length) {
+      await admin.storage.from("fotos-partidas").remove(fotos.map((f) => `${id}/${f.name}`));
+    }
+  }
+  await admin.from("partidas").delete().in("id", ids);
+  await Promise.all((invitados ?? []).map((i) => admin.auth.admin.deleteUser(i.user_id!)));
+}
+
+/** Código de la sala abierta en la página (sale de la URL /sala/XXXXXX). */
+export function codigoDeSala(page: Page) {
+  const codigo = new URL(page.url()).pathname.split("/").pop();
+  if (!codigo || !/^[A-Z2-9]{6}$/.test(codigo)) throw new Error(`No es una sala: ${page.url()}`);
+  return codigo;
+}
+
+type JugadorTerminado = {
+  usuario?: Usuario;
+  nombre?: string;
+  puntos?: number;
+  gano: boolean;
+  posicion?: number | null;
+};
+
+/** Partida ya terminada (para historial y ranking), armada con la API admin. */
+export async function crearPartidaTerminada(
+  anfitrion: Usuario,
+  juego: { id?: string; nombre: string },
+  jugadores: JugadorTerminado[],
+  modo: "mas_puntos" | "cooperativo" = "mas_puntos",
+) {
+  const ahora = new Date().toISOString();
+  const { data, error } = await admin
+    .from("partidas")
+    .insert({
+      codigo: "ZZZZZZ",
+      juego_id: juego.id ?? null,
+      juego_nombre: juego.nombre,
+      anfitrion_id: anfitrion.id,
+      estado: "terminada",
+      terminada_en: ahora,
+      modo_resultado: modo,
+      cooperativo_ganado: modo === "cooperativo" ? jugadores.some((j) => j.gano) : null,
+    })
+    .select("id")
+    .single();
+  if (error) throw error;
+  const { error: e2 } = await admin.from("partida_jugadores").insert(
+    jugadores.map((j) => ({
+      partida_id: data.id,
+      user_id: j.usuario?.id ?? null,
+      nombre: j.nombre ?? "Jugador",
+      puntos: j.puntos ?? 0,
+      gano: j.gano,
+      posicion: modo === "cooperativo" ? null : (j.posicion ?? null),
+    })),
+  );
+  if (e2) throw e2;
+  return data.id;
+}

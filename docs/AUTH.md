@@ -74,7 +74,16 @@ Google en local (opcional):
    Client ID y el Client Secret.
 4. En Vercel: `NEXT_PUBLIC_AUTH_GOOGLE=true`.
 
-### 4. Variables en Vercel
+### 4. Invitados de las salas (Authentication → Sign In / Providers)
+
+- Activar **Allow anonymous sign-ins**. Los invitados que entran a una sala
+  por el QR son usuarios anónimos: sin esto, solo se puede jugar con cuenta.
+- Límite por defecto: 30 invitados nuevos por hora y por IP (Authentication →
+  Rate Limits). Alcanza para varias mesas en la misma red.
+- Los anónimos quedan en `auth.users`. Conviene borrarlos de vez en cuando
+  (pendiente: limpieza periódica de los de más de 30 días).
+
+### 5. Variables en Vercel
 
 `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`,
 `SUPABASE_SECRET_KEY`, `NEXT_PUBLIC_SITE_URL=https://<tu-dominio>` y
