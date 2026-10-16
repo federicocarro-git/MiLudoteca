@@ -10,10 +10,10 @@ export function Chip({
     <button
       type="button"
       aria-pressed={activo}
-      className={`min-h-10 rounded-full border px-3.5 text-sm ${
+      className={`min-h-10 rounded-full border-[1.5px] px-4 text-sm font-bold ${
         activo
-          ? "bg-primario border-primario text-sobre-primario"
-          : "border-borde text-texto-suave hover:text-texto"
+          ? "bg-texto border-texto text-fondo"
+          : "border-borde bg-superficie text-texto-suave hover:text-texto"
       } ${className}`}
       {...props}
     />

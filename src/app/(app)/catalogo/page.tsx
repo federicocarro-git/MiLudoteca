@@ -1,4 +1,4 @@
-import { Dices, Plus } from "lucide-react";
+import { Dices } from "lucide-react";
 import type { Metadata } from "next";
 import { Suspense } from "react";
 import { CatalogoInteractivo } from "@/components/catalogo/catalogo-interactivo";
@@ -6,22 +6,12 @@ import { EncabezadoPagina } from "@/components/layout/encabezado-pagina";
 import { BotonLink } from "@/components/ui/boton";
 import { obtenerMiCatalogo } from "@/lib/catalogo/consultas";
 
-export const metadata: Metadata = { title: "Catálogo" };
+export const metadata: Metadata = { title: "Tu estante" };
 
 export default function CatalogoPage() {
   return (
     <>
-      <EncabezadoPagina titulo="Mi catálogo">
-        <BotonLink
-          href="/juegos/nuevo"
-          variante="secundario"
-          aria-label="Agregar juego"
-          className="px-3"
-        >
-          <Plus aria-hidden className="size-5" />
-          <span className="hidden sm:inline">Agregar</span>
-        </BotonLink>
-      </EncabezadoPagina>
+      <EncabezadoPagina titulo="Tu estante" />
       <Suspense fallback={<EsqueletoCatalogo />}>
         <Catalogo />
       </Suspense>
@@ -39,8 +29,10 @@ function CatalogoVacio() {
   return (
     <section className="border-borde bg-superficie flex flex-col items-center gap-3 rounded-2xl border border-dashed px-6 py-12 text-center">
       <Dices aria-hidden className="text-primario size-10" />
-      <h2 className="text-lg font-semibold">Todavía no agregaste juegos</h2>
-      <p className="text-texto-suave max-w-xs text-sm">Cargá tu primer juego y armá tu ludoteca.</p>
+      <h2 className="text-xl font-bold">Todavía no agregaste juegos</h2>
+      <p className="text-texto-suave max-w-xs text-sm">
+        Cargá tu primer juego y empezá a llenar tu estante.
+      </p>
       <BotonLink href="/juegos/nuevo">Agregá un juego</BotonLink>
     </section>
   );

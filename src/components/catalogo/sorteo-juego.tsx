@@ -4,7 +4,7 @@ import { Dices, RefreshCw } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { ImagenJuego } from "@/components/juegos/imagen-juego";
-import { BotonLink } from "@/components/ui/boton";
+import { Boton, BotonLink } from "@/components/ui/boton";
 import { Hoja } from "@/components/ui/hoja";
 import { elegirAlAzar, type JuegoCatalogo } from "@/lib/catalogo/filtros";
 import { formatearDuracion, formatearJugadores } from "@/lib/formato";
@@ -12,7 +12,7 @@ import { formatearDuracion, formatearJugadores } from "@/lib/formato";
 const DURACION_GIRO_MS = 900;
 const PASO_GIRO_MS = 90;
 
-/** Botón flotante "¿A qué jugamos?": sortea entre los juegos que se ven. */
+/** La pizarra "¿A qué jugamos hoy?": sortea entre los juegos que se ven. */
 export function SorteoJuego({ juegos }: { juegos: JuegoCatalogo[] }) {
   const [abierta, setAbierta] = useState(false);
   const [elegido, setElegido] = useState<JuegoCatalogo | null>(null);
@@ -66,15 +66,28 @@ export function SorteoJuego({ juegos }: { juegos: JuegoCatalogo[] }) {
 
   return (
     <>
-      <button
-        type="button"
-        onClick={abrir}
-        disabled={juegos.length === 0}
-        className="bg-primario text-sobre-primario hover:bg-primario-hover fixed right-4 bottom-[calc(4.5rem+env(safe-area-inset-bottom))] z-30 flex min-h-14 items-center gap-2 rounded-full px-5 font-semibold shadow-lg transition-transform active:scale-95 disabled:opacity-50 print:hidden"
+      <section
+        aria-labelledby="titulo-pizarra"
+        className="bg-pizarra text-tiza border-marco relative overflow-hidden rounded-[1.25rem] border-[6px] px-4 py-3.5 shadow-[inset_0_0_0_1px_rgb(255_255_255/0.08)] print:hidden"
       >
-        <Dices aria-hidden className="size-6" />
-        ¿A qué jugamos?
-      </button>
+        <h2 id="titulo-pizarra" className="font-mano text-[1.9rem] leading-none font-semibold">
+          ¿A qué jugamos hoy?
+        </h2>
+        <p className="mt-1 text-sm opacity-80">
+          {juegos.length === 0
+            ? "Ningún juego pasa los filtros de abajo."
+            : `Sorteo entre ${juegos.length === 1 ? "el juego" : `los ${juegos.length} juegos`} que ves abajo.`}
+        </p>
+        <button
+          type="button"
+          onClick={abrir}
+          disabled={juegos.length === 0}
+          className="bg-miel mt-3 inline-flex min-h-11 items-center gap-2 rounded-full px-5 text-sm font-extrabold text-[#3a2a1f] shadow-[0_3px_0_rgb(0_0_0/0.35)] transition active:translate-y-0.5 active:shadow-none disabled:opacity-50"
+        >
+          <Dices aria-hidden className="size-5" />
+          Sortear
+        </button>
+      </section>
 
       <Hoja abierta={abierta} onCerrar={() => setAbierta(false)} titulo="¿A qué jugamos?">
         <div
@@ -96,19 +109,19 @@ export function SorteoJuego({ juegos }: { juegos: JuegoCatalogo[] }) {
                 />
               </Link>
               <div>
-                <p className="text-2xl font-bold tracking-tight">{elegido.nombre}</p>
+                <p className="font-display text-2xl font-bold">{elegido.nombre}</p>
                 {detalle && <p className="text-texto-suave text-sm">{detalle}</p>}
               </div>
               <div className="flex w-full gap-3">
-                <button
-                  type="button"
+                <Boton
+                  variante="secundario"
                   onClick={() => sortear(elegido.id)}
                   disabled={juegos.length < 2}
-                  className="border-borde hover:bg-fondo inline-flex min-h-11 flex-1 items-center justify-center gap-2 rounded-xl border text-sm font-semibold disabled:opacity-50"
+                  className="flex-1"
                 >
                   <RefreshCw aria-hidden className="size-4" />
                   Otro
-                </button>
+                </Boton>
                 <BotonLink href={`/juegos/${elegido.id}`} className="flex-1">
                   Ver ficha
                 </BotonLink>

@@ -5,13 +5,15 @@ import { useState, useTransition } from "react";
 import { crearSala } from "@/app/(app)/jugar/actions";
 import { Boton } from "@/components/ui/boton";
 
-/** Crea una sala con este juego (y lleva a ella). */
+/** Crea una sala con este juego, o sin juego (y lleva a ella). */
 export function BotonCrearSala({
   juegoId,
   children = "Jugar una partida",
   className = "",
+  variante = "primario",
 }: {
-  juegoId: string;
+  juegoId: string | null;
+  variante?: "primario" | "secundario";
   children?: React.ReactNode;
   className?: string;
 }) {
@@ -20,6 +22,7 @@ export function BotonCrearSala({
   return (
     <div className={`space-y-2 ${className}`}>
       <Boton
+        variante={variante}
         disabled={pendiente}
         onClick={() =>
           iniciar(async () => {

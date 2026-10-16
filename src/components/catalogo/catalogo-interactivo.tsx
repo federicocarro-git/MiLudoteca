@@ -63,29 +63,30 @@ export function CatalogoInteractivo({ juegos }: { juegos: JuegoCatalogo[] }) {
   if (filtros.tipo) activos.push({ clave: "tipo", texto: filtros.tipo });
 
   return (
-    // pb-20: que el botón flotante "¿A qué jugamos?" no tape la última fila.
-    <div className="space-y-4 pb-20">
+    <div className="space-y-4">
+      <SorteoJuego juegos={visibles} />
+
       <div className="flex gap-2">
         <div className="relative flex-1">
           <Search
             aria-hidden
-            className="text-texto-suave pointer-events-none absolute top-1/2 left-3 size-5 -translate-y-1/2"
+            className="text-texto-suave pointer-events-none absolute top-1/2 left-4 size-5 -translate-y-1/2"
           />
           <input
             type="search"
-            aria-label="Buscar en mi catálogo"
-            placeholder="Buscar…"
+            aria-label="Buscar en tu estante"
+            placeholder="Buscar en tu estante…"
             value={texto}
             onChange={(e) => buscar(e.target.value)}
             enterKeyHint="search"
             autoComplete="off"
-            className="border-borde bg-superficie focus-visible:outline-primario block min-h-11 w-full rounded-xl border pr-3 pl-10 text-base focus-visible:outline-2"
+            className="border-borde bg-superficie focus-visible:outline-primario block min-h-12 w-full rounded-full border-[1.5px] pr-4 pl-11 text-base focus-visible:outline-2"
           />
         </div>
         <button
           type="button"
           onClick={() => setPanelAbierto(true)}
-          className="border-borde bg-superficie hover:bg-fondo relative inline-flex min-h-11 items-center gap-2 rounded-xl border px-3.5 text-sm font-semibold"
+          className="border-borde bg-superficie hover:bg-fondo relieve relative inline-flex min-h-12 items-center gap-2 rounded-full border-[1.5px] px-4 text-sm font-bold"
         >
           <SlidersHorizontal aria-hidden className="size-5" />
           Filtros
@@ -105,7 +106,7 @@ export function CatalogoInteractivo({ juegos }: { juegos: JuegoCatalogo[] }) {
               <button
                 type="button"
                 onClick={() => actualizar({ ...filtros, [clave]: undefined })}
-                className="bg-primario/10 text-texto inline-flex min-h-9 items-center gap-1.5 rounded-full pr-2 pl-3 text-sm"
+                className="bg-texto text-fondo inline-flex min-h-9 items-center gap-1.5 rounded-full pr-2.5 pl-3.5 text-sm font-bold"
               >
                 {texto}
                 <X aria-hidden className="size-4" />
@@ -168,7 +169,6 @@ export function CatalogoInteractivo({ juegos }: { juegos: JuegoCatalogo[] }) {
         tiposDisponibles={tiposDisponibles}
         cantidad={visibles.length}
       />
-      <SorteoJuego juegos={visibles} />
     </div>
   );
 }

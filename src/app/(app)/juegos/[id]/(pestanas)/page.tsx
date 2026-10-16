@@ -1,4 +1,4 @@
-import { CircleCheck, Clock, Gauge, History, Pencil, Users } from "lucide-react";
+import { CircleCheck, History, Pencil, Users } from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
@@ -8,7 +8,7 @@ import { EnlaceBgg } from "@/components/juegos/enlace-bgg";
 import { ImagenJuego } from "@/components/juegos/imagen-juego";
 import { BotonCrearSala } from "@/components/salas/boton-crear-sala";
 import { BotonLink } from "@/components/ui/boton";
-import { formatearComplejidad, formatearDuracion, formatearJugadores } from "@/lib/formato";
+import { formatearDuracion, jugadoresCorto, nivelDeComplejidad } from "@/lib/formato";
 import { urlJuegoBgg } from "@/lib/game-data/bgg/enlaces";
 import { obtenerJuego } from "@/lib/juegos/consultas";
 import { obtenerJuegosDeAmigos } from "@/lib/mesa/consultas";
@@ -32,7 +32,7 @@ export default function FichaPage({ params, searchParams }: PageProps<"/juegos/[
 }
 
 const AVISOS = {
-  agregado: "¡Listo! Lo agregaste a tu catálogo.",
+  agregado: "¡Listo! Lo agregaste a tu estante.",
   editado: "Guardaste los cambios.",
 };
 
@@ -42,10 +42,10 @@ async function Ficha({ id, aviso }: { id: string; aviso: keyof typeof AVISOS | n
   const { juego, catalogo, editable } = resultado;
 
   const datos = [
-    { Icono: Users, texto: formatearJugadores(juego.jugadores_min, juego.jugadores_max) },
-    { Icono: Clock, texto: formatearDuracion(juego.duracion_min) },
-    { Icono: Gauge, texto: formatearComplejidad(juego.complejidad) },
-  ].filter((d) => d.texto);
+    { etiqueta: "Jugadores", valor: jugadoresCorto(juego.jugadores_min, juego.jugadores_max) },
+    { etiqueta: "Duración", valor: formatearDuracion(juego.duracion_min) },
+    { etiqueta: "Peso", valor: nivelDeComplejidad(juego.complejidad) },
+  ].filter((d) => d.valor);
 
   return (
     <article className="space-y-5">
@@ -63,21 +63,23 @@ async function Ficha({ id, aviso }: { id: string; aviso: keyof typeof AVISOS | n
         nombre={juego.nombre}
         sizes="(min-width: 768px) 720px, 100vw"
         priority
-        className="aspect-[4/3] w-full rounded-2xl"
+        className="aspect-[4/3] w-full rounded-[1.5rem]"
       />
 
       {datos.length > 0 && (
-        <ul className="flex flex-wrap gap-2">
-          {datos.map(({ Icono, texto }) => (
-            <li
-              key={texto}
-              className="bg-superficie border-borde flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-sm"
+        <dl className="grid grid-cols-3 gap-2">
+          {datos.map(({ etiqueta, valor }) => (
+            <div
+              key={etiqueta}
+              className="bg-superficie border-borde rounded-2xl border-[1.5px] px-2 py-2.5 text-center"
             >
-              <Icono aria-hidden className="text-primario size-4" />
-              {texto}
-            </li>
+              <dt className="text-texto-suave text-[0.7rem] font-extrabold tracking-wider uppercase">
+                {etiqueta}
+              </dt>
+              <dd className="font-display text-lg leading-tight font-bold">{valor}</dd>
+            </div>
           ))}
-        </ul>
+        </dl>
       )}
 
       {juego.tipos.length > 0 && (
@@ -105,7 +107,7 @@ async function Ficha({ id, aviso }: { id: string; aviso: keyof typeof AVISOS | n
 
       {juego.descripcion && (
         <section className="space-y-2">
-          <h2 className="font-semibold">Descripción</h2>
+          <h2 className="text-lg font-bold">Descripción</h2>
           <p className="text-texto-suave text-sm leading-relaxed whitespace-pre-line">
             {juego.descripcion}
           </p>

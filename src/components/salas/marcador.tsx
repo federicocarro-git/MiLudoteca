@@ -20,14 +20,14 @@ export function Marcador({
   const limitar = (n: number) => Math.max(-PUNTOS_MAX, Math.min(PUNTOS_MAX, n));
 
   return (
-    <div className="flex items-center gap-1">
+    <div className="flex items-center gap-0.5">
       <button
         type="button"
         onClick={() => onCambiar(limitar(puntos - 1))}
         aria-label={`Restar un punto a ${nombre}`}
-        className="border-borde bg-fondo active:bg-borde inline-flex size-11 items-center justify-center rounded-xl border"
+        className="border-borde bg-fondo active:bg-borde inline-flex size-11 items-center justify-center rounded-full border-[1.5px]"
       >
-        <Minus aria-hidden className="size-5" />
+        <Minus aria-hidden className="size-5" strokeWidth={3} />
       </button>
       <input
         type="text"
@@ -41,15 +41,15 @@ export function Marcador({
           if (/^-?\d+$/.test(valor)) onCambiar(limitar(Number(valor)));
         }}
         onBlur={() => setTexto(null)}
-        className="border-borde bg-superficie focus-visible:outline-primario h-11 w-20 rounded-xl border text-center text-xl font-bold tabular-nums focus-visible:outline-2"
+        className="font-display focus-visible:outline-primario h-11 w-14 rounded-xl bg-transparent text-center text-[1.6rem] font-bold tabular-nums focus-visible:outline-2"
       />
       <button
         type="button"
         onClick={() => onCambiar(limitar(puntos + 1))}
         aria-label={`Sumar un punto a ${nombre}`}
-        className="bg-primario text-sobre-primario active:bg-primario-hover inline-flex size-11 items-center justify-center rounded-xl"
+        className="bg-primario text-sobre-primario active:bg-primario-hover relieve-primario inline-flex size-11 items-center justify-center rounded-full active:translate-y-0.5 active:shadow-none"
       >
-        <Plus aria-hidden className="size-5" />
+        <Plus aria-hidden className="size-5" strokeWidth={3} />
       </button>
     </div>
   );

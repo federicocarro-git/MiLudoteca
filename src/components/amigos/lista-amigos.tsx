@@ -154,7 +154,7 @@ export function ListaAmigos({ amistades }: { amistades: Amistades }) {
 
 function Fila({ amigo, children }: { amigo: Amigo; children: React.ReactNode }) {
   return (
-    <li className="border-borde bg-superficie flex items-center gap-3 rounded-2xl border p-3">
+    <li className="border-borde bg-superficie relieve flex items-center gap-3 rounded-2xl border p-3">
       <Avatar nombre={amigo.nombre} />
       <span className="min-w-0 flex-1 truncate font-medium">{amigo.nombre}</span>
       <div className="flex shrink-0 gap-2">{children}</div>

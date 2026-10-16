@@ -1,7 +1,7 @@
 import type { ComponentProps, ReactNode } from "react";
 
 const ESTILO_CONTROL =
-  "border-borde bg-superficie placeholder:text-texto-suave/70 focus-visible:outline-primario block w-full rounded-xl border px-3 text-base focus-visible:outline-2 focus-visible:outline-offset-1 aria-[invalid=true]:border-red-600";
+  "border-borde bg-superficie placeholder:text-texto-suave/70 focus-visible:outline-primario block w-full rounded-2xl border-[1.5px] px-3.5 text-base focus-visible:outline-2 focus-visible:outline-offset-1 aria-[invalid=true]:border-red-600";
 
 type PropsComunes = { etiqueta: string; id: string; error?: string; ayuda?: ReactNode };
 
@@ -14,7 +14,7 @@ function Envoltorio({
 }: PropsComunes & { children: ReactNode }) {
   return (
     <div className="space-y-1.5">
-      <label htmlFor={id} className="block text-sm font-medium">
+      <label htmlFor={id} className="block text-sm font-bold">
         {etiqueta}
       </label>
       {children}

@@ -22,7 +22,7 @@ test.afterEach(() => borrarUsuario(usuario));
 const nombre = (page: import("@playwright/test").Page) =>
   page.getByLabel("Nombre", { exact: true });
 const guardar = (page: import("@playwright/test").Page) =>
-  page.getByRole("button", { name: "Guardar en mi catálogo" });
+  page.getByRole("button", { name: "Guardar en mi estante" });
 
 test("buscar en el mock, completar el formulario y guardar", async ({ page }) => {
   await page.goto("/juegos/nuevo");
@@ -41,7 +41,7 @@ test("buscar en el mock, completar el formulario y guardar", async ({ page }) =>
 
   await page.waitForURL(/\/juegos\/[0-9a-f-]{36}\?agregado=1/);
   await expect(page.getByText("¡Listo! Lo agregaste")).toBeVisible();
-  await expect(page.getByText("3–4 jugadores")).toBeVisible();
+  await expect(page.getByText("3–4", { exact: true })).toBeVisible();
   await expect(page.getByText("1 h 30 min")).toBeVisible();
   await expect(page.getByText("8/10")).toBeVisible();
   // La descripción del mock tiene varios párrafos y se muestran separados.
@@ -73,7 +73,7 @@ test("avisa si el juego ya está en el catálogo y permite agregarlo igual", asy
   await page.goto("/juegos/nuevo");
   await nombre(page).fill("CATAN");
   await guardar(page).click();
-  await expect(page.getByText('Ya tenés "Catan" en tu catálogo.')).toBeVisible();
+  await expect(page.getByText('Ya tenés "Catan" en tu estante.')).toBeVisible();
   await expect(nombre(page)).toHaveValue("CATAN");
   await page.getByRole("button", { name: "Agregar igual" }).click();
   await page.waitForURL(/agregado=1/);

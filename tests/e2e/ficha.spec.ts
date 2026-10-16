@@ -146,14 +146,14 @@ test("editar los datos de un juego propio y quitar la foto (se borra de Storage)
   await page.waitForURL(/editado=1/);
   await expect(page.getByText("Guardaste los cambios.")).toBeVisible();
   await expect(page.getByRole("heading", { name: /edición viajera/ })).toBeVisible();
-  await expect(page.getByText("3–6 jugadores")).toBeVisible();
+  await expect(page.getByText("3–6", { exact: true })).toBeVisible();
   const { data } = await admin.storage.from("imagenes-juegos").list(usuario.id);
   expect(data!.map((a) => `${usuario.id}/${a.name}`)).not.toContain(rutaFoto);
 });
 
 test("quitar un juego propio lo borra junto con sus resúmenes", async ({ page }) => {
   await page.goto(`/juegos/${idCatan}`);
-  await page.getByRole("button", { name: "Quitar de mi catálogo" }).click();
+  await page.getByRole("button", { name: "Quitar de mi estante" }).click();
   await expect(page.getByText("también se borran")).toBeVisible();
   await page.getByRole("button", { name: "Quitar", exact: true }).click();
   await page.waitForURL("**/catalogo");
@@ -201,7 +201,7 @@ test.describe("juegos de BGG", () => {
       );
     }
     await page.goto(`/juegos/${idBgg}`);
-    await expect(page.getByText("En tu catálogo")).toBeVisible();
+    await expect(page.getByText("En tu estante")).toBeVisible();
     await expect(page.getByRole("link", { name: "Editar datos del juego" })).toHaveCount(0);
     await page.goto(`/juegos/${idBgg}/editar`);
     await expect(page.getByText(/404|could not be found/i).first()).toBeVisible();
@@ -209,7 +209,7 @@ test.describe("juegos de BGG", () => {
 
   test("quitarlo del catálogo conserva el juego compartido", async ({ page }) => {
     await page.goto(`/juegos/${idBgg}`);
-    await page.getByRole("button", { name: "Quitar de mi catálogo" }).click();
+    await page.getByRole("button", { name: "Quitar de mi estante" }).click();
     await expect(page.getByText("se conservan")).toBeVisible();
     await page.getByRole("button", { name: "Quitar", exact: true }).click();
     await page.waitForURL("**/catalogo");
@@ -237,8 +237,8 @@ test.describe("juegos de BGG", () => {
 
   test("agregarlo al catálogo desde la ficha", async ({ page }) => {
     await page.goto(`/juegos/${idFuera}`);
-    await page.getByRole("button", { name: "Agregar a mi catálogo" }).click();
-    await expect(page.getByText("En tu catálogo")).toBeVisible();
+    await page.getByRole("button", { name: "Agregar a mi estante" }).click();
+    await expect(page.getByText("En tu estante")).toBeVisible();
   });
 });
 

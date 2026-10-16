@@ -297,9 +297,10 @@ export type Database = {
           id: string;
           juego_id: string | null;
           juego_imagen_url: string | null;
-          juego_nombre: string;
+          juego_nombre: string | null;
           modo_resultado: string | null;
           notas: string | null;
+          revancha_de: string | null;
           rondas: number;
           terminada_en: string | null;
           tipo_puntaje: string;
@@ -315,9 +316,10 @@ export type Database = {
           id?: string;
           juego_id?: string | null;
           juego_imagen_url?: string | null;
-          juego_nombre: string;
+          juego_nombre?: string | null;
           modo_resultado?: string | null;
           notas?: string | null;
+          revancha_de?: string | null;
           rondas?: number;
           terminada_en?: string | null;
           tipo_puntaje?: string;
@@ -332,9 +334,10 @@ export type Database = {
           id?: string;
           juego_id?: string | null;
           juego_imagen_url?: string | null;
-          juego_nombre?: string;
+          juego_nombre?: string | null;
           modo_resultado?: string | null;
           notas?: string | null;
+          revancha_de?: string | null;
           rondas?: number;
           terminada_en?: string | null;
           tipo_puntaje?: string;
@@ -359,6 +362,13 @@ export type Database = {
             columns: ["juego_id"];
             isOneToOne: false;
             referencedRelation: "mi_catalogo";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "partidas_revancha_de_fkey";
+            columns: ["revancha_de"];
+            isOneToOne: false;
+            referencedRelation: "partidas";
             referencedColumns: ["id"];
           },
         ];
@@ -495,6 +505,13 @@ export type Database = {
           id: string;
         }[];
       };
+      crear_sala_sin_juego: {
+        Args: Record<PropertyKey, never>;
+        Returns: {
+          codigo: string;
+          id: string;
+        }[];
+      };
       enviar_solicitud_amistad: { Args: { codigo: string }; Returns: string };
       es_amigo: { Args: { otro: string }; Returns: boolean };
       es_anfitrion: { Args: { partida: string }; Returns: boolean };
@@ -520,6 +537,14 @@ export type Database = {
       partida_de_foto: { Args: { ruta: string }; Returns: string };
       partida_en_curso: { Args: { partida: string }; Returns: boolean };
       puede_subir_foto: { Args: { partida: string }; Returns: boolean };
+      reabrir_partida: { Args: { partida: string }; Returns: string };
+      revancha: {
+        Args: { partida: string };
+        Returns: {
+          codigo: string;
+          id: string;
+        }[];
+      };
       terminar_partida: {
         Args: { ganadores?: string[]; ganamos?: boolean; modo: string; partida: string };
         Returns: undefined;

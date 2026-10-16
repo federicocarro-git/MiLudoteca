@@ -246,7 +246,7 @@ export function EditorResumen({
         })}
       </div>
 
-      <div className="border-borde bg-superficie overflow-hidden rounded-2xl border">
+      <div className="border-borde bg-superficie relieve overflow-hidden rounded-2xl border">
         <div className="border-borde flex items-center justify-between gap-2 border-b px-2 py-1">
           <div className="flex">
             {(["escribir", "vista"] as const).map((m) => (

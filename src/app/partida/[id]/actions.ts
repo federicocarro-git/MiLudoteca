@@ -77,3 +77,38 @@ export async function borrarPartida(partidaId: string): Promise<Resultado<null>>
   }
   redirect("/jugar/historial");
 }
+
+/**
+ * Revancha: otra sala con el mismo juego, la misma forma de anotar y los
+ * mismos jugadores (amigos y los que juegan sin celular). Lleva a ella.
+ */
+export async function armarRevancha(partidaId: string): Promise<Resultado<null>> {
+  if (!esUuid(partidaId)) return { ok: false, error: "Esa partida no existe." };
+  if (!(await getUsuarioActual())) return { ok: false, error: SESION_VENCIDA };
+
+  const supabase = await createClient();
+  const { data, error } = await supabase.rpc("revancha", { partida: partidaId });
+  const sala = data?.[0];
+  if (error || !sala) {
+    console.error("armarRevancha", partidaId, error);
+    return { ok: false, error: "No se pudo armar la revancha. Probá de nuevo." };
+  }
+  redirect(`/sala/${sala.codigo}`);
+}
+
+/** El anfitrión vuelve a poner en curso una partida recién terminada. */
+export async function reabrirPartida(partidaId: string): Promise<Resultado<null>> {
+  if (!esUuid(partidaId)) return { ok: false, error: "Esa partida no existe." };
+  if (!(await getUsuarioActual())) return { ok: false, error: SESION_VENCIDA };
+
+  const supabase = await createClient();
+  const { data: codigo, error } = await supabase.rpc("reabrir_partida", { partida: partidaId });
+  if (error) {
+    if (error.hint === "muy_tarde") {
+      return { ok: false, error: "Ya pasaron más de 10 minutos: no se puede reabrir." };
+    }
+    console.error("reabrirPartida", partidaId, error);
+    return { ok: false, error: "No se pudo reabrir la partida. Probá de nuevo." };
+  }
+  redirect(`/sala/${codigo}`);
+}

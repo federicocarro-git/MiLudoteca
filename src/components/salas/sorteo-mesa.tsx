@@ -6,9 +6,16 @@ import { cambiarJuegoDeSala } from "@/app/sala/[codigo]/actions";
 import { ImagenJuego } from "@/components/juegos/imagen-juego";
 import { Boton } from "@/components/ui/boton";
 import { Selector } from "@/components/ui/campo";
+import { Chip } from "@/components/ui/chip";
 import { OPCIONES_DURACION, elegirAlAzar } from "@/lib/catalogo/filtros";
 import { formatearDuracion, formatearJugadores } from "@/lib/formato";
-import { agruparPorJuego, juegosParaLaMesa, type JuegoConDuenos } from "@/lib/mesa/juegos";
+import {
+  agruparPorJuego,
+  duenosDeLosJuegos,
+  filtrarPorDuenos,
+  juegosParaLaMesa,
+  type JuegoConDuenos,
+} from "@/lib/mesa/juegos";
 import { unirNombres } from "@/lib/partidas/resultado";
 import { createClient } from "@/lib/supabase/client";
 
@@ -16,11 +23,13 @@ const DURACION_GIRO_MS = 900;
 const PASO_GIRO_MS = 90;
 
 type Candidato = JuegoConDuenos & { id: string };
+type Modo = "elegir" | "sortear";
 
 /**
- * "¿A qué jugamos?" con los catálogos de todos los que están en la sala,
- * para la cantidad de jugadores de la mesa. El anfitrión puede pasar la sala
- * al juego que salió.
+ * "¿A qué jugamos?" con los catálogos de todos los que están en la sala:
+ * elegir uno de la lista o sortear. Se puede filtrar por dueño, por la
+ * cantidad de jugadores de la mesa y por duración. El anfitrión puede pasar
+ * la sala al juego elegido.
  */
 export function SorteoMesa({
   partidaId,
@@ -37,6 +46,9 @@ export function SorteoMesa({
 }) {
   const [todos, setTodos] = useState<Candidato[] | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [modo, setModo] = useState<Modo>("elegir");
+  const [duenos, setDuenos] = useState<string[]>([]);
+  const [soloParaLaMesa, setSoloParaLaMesa] = useState(true);
   const [duracion, setDuracion] = useState<number | null>(null);
   const [elegido, setElegido] = useState<Candidato | null>(null);
   const [girando, setGirando] = useState<string | null>(null);
@@ -59,7 +71,29 @@ export function SorteoMesa({
     };
   }, [partidaId]);
 
-  const candidatos = todos ? juegosParaLaMesa(todos, jugadores, duracion) : [];
+  const deLosDuenos = todos ? filtrarPorDuenos(todos, duenos) : [];
+  const candidatos = soloParaLaMesa
+    ? juegosParaLaMesa(deLosDuenos, jugadores, duracion)
+    : deLosDuenos.filter(
+        (j) => duracion === null || (j.duracion_min !== null && j.duracion_min <= duracion),
+      );
+
+  // Si un filtro deja afuera al elegido, se deselecciona.
+  if (elegido && !girando && !candidatos.some((c) => c.id === elegido.id)) setElegido(null);
+
+  function cambiarFiltro(cambio: () => void) {
+    cambio();
+    timers.current.forEach(clearTimeout);
+    setGirando(null);
+  }
+
+  function cambiarModo(nuevo: Modo) {
+    if (nuevo === modo) return;
+    timers.current.forEach(clearTimeout);
+    setGirando(null);
+    setElegido(null);
+    setModo(nuevo);
+  }
 
   function sortear(anterior?: string) {
     const resultado = elegirAlAzar(candidatos, anterior);
@@ -93,50 +127,106 @@ export function SorteoMesa({
   if (!todos) {
     return (
       <p className="text-texto-suave flex items-center gap-2 text-sm">
-        <Loader2 aria-hidden className="size-4 animate-spin" /> Juntando los catálogos de la mesa…
+        <Loader2 aria-hidden className="size-4 animate-spin" /> Juntando los estantes de la mesa…
       </p>
     );
   }
 
-  const sinDatos = todos.length - juegosParaLaMesa(todos, jugadores).length;
+  const todosLosDuenos = duenosDeLosJuegos(todos);
   const yaEsElDeLaSala = elegido !== null && elegido.juego_id === juegoActualId;
 
   return (
     <div className="space-y-4">
-      <p className="text-sm">
-        {todos.length === 1 ? "1 juego" : `${todos.length} juegos`} entre los catálogos de la mesa ·{" "}
+      <div className="flex gap-2" role="group" aria-label="Cómo elegir">
+        <Chip activo={modo === "elegir"} onClick={() => cambiarModo("elegir")}>
+          Elegir
+        </Chip>
+        <Chip activo={modo === "sortear"} onClick={() => cambiarModo("sortear")}>
+          Al azar
+        </Chip>
+      </div>
+
+      {todosLosDuenos.length > 1 && (
+        <fieldset className="space-y-2">
+          <legend className="text-sm font-medium">Filtrar por dueño</legend>
+          <div className="flex flex-wrap gap-2">
+            {todosLosDuenos.map((d) => (
+              <Chip
+                key={d.id}
+                activo={duenos.includes(d.id)}
+                onClick={() =>
+                  cambiarFiltro(() =>
+                    setDuenos((lista) =>
+                      lista.includes(d.id) ? lista.filter((id) => id !== d.id) : [...lista, d.id],
+                    ),
+                  )
+                }
+              >
+                {d.nombre}
+              </Chip>
+            ))}
+          </div>
+        </fieldset>
+      )}
+
+      <div className="grid grid-cols-2 items-end gap-3">
+        <label className="flex min-h-11 cursor-pointer items-center gap-2 text-sm">
+          <input
+            type="checkbox"
+            checked={soloParaLaMesa}
+            onChange={(e) => cambiarFiltro(() => setSoloParaLaMesa(e.target.checked))}
+            className="accent-primario size-5"
+          />
+          Solo para {jugadores} {jugadores === 1 ? "jugador" : "jugadores"}
+        </label>
+        <Selector
+          etiqueta="Duración máxima"
+          id="sorteo-duracion"
+          value={duracion ?? ""}
+          onChange={(e) =>
+            cambiarFiltro(() => setDuracion(e.target.value ? Number(e.target.value) : null))
+          }
+        >
+          <option value="">Cualquiera</option>
+          {OPCIONES_DURACION.map((m) => (
+            <option key={m} value={m}>
+              Hasta {formatearDuracion(m)}
+            </option>
+          ))}
+        </Selector>
+      </div>
+
+      <p className="text-sm" aria-live="polite">
+        {todos.length === 1 ? "1 juego" : `${todos.length} juegos`} en la mesa ·{" "}
         <strong>
           {candidatos.length === 1
-            ? `1 sirve para ${jugadores}`
-            : `${candidatos.length} sirven para ${jugadores}`}
+            ? "1 con estos filtros"
+            : `${candidatos.length} con estos filtros`}
         </strong>
       </p>
-      <Selector
-        etiqueta="Duración máxima"
-        id="sorteo-duracion"
-        value={duracion ?? ""}
-        onChange={(e) => {
-          setDuracion(e.target.value ? Number(e.target.value) : null);
-          setElegido(null);
-        }}
-      >
-        <option value="">Cualquiera</option>
-        {OPCIONES_DURACION.map((m) => (
-          <option key={m} value={m}>
-            Hasta {formatearDuracion(m)}
+
+      {modo === "elegir" && (
+        <Selector
+          etiqueta="Juego"
+          id="elegir-juego"
+          value={elegido?.id ?? ""}
+          disabled={candidatos.length === 0}
+          onChange={(e) => setElegido(candidatos.find((c) => c.id === e.target.value) ?? null)}
+        >
+          <option value="">
+            {candidatos.length === 0 ? "Ningún juego con estos filtros" : "Elegí un juego"}
           </option>
-        ))}
-      </Selector>
-      {sinDatos > 0 && (
-        <p className="text-texto-suave text-xs">
-          {sinDatos === 1 ? "1 juego no entra" : `${sinDatos} juegos no entran`}: no sirven para{" "}
-          {jugadores} o no tienen la cantidad de jugadores cargada.
-        </p>
+          {candidatos.map((c) => (
+            <option key={c.id} value={c.id}>
+              {c.nombre} · {unirNombres(c.duenos.map((d) => d.nombre))}
+            </option>
+          ))}
+        </Selector>
       )}
 
       <div
         aria-live="polite"
-        className="flex min-h-56 flex-col items-center justify-center gap-3 text-center"
+        className="flex min-h-40 flex-col items-center justify-center gap-3 text-center"
       >
         {girando && (
           <p className="text-texto-suave animate-pulse text-xl font-semibold">{girando}</p>
@@ -147,7 +237,7 @@ export function SorteoMesa({
               url={elegido.imagen_url}
               nombre={elegido.nombre}
               sizes="128px"
-              className="aspect-square w-32 rounded-2xl"
+              className="aspect-square w-28 rounded-2xl"
             />
             <div>
               <p className="text-2xl font-bold tracking-tight">{elegido.nombre}</p>
@@ -166,26 +256,30 @@ export function SorteoMesa({
         {!elegido && !girando && (
           <p className="text-texto-suave text-sm">
             {candidatos.length === 0
-              ? "Ningún juego de la mesa sirve para esta cantidad de jugadores."
-              : "Tocá Sortear y que decida el azar."}
+              ? "Ningún juego de la mesa pasa estos filtros."
+              : modo === "elegir"
+                ? "Elegí un juego de la lista."
+                : "Tocá Sortear y que decida el azar."}
           </p>
         )}
       </div>
 
       <div className="flex gap-3">
-        <Boton
-          variante={elegido ? "secundario" : "primario"}
-          className="flex-1"
-          disabled={candidatos.length === 0 || (elegido !== null && candidatos.length < 2)}
-          onClick={() => sortear(elegido?.id)}
-        >
-          {elegido ? (
-            <RefreshCw aria-hidden className="size-4" />
-          ) : (
-            <Dices aria-hidden className="size-4" />
-          )}
-          {elegido ? "Otro" : "Sortear"}
-        </Boton>
+        {modo === "sortear" && (
+          <Boton
+            variante={elegido ? "secundario" : "primario"}
+            className="flex-1"
+            disabled={candidatos.length === 0 || (elegido !== null && candidatos.length < 2)}
+            onClick={() => sortear(elegido?.id)}
+          >
+            {elegido ? (
+              <RefreshCw aria-hidden className="size-4" />
+            ) : (
+              <Dices aria-hidden className="size-4" />
+            )}
+            {elegido ? "Otro" : "Sortear"}
+          </Boton>
+        )}
         {soyAnfitrion && elegido && !girando && (
           <Boton
             className="flex-1"

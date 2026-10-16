@@ -2,7 +2,9 @@ import { describe, expect, it } from "vitest";
 import {
   agruparPorJuego,
   claveDeJuego,
+  duenosDeLosJuegos,
   filtrarJuegosDeAmigos,
+  filtrarPorDuenos,
   juegosParaLaMesa,
   type FilaJuegoAjeno,
 } from "./juegos";
@@ -91,5 +93,24 @@ describe("filtrarJuegosDeAmigos", () => {
     expect(filtrarJuegosDeAmigos(juegos, { q: "catan" }).map((j) => j.nombre)).toEqual(["Catán"]);
     expect(filtrarJuegosDeAmigos(juegos, { amigo: "c" }).map((j) => j.nombre)).toEqual(["Dixit"]);
     expect(filtrarJuegosDeAmigos(juegos, {})).toHaveLength(2);
+  });
+});
+
+describe("dueños de los juegos de la mesa", () => {
+  const juegos = agruparPorJuego([
+    fila(CARO, { nombre: "Catan" }),
+    fila(BETO, { nombre: "Catan" }),
+    fila(BETO, { nombre: "Dixit" }),
+    fila(["a", "Ana"], { nombre: "Azul" }),
+  ]);
+
+  it("lista los dueños sin repetir, por nombre", () => {
+    expect(duenosDeLosJuegos(juegos).map((d) => d.nombre)).toEqual(["Ana", "Beto", "Caro"]);
+  });
+
+  it("filtra por uno o varios dueños; sin elegir, todos", () => {
+    expect(filtrarPorDuenos(juegos, ["c"]).map((j) => j.nombre)).toEqual(["Catan"]);
+    expect(filtrarPorDuenos(juegos, ["a", "c"]).map((j) => j.nombre)).toEqual(["Azul", "Catan"]);
+    expect(filtrarPorDuenos(juegos, [])).toHaveLength(3);
   });
 });

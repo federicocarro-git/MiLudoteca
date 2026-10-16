@@ -275,7 +275,7 @@ export function SalaEnVivo({
 
   if (fuera) {
     return (
-      <section className="border-borde bg-superficie space-y-3 rounded-2xl border p-6 text-center">
+      <section className="border-borde bg-superficie relieve space-y-3 rounded-2xl border p-6 text-center">
         <DoorOpen aria-hidden className="text-primario mx-auto size-10" />
         <h2 className="font-semibold">Ya no estás en esta sala</h2>
         <p className="text-texto-suave text-sm">La sala se canceló o te sacaron.</p>
@@ -290,6 +290,7 @@ export function SalaEnVivo({
   }
 
   const lideres = puntajeMasAlto(jugadores);
+  const sinJuego = sala.juego_nombre === null;
 
   return (
     <div className="space-y-4">
@@ -338,6 +339,25 @@ export function SalaEnVivo({
         {error}
       </p>
 
+      {sinJuego && (
+        <section
+          aria-label="Falta elegir el juego"
+          className="bg-primario/10 border-primario space-y-3 rounded-2xl border p-4"
+        >
+          <p className="text-sm">
+            <span className="block font-semibold">Todavía no eligieron el juego</span>
+            <span className="text-texto-suave">
+              {soyAnfitrion
+                ? "Cuando estén todos, elegí entre los juegos de la mesa: los tuyos y los de los que se sumaron."
+                : "Cuando estén todos, el anfitrión elige entre los juegos de la mesa (también los tuyos)."}
+            </span>
+          </p>
+          <Boton onClick={() => setHoja("sortear")}>
+            <Dices aria-hidden className="size-4" /> Ver los juegos de la mesa
+          </Boton>
+        </section>
+      )}
+
       <ul className="space-y-2" aria-label="Jugadores">
         {jugadores.map((j) => {
           const esYo = j.user_id === yo;
@@ -351,8 +371,8 @@ export function SalaEnVivo({
             <li
               key={j.id}
               aria-label={j.nombre}
-              className={`bg-superficie flex items-center gap-3 rounded-2xl border p-3 ${
-                esYo ? "border-primario" : "border-borde"
+              className={`bg-superficie flex items-center gap-2.5 rounded-[1.25rem] border-[1.5px] p-2.5 pl-3 ${
+                esYo ? "border-primario relieve-primario" : "border-borde relieve"
               }`}
             >
               <Avatar nombre={j.nombre} />
@@ -377,7 +397,7 @@ export function SalaEnVivo({
                   onCambiar={(n) => cambiarPuntos(j.id, n)}
                 />
               ) : (
-                <p className="w-20 text-center text-2xl font-bold tabular-nums">
+                <p className="font-display w-20 text-center text-[1.75rem] font-bold tabular-nums">
                   <span className="sr-only">Puntos: </span>
                   {j.puntos}
                 </p>
@@ -387,7 +407,7 @@ export function SalaEnVivo({
                   type="button"
                   onClick={() => setQuitando(j)}
                   aria-label={`Sacar a ${j.nombre}`}
-                  className="text-texto-suave -mr-1 inline-flex size-11 items-center justify-center rounded-xl hover:text-red-700 dark:hover:text-red-400"
+                  className="text-texto-suave -mr-1 inline-flex h-11 w-9 shrink-0 items-center justify-center rounded-xl hover:text-red-700 dark:hover:text-red-400"
                 >
                   <X aria-hidden className="size-5" />
                 </button>
@@ -416,9 +436,22 @@ export function SalaEnVivo({
       )}
 
       {soyAnfitrion && (
-        <Boton className="w-full" onClick={() => setHoja("terminar")}>
-          <Flag aria-hidden className="size-4" /> Terminar partida
-        </Boton>
+        // Siempre a mano, abajo, al alcance del pulgar.
+        <div className="from-fondo sticky bottom-0 z-10 -mx-4 space-y-1 bg-gradient-to-t from-70% px-4 pt-6 pb-[max(1rem,env(safe-area-inset-bottom))]">
+          <Boton
+            variante="acento"
+            className="min-h-13 w-full text-base"
+            disabled={sinJuego}
+            onClick={() => setHoja("terminar")}
+          >
+            <Flag aria-hidden className="size-4" /> Terminar partida
+          </Boton>
+          {sinJuego && (
+            <p className="text-texto-suave text-center text-xs">
+              Para terminar, primero elijan a qué juegan.
+            </p>
+          )}
+        </div>
       )}
 
       <div className="pt-2">

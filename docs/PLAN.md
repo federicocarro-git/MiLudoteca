@@ -197,6 +197,17 @@ vivo.
 | 13  | Catálogos de la mesa (_hecho_)     | "¿Quién lo tiene?" (juegos de tus amigos) y "¿A qué jugamos?" entre los catálogos de los presentes en la sala.                                    |
 | 14  | Puntuación por rondas (_hecho_)    | Rondas en la sala y hojas de puntuación por juego (categorías con suma automática).                                                               |
 
+### Después de la fase 2
+
+- "¿A qué jugamos?" en la sala: elegir de una lista (además de al azar), con
+  filtro por dueño de los juegos.
+- Sala sin juego ("Elegimos en la mesa"): se elige entre los catálogos de
+  todos los que se sumaron; no se puede terminar sin juego.
+- Revancha: otra sala con el mismo juego, la misma forma de anotar y los
+  mismos jugadores (amigos y sin celular).
+- Reabrir: el anfitrión puede volver a poner en curso una partida durante
+  los 10 minutos después de terminarla.
+
 ### Pendiente aparte
 
 - **Importar la colección de BGG**: `BggProvider` ya maneja el 202 (el

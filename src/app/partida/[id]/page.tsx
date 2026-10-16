@@ -7,14 +7,13 @@ import { ImagenJuego } from "@/components/juegos/imagen-juego";
 import { BorrarPartida } from "@/components/partidas/borrar-partida";
 import { FotosPartida } from "@/components/partidas/fotos-partida";
 import { NotasPartida } from "@/components/partidas/notas-partida";
+import { AvisoRevancha, BotonRevancha, ReabrirPartida } from "@/components/partidas/revancha";
 import { TablaResultado } from "@/components/partidas/tabla-resultado";
-import { BotonCrearSala } from "@/components/salas/boton-crear-sala";
 import { HojaDePuntos } from "@/components/salas/hoja-de-puntos";
 import { getSesionActual } from "@/lib/auth";
 import { formatearDuracion } from "@/lib/formato";
-import { obtenerJuego } from "@/lib/juegos/consultas";
-import { listarFotos, obtenerPartida } from "@/lib/partidas/consultas";
-import { casillerosVisibles, filasDeLaHoja } from "@/lib/salas/tipos";
+import { listarFotos, obtenerPartida, obtenerRevancha } from "@/lib/partidas/consultas";
+import { SIN_JUEGO, casillerosVisibles, filasDeLaHoja } from "@/lib/salas/tipos";
 import {
   NOMBRE_MODO,
   formatearFecha,
@@ -25,7 +24,7 @@ import {
 
 export const metadata: Metadata = { title: "Partida" };
 
-const TARJETA = "border-borde bg-superficie space-y-3 rounded-2xl border p-4";
+const TARJETA = "border-borde bg-superficie space-y-3 relieve rounded-2xl border p-4";
 
 export default function PartidaPage({ params }: PageProps<"/partida/[id]">) {
   return (
@@ -43,7 +42,7 @@ async function ContenidoPartida({ id }: { id: string }) {
 
   if (!datos) {
     return (
-      <section className="border-borde bg-superficie mx-auto max-w-md space-y-3 rounded-2xl border p-6 text-center">
+      <section className="border-borde bg-superficie relieve mx-auto max-w-md space-y-3 rounded-2xl border p-6 text-center">
         <h1 className="text-xl font-bold">No encontramos esa partida</h1>
         <p className="text-texto-suave text-sm">
           Puede que se haya borrado o que no hayas jugado en ella.
@@ -62,7 +61,7 @@ async function ContenidoPartida({ id }: { id: string }) {
   // Si alguien abre el link de una sala que sigue en curso, a la sala.
   if (partida.estado === "en_curso") {
     return (
-      <section className="border-borde bg-superficie mx-auto max-w-md space-y-3 rounded-2xl border p-6 text-center">
+      <section className="border-borde bg-superficie relieve mx-auto max-w-md space-y-3 rounded-2xl border p-6 text-center">
         <h1 className="text-xl font-bold">La partida sigue en curso</h1>
         <Link
           href={`/sala/${partida.codigo}`}
@@ -76,11 +75,9 @@ async function ContenidoPartida({ id }: { id: string }) {
 
   const yo = sesion?.id ?? null;
   const soyAnfitrion = yo !== null && partida.anfitrion_id === yo;
-  const [fotos, juegoVisible] = await Promise.all([
+  const [fotos, revancha] = await Promise.all([
     listarFotos(partida.id),
-    // "Jugar otra vez" solo si el anfitrión puede ver el juego (no si la sala
-    // se pasó a un juego manual de un amigo).
-    soyAnfitrion && partida.juego_id ? obtenerJuego(partida.juego_id) : null,
+    soyAnfitrion ? null : obtenerRevancha(partida.id),
   ]);
   const minutos = minutosDePartida(partida.creada_en, partida.terminada_en);
   const cooperativo = partida.modo_resultado === "cooperativo";
@@ -92,12 +89,14 @@ async function ContenidoPartida({ id }: { id: string }) {
       <header className="flex items-center gap-3">
         <ImagenJuego
           url={partida.juego_imagen_url}
-          nombre={partida.juego_nombre}
+          nombre={partida.juego_nombre ?? SIN_JUEGO}
           sizes="64px"
           className="size-16 shrink-0 rounded-xl"
         />
         <div className="min-w-0">
-          <h1 className="truncate text-2xl font-bold tracking-tight">{partida.juego_nombre}</h1>
+          <h1 className="truncate text-2xl font-bold tracking-tight">
+            {partida.juego_nombre ?? SIN_JUEGO}
+          </h1>
           <p className="text-texto-suave flex flex-wrap items-center gap-x-3 text-sm">
             <span className="inline-flex items-center gap-1">
               <CalendarDays aria-hidden className="size-4" />
@@ -112,6 +111,14 @@ async function ContenidoPartida({ id }: { id: string }) {
           </p>
         </div>
       </header>
+
+      {!soyAnfitrion && partida.terminada_en && (
+        <AvisoRevancha
+          partidaId={partida.id}
+          terminadaEn={partida.terminada_en}
+          revancha={revancha}
+        />
+      )}
 
       <section
         className="flex items-center gap-3 rounded-2xl bg-amber-100 p-4 dark:bg-amber-950"
@@ -164,8 +171,10 @@ async function ContenidoPartida({ id }: { id: string }) {
         />
       </section>
 
-      {soyAnfitrion && juegoVisible && partida.juego_id && (
-        <BotonCrearSala juegoId={partida.juego_id}>Jugar otra vez</BotonCrearSala>
+      {soyAnfitrion && <BotonRevancha partidaId={partida.id} />}
+
+      {soyAnfitrion && partida.terminada_en && (
+        <ReabrirPartida partidaId={partida.id} terminadaEn={partida.terminada_en} />
       )}
 
       {!conCuenta && (

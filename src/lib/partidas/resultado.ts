@@ -72,3 +72,12 @@ export function formatearFecha(iso: string): string {
     timeZone: "America/Argentina/Buenos_Aires",
   });
 }
+
+/** Minutos durante los que el anfitrión puede reabrir una partida terminada (igual que la base). */
+export const MINUTOS_PARA_REABRIR = 10;
+
+/** Milisegundos que quedan para reabrir la partida (0 si ya no se puede). */
+export function tiempoParaReabrir(terminada: string | null, ahora: number): number {
+  if (!terminada) return 0;
+  return Math.max(0, Date.parse(terminada) + MINUTOS_PARA_REABRIR * 60_000 - ahora);
+}

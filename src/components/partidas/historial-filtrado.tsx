@@ -83,7 +83,7 @@ export function HistorialFiltrado({
             <li key={p.id}>
               <Link
                 href={`/partida/${p.id}`}
-                className="border-borde bg-superficie hover:border-primario flex items-center gap-3 rounded-2xl border p-3"
+                className="border-borde bg-superficie hover:border-primario relieve flex items-center gap-3 rounded-2xl border p-3"
               >
                 <div className="min-w-0 flex-1">
                   <p className="flex items-center gap-1.5 font-medium">

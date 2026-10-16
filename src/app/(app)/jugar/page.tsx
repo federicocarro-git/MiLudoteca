@@ -1,16 +1,18 @@
-import { ChevronRight, History, PackageSearch, Plus, Trophy, Users } from "lucide-react";
+import { ChevronRight, History, PackageSearch, Plus, Users } from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { Suspense } from "react";
 import { EncabezadoPagina } from "@/components/layout/encabezado-pagina";
+import { BotonCrearSala } from "@/components/salas/boton-crear-sala";
 import { UnirseConCodigo } from "@/components/salas/unirse-con-codigo";
 import { BotonLink } from "@/components/ui/boton";
 import { obtenerAmistades } from "@/lib/amigos/consultas";
 import { obtenerMisSalasEnCurso } from "@/lib/salas/consultas";
+import { SIN_JUEGO } from "@/lib/salas/tipos";
 
 export const metadata: Metadata = { title: "Jugar" };
 
-const TARJETA = "border-borde bg-superficie space-y-3 rounded-2xl border p-4";
+const TARJETA = "border-borde bg-superficie space-y-3 relieve rounded-2xl border p-4";
 
 export default function JugarPage() {
   return (
@@ -23,10 +25,16 @@ export default function JugarPage() {
           </h2>
           <p className="text-texto-suave text-sm">
             Elegí un juego, invitá a la mesa con un QR y cada uno anota sus puntos desde su celular.
+            ¿No saben a qué jugar? Creá la sala sin juego y elijan entre los estantes de todos.
           </p>
-          <BotonLink href="/jugar/nueva">
-            <Plus aria-hidden className="size-4" /> Crear una sala
-          </BotonLink>
+          <div className="flex flex-wrap gap-3">
+            <BotonLink href="/jugar/nueva">
+              <Plus aria-hidden className="size-4" /> Crear una sala
+            </BotonLink>
+            <BotonCrearSala juegoId={null} variante="secundario">
+              Elegimos en la mesa
+            </BotonCrearSala>
+          </div>
         </section>
 
         <Suspense>
@@ -42,7 +50,7 @@ export default function JugarPage() {
 
         <Link
           href="/jugar/historial"
-          className="border-borde bg-superficie hover:border-primario flex min-h-16 items-center gap-3 rounded-2xl border p-4"
+          className="border-borde bg-superficie hover:border-primario relieve flex min-h-16 items-center gap-3 rounded-2xl border p-4"
         >
           <History aria-hidden className="text-primario size-6 shrink-0" />
           <span className="flex-1">
@@ -55,22 +63,8 @@ export default function JugarPage() {
         </Link>
 
         <Link
-          href="/jugar/ranking"
-          className="border-borde bg-superficie hover:border-primario flex min-h-16 items-center gap-3 rounded-2xl border p-4"
-        >
-          <Trophy aria-hidden className="text-primario size-6 shrink-0" />
-          <span className="flex-1">
-            <span className="block font-semibold">Ranking</span>
-            <span className="text-texto-suave block text-sm">
-              Victorias entre amigos y cara a cara
-            </span>
-          </span>
-          <ChevronRight aria-hidden className="text-texto-suave size-5 shrink-0" />
-        </Link>
-
-        <Link
           href="/jugar/quien-lo-tiene"
-          className="border-borde bg-superficie hover:border-primario flex min-h-16 items-center gap-3 rounded-2xl border p-4"
+          className="border-borde bg-superficie hover:border-primario relieve flex min-h-16 items-center gap-3 rounded-2xl border p-4"
         >
           <PackageSearch aria-hidden className="text-primario size-6 shrink-0" />
           <span className="flex-1">
@@ -82,7 +76,7 @@ export default function JugarPage() {
 
         <Link
           href="/jugar/amigos"
-          className="border-borde bg-superficie hover:border-primario flex min-h-16 items-center gap-3 rounded-2xl border p-4"
+          className="border-borde bg-superficie hover:border-primario relieve flex min-h-16 items-center gap-3 rounded-2xl border p-4"
         >
           <Users aria-hidden className="text-primario size-6 shrink-0" />
           <span className="flex-1">
@@ -121,7 +115,7 @@ async function SalasEnCurso() {
                 <span className="relative inline-flex size-2.5 rounded-full bg-green-600" />
               </span>
               <span className="min-w-0 flex-1">
-                <span className="block truncate font-medium">{s.juego_nombre}</span>
+                <span className="block truncate font-medium">{s.juego_nombre ?? SIN_JUEGO}</span>
                 <span className="text-texto-suave block text-sm">
                   {s.jugadores === 1 ? "1 jugador" : `${s.jugadores} jugadores`}
                   {s.soyAnfitrion ? " · sos anfitrión" : ""} · {s.codigo}

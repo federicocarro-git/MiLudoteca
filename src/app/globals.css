@@ -1,28 +1,48 @@
 @import "tailwindcss";
 
-/* Paleta: verde mesa de juego + fondo cálido. Usar siempre estos tokens
-   (bg-fondo, text-texto, bg-primario, ...) en vez de colores sueltos. */
+/* Paleta "café de juegos": papel crema, espresso, paño de mesa, terracota,
+   miel y pizarra. Usar siempre estos tokens (bg-fondo, text-texto,
+   bg-primario, ...) en vez de colores sueltos. */
 :root {
-  --fondo: #faf8f5;
-  --superficie: #ffffff;
-  --borde: #e7e2da;
-  --texto: #1f1b16;
-  --texto-suave: #6b6359;
-  --primario: #0f766e;
-  --primario-hover: #115e59;
-  --sobre-primario: #ffffff;
+  --fondo: #f3e9d8;
+  --superficie: #fffaf1;
+  --borde: #e2d3bb;
+  --texto: #3a2a1f;
+  --texto-suave: #7a6654;
+  --primario: #2f5d50;
+  --primario-hover: #264d42;
+  --primario-sombra: #1c3a32;
+  --sobre-primario: #fffaf1;
+  --acento: #b9562a;
+  --acento-sombra: #7f3a1b;
+  --sobre-acento: #fffaf1;
+  --miel: #e0a83a;
+  --pizarra: #2c322e;
+  --tiza: #f1ece2;
+  --marco: #8a5a3b;
+  --nota: #fbf1c9;
 }
 
+/* "Café de noche": madera oscura y luz cálida. */
 @media (prefers-color-scheme: dark) {
   :root {
-    --fondo: #14120f;
-    --superficie: #1f1c18;
-    --borde: #36312a;
-    --texto: #f3efe9;
-    --texto-suave: #a89f93;
-    --primario: #2dd4bf;
-    --primario-hover: #5eead4;
-    --sobre-primario: #042f2e;
+    --fondo: #1b1511;
+    --superficie: #261e18;
+    --borde: #3e3128;
+    --texto: #f3e9d8;
+    --texto-suave: #b9a690;
+    --primario: #6fb39b;
+    --primario-hover: #8cc5b0;
+    --primario-sombra: #2f5d50;
+    --sobre-primario: #12231d;
+    --acento: #e07a45;
+    --acento-sombra: #8f4320;
+    --sobre-acento: #1b1511;
+    --miel: #e9b54d;
+    --pizarra: #232825;
+    --tiza: #ece5d8;
+    --marco: #6b4630;
+    --nota: #3a3322;
   }
 }
 
@@ -35,12 +55,41 @@
   --color-primario: var(--primario);
   --color-primario-hover: var(--primario-hover);
   --color-sobre-primario: var(--sobre-primario);
-  --font-sans: var(--font-geist-sans);
+  --color-acento: var(--acento);
+  --color-sobre-acento: var(--sobre-acento);
+  --color-miel: var(--miel);
+  --color-pizarra: var(--pizarra);
+  --color-tiza: var(--tiza);
+  --color-marco: var(--marco);
+  --color-nota: var(--nota);
+  --font-sans: var(--font-nunito);
+  --font-display: var(--font-fraunces);
+  --font-mano: var(--font-caveat);
 }
 
 body {
   background: var(--fondo);
   color: var(--texto);
+}
+
+/* Títulos con letra de carta de café. */
+@layer base {
+  h1,
+  h2 {
+    font-family: var(--font-display);
+    letter-spacing: -0.01em;
+  }
+}
+
+/* "Relieve": la sombra dura de abajo que hace que se note qué se toca. */
+@utility relieve {
+  box-shadow: 0 3px 0 var(--borde);
+}
+@utility relieve-primario {
+  box-shadow: 0 3px 0 var(--primario-sombra);
+}
+@utility relieve-acento {
+  box-shadow: 0 4px 0 var(--acento-sombra);
 }
 
 /* Al imprimir, siempre fondo blanco y texto negro. */
@@ -50,6 +99,7 @@ body {
     --superficie: #ffffff;
     --texto: #000000;
     --texto-suave: #333333;
+    --borde: #cccccc;
   }
 }
 

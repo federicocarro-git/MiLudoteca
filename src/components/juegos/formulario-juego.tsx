@@ -40,7 +40,7 @@ export function FormularioJuego({
   inicial,
   bggIdInicial = null,
   accion: accionGuardar = guardarJuego,
-  textoBoton = "Guardar en mi catálogo",
+  textoBoton = "Guardar en mi estante",
 }: {
   origen: ProviderId | null;
   inicial?: ValoresJuego;
@@ -116,7 +116,7 @@ export function FormularioJuego({
           <input key={t} type="hidden" name="tipos" value={t} />
         ))}
 
-        <section className="border-borde bg-superficie space-y-4 rounded-2xl border p-4">
+        <section className="border-borde bg-superficie relieve space-y-4 rounded-2xl border p-4">
           <h2 className="font-semibold">Datos del juego</h2>
           <Campo
             etiqueta="Nombre"
@@ -227,8 +227,8 @@ export function FormularioJuego({
           />
         </section>
 
-        <section className="border-borde bg-superficie space-y-4 rounded-2xl border p-4">
-          <h2 className="font-semibold">En tu catálogo</h2>
+        <section className="border-borde bg-superficie relieve space-y-4 rounded-2xl border p-4">
+          <h2 className="font-semibold">En tu estante</h2>
           <Selector
             etiqueta="Tu puntuación"
             id="puntuacion"

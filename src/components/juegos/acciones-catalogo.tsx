@@ -31,8 +31,8 @@ export function AccionesCatalogo({
 
   if (!catalogo) {
     return (
-      <section className="border-borde bg-superficie space-y-3 rounded-2xl border p-4">
-        <p className="text-texto-suave text-sm">Este juego no está en tu catálogo.</p>
+      <section className="border-borde bg-superficie relieve space-y-3 rounded-2xl border p-4">
+        <p className="text-texto-suave text-sm">Este juego no está en tu estante.</p>
         <Boton
           disabled={pendiente}
           onClick={() =>
@@ -47,7 +47,7 @@ export function AccionesCatalogo({
           ) : (
             <Plus aria-hidden className="size-4" />
           )}
-          Agregar a mi catálogo
+          Agregar a mi estante
         </Boton>
         {error && <p className="text-sm font-medium text-red-700 dark:text-red-400">{error}</p>}
       </section>
@@ -55,9 +55,11 @@ export function AccionesCatalogo({
   }
 
   return (
-    <section className="border-borde bg-superficie space-y-3 rounded-2xl border p-4 print:hidden">
+    // Un post-it pegado con cinta: la nota y la puntuación de uno.
+    <section className="bg-nota relative mt-2 -rotate-[0.6deg] space-y-2 rounded-tl-sm rounded-tr-2xl rounded-b-2xl px-4 pt-3 pb-2 shadow-[0_4px_10px_rgb(58_42_31/0.12)] print:hidden">
+      <span aria-hidden className="bg-acento/35 absolute -top-2 left-5 h-4 w-14 -rotate-[4deg]" />
       <div className="flex items-center justify-between gap-2">
-        <h2 className="font-semibold">En tu catálogo</h2>
+        <h2 className="font-mano text-acento text-2xl font-semibold">En tu estante</h2>
         <button
           type="button"
           onClick={() => setEditando(true)}
@@ -69,7 +71,7 @@ export function AccionesCatalogo({
       <p className="flex items-center gap-1.5 text-sm">
         <Star
           aria-hidden
-          className={`size-4 ${catalogo.puntuacion ? "fill-amber-400 text-amber-400" : "text-texto-suave"}`}
+          className={`size-4 ${catalogo.puntuacion ? "fill-acento text-acento" : "text-texto-suave"}`}
         />
         {catalogo.puntuacion ? (
           <>
@@ -89,7 +91,7 @@ export function AccionesCatalogo({
         onClick={() => setQuitando(true)}
         className="text-texto-suave inline-flex min-h-11 items-center gap-1.5 text-sm hover:text-red-700 dark:hover:text-red-400"
       >
-        <Trash2 aria-hidden className="size-4" /> Quitar de mi catálogo
+        <Trash2 aria-hidden className="size-4" /> Quitar de mi estante
       </button>
 
       <Hoja abierta={editando} onCerrar={() => setEditando(false)} titulo="Tu puntuación y notas">
@@ -102,7 +104,7 @@ export function AccionesCatalogo({
         )}
       </Hoja>
 
-      <Hoja abierta={quitando} onCerrar={() => setQuitando(false)} titulo="¿Quitar de tu catálogo?">
+      <Hoja abierta={quitando} onCerrar={() => setQuitando(false)} titulo="¿Quitar de tu estante?">
         <div className="space-y-4">
           <p className="text-sm">
             {esManualPropio

@@ -4,6 +4,7 @@ import type { PostgrestError } from "@supabase/supabase-js";
 import { refresh } from "next/cache";
 import { redirect } from "next/navigation";
 import { getSesionActual, getUsuarioActual } from "@/lib/auth";
+import { mensajeDeErrorInvitado } from "@/lib/auth-errores";
 import { esUuid } from "@/lib/juegos/consultas";
 import { borrarFotosDePartida } from "@/lib/partidas/borrar-fotos";
 import type { Resultado } from "@/lib/resultado";
@@ -47,14 +48,8 @@ export async function entrarComoInvitado(
   if (!(await getSesionActual())) {
     const { error } = await supabase.auth.signInAnonymously();
     if (error) {
-      console.error("entrarComoInvitado: signInAnonymously", error);
-      return {
-        ok: false,
-        error:
-          error.status === 429
-            ? "Entraron demasiados invitados desde esta red. Probá en un rato o ingresá con tu cuenta."
-            : "No se pudo entrar como invitado. Probá de nuevo.",
-      };
+      console.error("entrarComoInvitado: signInAnonymously", error.code, error.status, error);
+      return { ok: false, error: mensajeDeErrorInvitado(error.code, error.status) };
     }
   }
 
@@ -241,6 +236,9 @@ export async function terminarPartida(
     ...(ganamos === null ? {} : { ganamos }),
   });
   if (error) {
+    if (error.hint === "sin_juego") {
+      return { ok: false, error: "Antes de terminar, elijan a qué juegan." };
+    }
     console.error("terminarPartida", partidaId, error);
     return { ok: false, error: "No se pudo terminar la partida. Probá de nuevo." };
   }

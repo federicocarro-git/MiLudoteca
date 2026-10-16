@@ -9,7 +9,7 @@ import { obtenerAmistades, obtenerMiPerfil } from "@/lib/amigos/consultas";
 
 export const metadata: Metadata = { title: "Amigos" };
 
-const TARJETA = "border-borde bg-superficie space-y-3 rounded-2xl border p-4";
+const TARJETA = "border-borde bg-superficie space-y-3 relieve rounded-2xl border p-4";
 
 export default function AmigosPage({ searchParams }: PageProps<"/jugar/amigos">) {
   return (

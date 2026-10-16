@@ -22,7 +22,7 @@ export default function LoginPage() {
           <p className="text-texto-suave text-sm">Tus juegos de mesa, siempre a mano.</p>
         </div>
       </header>
-      <section className="border-borde bg-superficie rounded-2xl border p-5 shadow-sm">
+      <section className="border-borde bg-superficie relieve rounded-2xl border p-5 shadow-sm">
         {/* useSearchParams (next y error) es dato del request: va en Suspense. */}
         <Suspense fallback={<div className="bg-fondo h-80 animate-pulse rounded-xl" />}>
           <FormularioLogin />

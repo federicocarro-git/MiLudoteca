@@ -69,6 +69,20 @@ nunca en el repo ni en un chat.
 - [ ] "¿Quién lo tiene?" muestra los juegos del amigo, y dejan de verse al
       apagar "Mostrar mis juegos" en su Cuenta.
 
+## Usuarios de prueba
+
+`scripts/datos-de-prueba.mjs` crea 6 usuarios (Ana, Beto, Caro, Dani, Eli y
+Fran, con mails `@miludoteca.test`) con juegos en sus catálogos, amigos entre
+sí y, con `--amigo`, también de tu cuenta. Usa la clave secreta, así que se
+corre desde tu compu con las claves en `.env.produccion` (ignorado por git):
+
+```bash
+node --env-file=.env.produccion scripts/datos-de-prueba.mjs --amigo tu@mail.com
+node --env-file=.env.produccion scripts/datos-de-prueba.mjs --borrar
+```
+
+Imprime la contraseña (la misma para los seis, nueva en cada corrida).
+
 ## 4. Cuando llegue el token de BGG
 
 1. Correr `BGG_API_TOKEN=... npm run test:bgg-real` y completar la checklist

@@ -17,6 +17,9 @@ export type Sala = Pick<
   | "categorias"
 >;
 
+/** Lo que se muestra en lugar del juego mientras la sala no tiene uno. */
+export const SIN_JUEGO = "Sin juego todavía";
+
 export type TipoPuntaje = "total" | "rondas" | "categorias";
 
 /** Cómo se anota en la sala (cambia con configurar_puntaje y agregar_ronda). */

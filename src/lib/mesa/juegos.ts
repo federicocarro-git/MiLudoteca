@@ -101,3 +101,22 @@ export function filtrarJuegosDeAmigos(
       (!filtros.amigo || j.duenos.some((d) => d.id === filtros.amigo)),
   );
 }
+
+/** Quiénes tienen algún juego en la lista, ordenados por nombre. */
+export function duenosDeLosJuegos(juegos: JuegoConDuenos[]): { id: string; nombre: string }[] {
+  const duenos = new Map<string, string>();
+  for (const j of juegos) for (const d of j.duenos) duenos.set(d.id, d.nombre);
+  return [...duenos]
+    .map(([id, nombre]) => ({ id, nombre }))
+    .sort((a, b) => a.nombre.localeCompare(b.nombre, "es"));
+}
+
+/** Los juegos de alguno de estos dueños (sin dueños elegidos, todos). */
+export function filtrarPorDuenos<T extends Pick<JuegoConDuenos, "duenos">>(
+  juegos: T[],
+  duenos: string[],
+): T[] {
+  if (duenos.length === 0) return juegos;
+  const elegidos = new Set(duenos);
+  return juegos.filter((j) => j.duenos.some((d) => elegidos.has(d.id)));
+}
