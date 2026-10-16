@@ -10,6 +10,12 @@ export function formatearJugadores(min: number | null, max: number | null): stri
   return null;
 }
 
+/** Jugadores en corto, para tarjetas y datos: "2–4", "2", "3+", "≤5". */
+export function jugadoresCorto(min: number | null, max: number | null): string | null {
+  if (min && max) return min === max ? `${min}` : `${min}–${max}`;
+  return min ? `${min}+` : max ? `≤${max}` : null;
+}
+
 export function formatearDuracion(minutos: number | null): string | null {
   if (!minutos) return null;
   if (minutos < 60) return `${minutos} min`;
@@ -18,23 +24,25 @@ export function formatearDuracion(minutos: number | null): string | null {
   return resto ? `${horas} h ${resto} min` : `${horas} h`;
 }
 
+// Los mismos tres niveles que el filtro del catálogo (NIVELES_COMPLEJIDAD).
 const NIVELES: Array<[number, string]> = [
-  [1.8, "Liviano"],
-  [2.6, "Medio-liviano"],
-  [3.4, "Medio"],
-  [4.2, "Medio-pesado"],
+  [2, "Liviano"],
+  [3, "Mediano"],
   [Infinity, "Pesado"],
 ];
 
-/** Nombre del nivel de complejidad (escala 1-5 de BGG). */
+/** Nombre del nivel de complejidad (escala 1-5 de BGG): Liviano, Mediano o Pesado. */
 export function nivelDeComplejidad(complejidad: number | null): string | null {
   if (complejidad === null || complejidad === undefined) return null;
   return NIVELES.find(([tope]) => complejidad < tope)![1];
 }
 
-export function formatearComplejidad(complejidad: number | null): string | null {
-  const nivel = nivelDeComplejidad(complejidad);
-  return nivel
-    ? `${nivel} (${complejidad!.toLocaleString("es-AR", { maximumFractionDigits: 1 })}/5)`
-    : null;
+// Colores de los posavasos (avatares): se leen con letra crema en los dos modos.
+const COLORES_AVATAR = ["#2f5d50", "#b9562a", "#25507d", "#8a6a4f", "#7a4b6e", "#9a6d14"];
+
+/** Color fijo para un nombre (siempre el mismo para la misma persona). */
+export function colorDeNombre(nombre: string): string {
+  let suma = 0;
+  for (const letra of nombre.trim().toLowerCase()) suma = (suma * 31 + letra.charCodeAt(0)) >>> 0;
+  return COLORES_AVATAR[suma % COLORES_AVATAR.length];
 }

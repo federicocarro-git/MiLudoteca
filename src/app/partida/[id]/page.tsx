@@ -24,7 +24,7 @@ import {
 
 export const metadata: Metadata = { title: "Partida" };
 
-const TARJETA = "border-borde bg-superficie space-y-3 rounded-2xl border p-4";
+const TARJETA = "border-borde bg-superficie space-y-3 relieve rounded-2xl border p-4";
 
 export default function PartidaPage({ params }: PageProps<"/partida/[id]">) {
   return (
@@ -42,7 +42,7 @@ async function ContenidoPartida({ id }: { id: string }) {
 
   if (!datos) {
     return (
-      <section className="border-borde bg-superficie mx-auto max-w-md space-y-3 rounded-2xl border p-6 text-center">
+      <section className="border-borde bg-superficie relieve mx-auto max-w-md space-y-3 rounded-2xl border p-6 text-center">
         <h1 className="text-xl font-bold">No encontramos esa partida</h1>
         <p className="text-texto-suave text-sm">
           Puede que se haya borrado o que no hayas jugado en ella.
@@ -61,7 +61,7 @@ async function ContenidoPartida({ id }: { id: string }) {
   // Si alguien abre el link de una sala que sigue en curso, a la sala.
   if (partida.estado === "en_curso") {
     return (
-      <section className="border-borde bg-superficie mx-auto max-w-md space-y-3 rounded-2xl border p-6 text-center">
+      <section className="border-borde bg-superficie relieve mx-auto max-w-md space-y-3 rounded-2xl border p-6 text-center">
         <h1 className="text-xl font-bold">La partida sigue en curso</h1>
         <Link
           href={`/sala/${partida.codigo}`}

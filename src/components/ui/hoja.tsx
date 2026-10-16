@@ -34,11 +34,11 @@ export function Hoja({
       onClose={onCerrar}
       // Tocar el fondo (el propio <dialog>, fuera del contenido) cierra.
       onClick={(e) => e.target === e.currentTarget && onCerrar()}
-      className="bg-superficie text-texto m-0 mt-auto max-h-[85dvh] w-full max-w-none rounded-t-3xl p-0 backdrop:bg-black/50 md:m-auto md:max-w-lg md:rounded-3xl"
+      className="bg-fondo text-texto m-0 mt-auto max-h-[85dvh] w-full max-w-none rounded-t-[2rem] p-0 backdrop:bg-black/50 md:m-auto md:max-w-lg md:rounded-3xl"
     >
       <div className="flex max-h-[85dvh] flex-col">
-        <header className="border-borde flex items-center justify-between border-b px-4 py-2">
-          <h2 className="text-lg font-semibold">{titulo}</h2>
+        <header className="border-borde flex items-center justify-between border-b-[1.5px] px-5 py-2">
+          <h2 className="text-xl font-bold">{titulo}</h2>
           <button
             type="button"
             onClick={onCerrar}
@@ -48,7 +48,7 @@ export function Hoja({
             <X className="size-5" />
           </button>
         </header>
-        <div className="overflow-y-auto px-4 pt-4 pb-[max(1rem,env(safe-area-inset-bottom))]">
+        <div className="overflow-y-auto px-5 pt-4 pb-[max(1rem,env(safe-area-inset-bottom))]">
           {children}
         </div>
       </div>

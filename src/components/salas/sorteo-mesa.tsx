@@ -127,7 +127,7 @@ export function SorteoMesa({
   if (!todos) {
     return (
       <p className="text-texto-suave flex items-center gap-2 text-sm">
-        <Loader2 aria-hidden className="size-4 animate-spin" /> Juntando los catálogos de la mesa…
+        <Loader2 aria-hidden className="size-4 animate-spin" /> Juntando los estantes de la mesa…
       </p>
     );
   }

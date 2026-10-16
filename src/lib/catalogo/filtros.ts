@@ -21,7 +21,7 @@ export type JuegoCatalogo = {
 
 export const NIVELES_COMPLEJIDAD = {
   liviano: { etiqueta: "Liviano", desde: 1, hasta: 2 },
-  medio: { etiqueta: "Medio", desde: 2, hasta: 3 },
+  medio: { etiqueta: "Mediano", desde: 2, hasta: 3 },
   pesado: { etiqueta: "Pesado", desde: 3, hasta: 5.01 },
 } as const;
 export type NivelComplejidad = keyof typeof NIVELES_COMPLEJIDAD;

@@ -68,21 +68,26 @@ async function SalaActiva({
   return (
     <>
       {!sesion.anonimo && <EnlaceVolver href="/jugar">Jugar</EnlaceVolver>}
-      <header className="mb-4 flex items-center gap-3">
-        <ImagenJuego
-          url={sala.juego_imagen_url}
-          nombre={sala.juego_nombre ?? SIN_JUEGO}
-          sizes="64px"
-          className="size-16 shrink-0 rounded-xl"
-        />
-        <div className="min-w-0">
-          <h1 className="truncate text-2xl font-bold tracking-tight">
+      {/* La sala como una comanda de café: el juego arriba y el código abajo del corte. */}
+      <header className="bg-superficie border-borde relieve relative mb-4 rounded-[1.25rem] border-[1.5px]">
+        <div className="flex items-center gap-3 p-3.5 pb-4">
+          <ImagenJuego
+            url={sala.juego_imagen_url}
+            nombre={sala.juego_nombre ?? SIN_JUEGO}
+            sizes="64px"
+            className="size-16 shrink-0 rounded-xl"
+          />
+          <h1 className="min-w-0 truncate text-[1.75rem] leading-tight font-bold">
             {sala.juego_nombre ?? SIN_JUEGO}
           </h1>
-          <p className="text-texto-suave text-sm">
-            Sala <span className="font-mono font-semibold tracking-widest">{sala.codigo}</span>
-          </p>
         </div>
+        <div aria-hidden className="border-borde mx-4 border-t-2 border-dashed" />
+        <p className="flex items-center justify-between px-3.5 py-3">
+          <span className="text-texto-suave text-xs font-extrabold tracking-widest uppercase">
+            Código
+          </span>
+          <span className="font-mono text-lg font-bold tracking-[0.3em]">{sala.codigo}</span>
+        </p>
       </header>
       {/* key: si se pasa de una sala a otra, que no quede estado de la anterior. */}
       <SalaEnVivo
@@ -126,7 +131,7 @@ function Unirse({
   return (
     <div className="mx-auto max-w-md space-y-4">
       {conCuenta && <EnlaceVolver href="/jugar">Jugar</EnlaceVolver>}
-      <section className="border-borde bg-superficie space-y-4 rounded-2xl border p-4">
+      <section className="border-borde bg-superficie relieve space-y-4 rounded-2xl border p-4">
         <div className="flex items-center gap-3">
           <ImagenJuego
             url={previa.juego_imagen_url}
@@ -161,7 +166,7 @@ function Unirse({
 
 function SalaNoEncontrada({ conCuenta = false }: { conCuenta?: boolean }) {
   return (
-    <section className="border-borde bg-superficie mx-auto max-w-md space-y-3 rounded-2xl border p-6 text-center">
+    <section className="border-borde bg-superficie relieve mx-auto max-w-md space-y-3 rounded-2xl border p-6 text-center">
       <h1 className="text-xl font-bold">No encontramos esa sala</h1>
       <p className="text-texto-suave text-sm">
         Puede que el código esté mal escrito o que la partida ya haya terminado.

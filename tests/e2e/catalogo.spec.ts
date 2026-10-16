@@ -98,7 +98,7 @@ test("lista ordenada por nombre", async ({ page }) => {
 });
 
 test("búsqueda sin tildes, guardada en la URL", async ({ page }) => {
-  await page.getByLabel("Buscar en mi catálogo").fill("catan");
+  await page.getByLabel("Buscar en tu estante").fill("catan");
   await expect(conteo(page, "1 de 8 juegos")).toBeVisible();
   expect(await nombres(page)).toEqual(["Catán"]);
   expect(ruta(page)).toBe("/catalogo?q=catan");
@@ -132,7 +132,7 @@ test("filtros: conteo en vivo, URL, recarga y chips", async ({ page }) => {
 test("sin resultados: sorteo deshabilitado y limpiar", async ({ page }) => {
   await page.goto("/catalogo?tipo=solitario&complejidad=pesado");
   await expect(page.getByText("Ningún juego coincide")).toBeVisible();
-  await expect(page.getByRole("button", { name: "¿A qué jugamos?" })).toBeDisabled();
+  await expect(page.getByRole("button", { name: "Sortear" })).toBeDisabled();
   await page.getByRole("button", { name: "Limpiar filtros y búsqueda" }).click();
   await expect(conteo(page, "8 juegos")).toBeVisible();
   expect(ruta(page)).toBe("/catalogo");
@@ -148,7 +148,8 @@ test("orden por puntuación y por agregados recientemente", async ({ page }) => 
 test("¿A qué jugamos? sortea entre los filtrados y 'Otro' cambia", async ({ page }) => {
   await page.goto("/catalogo?tipo=cooperativo");
   await expect(conteo(page, "2 de 8 juegos")).toBeVisible();
-  await page.getByRole("button", { name: "¿A qué jugamos?" }).click();
+  await expect(page.getByText("Sorteo entre los 2 juegos que ves abajo.")).toBeVisible();
+  await page.getByRole("button", { name: "Sortear" }).click();
   await expect(page.getByText("Hoy se juega…")).toBeVisible();
   const primero = await page.locator("dialog p.text-2xl").textContent();
   expect(["Pandemic", "Gloomhaven"]).toContain(primero);
@@ -162,21 +163,21 @@ test("¿A qué jugamos? sortea entre los filtrados y 'Otro' cambia", async ({ pa
   await expect(page.getByRole("heading", { name: segundo! })).toBeVisible();
 });
 
-test("el botón flotante no tapa la última tarjeta", async ({ page }) => {
+test("la barra de abajo no tapa la última tarjeta", async ({ page }) => {
   await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight));
   const ultima = await page.locator("main ul.grid > li").last().boundingBox();
-  const boton = await page.getByRole("button", { name: "¿A qué jugamos?" }).boundingBox();
-  expect(ultima!.y + ultima!.height).toBeLessThanOrEqual(boton!.y);
+  const barra = await page.getByRole("navigation", { name: "Navegación principal" }).boundingBox();
+  expect(ultima!.y + ultima!.height).toBeLessThanOrEqual(barra!.y);
 });
 
 test("un juego agregado aparece al volver al catálogo", async ({ page }) => {
   await page.goto("/juegos/nuevo");
   await page.getByLabel("Nombre", { exact: true }).fill("Recién agregado");
-  await page.getByRole("button", { name: "Guardar en mi catálogo" }).click();
+  await page.getByRole("button", { name: "Guardar en mi estante" }).click();
   await page.waitForURL(/agregado=1/);
   await page
     .getByRole("navigation", { name: "Navegación principal" })
-    .getByRole("link", { name: "Catálogo" })
+    .getByRole("link", { name: "Estante" })
     .click();
   await expect(conteo(page, "9 juegos")).toBeVisible();
 });

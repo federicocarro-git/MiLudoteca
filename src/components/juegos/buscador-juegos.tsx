@@ -65,7 +65,7 @@ export function BuscadorJuegos({
   const activa = consulta.trim().length >= 2 && busqueda.estado !== "inactiva";
 
   return (
-    <section className="border-borde bg-superficie space-y-3 rounded-2xl border p-4">
+    <section className="border-borde bg-superficie relieve space-y-3 rounded-2xl border p-4">
       <div>
         <h2 className="font-semibold">Buscar el juego</h2>
         <p className="text-texto-suave text-sm">

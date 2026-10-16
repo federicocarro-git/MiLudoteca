@@ -12,7 +12,7 @@ import { cerrarSesion } from "./actions";
 
 export const metadata: Metadata = { title: "Cuenta" };
 
-const TARJETA = "border-borde bg-superficie space-y-4 rounded-2xl border p-4";
+const TARJETA = "border-borde bg-superficie space-y-4 relieve rounded-2xl border p-4";
 
 export default function CuentaPage() {
   return (

@@ -275,7 +275,7 @@ export function SalaEnVivo({
 
   if (fuera) {
     return (
-      <section className="border-borde bg-superficie space-y-3 rounded-2xl border p-6 text-center">
+      <section className="border-borde bg-superficie relieve space-y-3 rounded-2xl border p-6 text-center">
         <DoorOpen aria-hidden className="text-primario mx-auto size-10" />
         <h2 className="font-semibold">Ya no estás en esta sala</h2>
         <p className="text-texto-suave text-sm">La sala se canceló o te sacaron.</p>
@@ -371,8 +371,8 @@ export function SalaEnVivo({
             <li
               key={j.id}
               aria-label={j.nombre}
-              className={`bg-superficie flex items-center gap-3 rounded-2xl border p-3 ${
-                esYo ? "border-primario" : "border-borde"
+              className={`bg-superficie flex items-center gap-2.5 rounded-[1.25rem] border-[1.5px] p-2.5 pl-3 ${
+                esYo ? "border-primario relieve-primario" : "border-borde relieve"
               }`}
             >
               <Avatar nombre={j.nombre} />
@@ -397,7 +397,7 @@ export function SalaEnVivo({
                   onCambiar={(n) => cambiarPuntos(j.id, n)}
                 />
               ) : (
-                <p className="w-20 text-center text-2xl font-bold tabular-nums">
+                <p className="font-display w-20 text-center text-[1.75rem] font-bold tabular-nums">
                   <span className="sr-only">Puntos: </span>
                   {j.puntos}
                 </p>
@@ -407,7 +407,7 @@ export function SalaEnVivo({
                   type="button"
                   onClick={() => setQuitando(j)}
                   aria-label={`Sacar a ${j.nombre}`}
-                  className="text-texto-suave -mr-1 inline-flex size-11 items-center justify-center rounded-xl hover:text-red-700 dark:hover:text-red-400"
+                  className="text-texto-suave -mr-1 inline-flex h-11 w-9 shrink-0 items-center justify-center rounded-xl hover:text-red-700 dark:hover:text-red-400"
                 >
                   <X aria-hidden className="size-5" />
                 </button>
@@ -436,8 +436,14 @@ export function SalaEnVivo({
       )}
 
       {soyAnfitrion && (
-        <div className="space-y-1">
-          <Boton className="w-full" disabled={sinJuego} onClick={() => setHoja("terminar")}>
+        // Siempre a mano, abajo, al alcance del pulgar.
+        <div className="from-fondo sticky bottom-0 z-10 -mx-4 space-y-1 bg-gradient-to-t from-70% px-4 pt-6 pb-[max(1rem,env(safe-area-inset-bottom))]">
+          <Boton
+            variante="acento"
+            className="min-h-13 w-full text-base"
+            disabled={sinJuego}
+            onClick={() => setHoja("terminar")}
+          >
             <Flag aria-hidden className="size-4" /> Terminar partida
           </Boton>
           {sinJuego && (

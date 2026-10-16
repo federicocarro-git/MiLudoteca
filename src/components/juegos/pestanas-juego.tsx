@@ -21,7 +21,7 @@ export function PestanasVista({ id, pathname }: { id: string; pathname: string |
       aria-label="Secciones del juego"
       className="bg-fondo/95 sticky top-0 z-20 -mx-4 px-4 py-2 backdrop-blur print:hidden"
     >
-      <ul className="bg-superficie border-borde grid grid-cols-3 rounded-xl border p-1">
+      <ul className="bg-borde/70 grid grid-cols-3 gap-1 rounded-full p-1">
         {PESTANAS.map(({ sufijo, etiqueta }) => {
           const href = `/juegos/${id}${sufijo}`;
           const activa = pathname === href;
@@ -32,8 +32,8 @@ export function PestanasVista({ id, pathname }: { id: string; pathname: string |
                 replace
                 scroll={false}
                 aria-current={activa ? "page" : undefined}
-                className={`flex min-h-10 items-center justify-center rounded-lg px-1 text-center text-sm leading-tight font-medium ${
-                  activa ? "bg-primario text-sobre-primario" : "text-texto-suave hover:text-texto"
+                className={`flex min-h-10 items-center justify-center rounded-full px-1 text-center text-sm leading-tight font-bold ${
+                  activa ? "bg-superficie text-texto relieve" : "text-texto-suave hover:text-texto"
                 }`}
               >
                 {etiqueta}

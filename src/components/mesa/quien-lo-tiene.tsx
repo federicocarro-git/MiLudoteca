@@ -68,7 +68,7 @@ export function QuienLoTiene({
             <li
               key={j.clave}
               aria-label={j.nombre}
-              className="border-borde bg-superficie flex items-center gap-3 rounded-2xl border p-2"
+              className="border-borde bg-superficie relieve flex items-center gap-3 rounded-2xl border p-2"
             >
               <ImagenJuego
                 url={j.imagen_url}

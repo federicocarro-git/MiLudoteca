@@ -36,8 +36,8 @@ export function ElegirJuego({ juegos }: { juegos: JuegoParaSala[] }) {
         />
         <input
           type="search"
-          aria-label="Buscar en tu catálogo"
-          placeholder="Buscar en tu catálogo"
+          aria-label="Buscar en tu estante"
+          placeholder="Buscar en tu estante"
           value={busqueda}
           onChange={(e) => setBusqueda(e.target.value)}
           className="border-borde bg-superficie focus-visible:outline-primario block min-h-11 w-full rounded-xl border pr-3 pl-10 text-base focus-visible:outline-2"
@@ -50,7 +50,7 @@ export function ElegirJuego({ juegos }: { juegos: JuegoParaSala[] }) {
         {error}
       </p>
       {visibles.length === 0 ? (
-        <p className="text-texto-suave text-sm">Ningún juego de tu catálogo coincide.</p>
+        <p className="text-texto-suave text-sm">Ningún juego de tu estante coincide.</p>
       ) : (
         <ul className="space-y-2">
           {visibles.map((j) => (
@@ -69,7 +69,7 @@ export function ElegirJuego({ juegos }: { juegos: JuegoParaSala[] }) {
                     }
                   });
                 }}
-                className="border-borde bg-superficie hover:border-primario flex w-full items-center gap-3 rounded-2xl border p-2 text-left disabled:opacity-60"
+                className="border-borde bg-superficie hover:border-primario relieve flex w-full items-center gap-3 rounded-2xl border p-2 text-left disabled:opacity-60"
               >
                 <ImagenJuego
                   url={j.imagen_url}

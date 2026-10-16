@@ -142,7 +142,8 @@ src/
       consultas.ts                obtenerJuegosDeAmigos() (rpc catalogo_de_amigos, con cache())
     resumenes/
       formato.ts                  barra de formato del editor (funciones puras) y plantillas
-    formato.ts                    textos de jugadores, duración y complejidad
+    formato.ts                    textos de jugadores, duración y peso; colorDeNombre() de los avatares
+    navegacion.ts                 rutas de la barra inferior e itemActivo()
     imagenes.ts                   achica las fotos en el navegador (máx. 1200 px, WebP)
     auth.ts                       getUsuarioActual() (sin anónimos) y getSesionActual() (con anónimos, solo salas)
     auth-errores.ts               códigos de error de Supabase Auth → mensajes en español
@@ -297,8 +298,9 @@ modo, ganadores, ganamos)` (solo el anfitrión, en curso). Modos
   actualizan con `window.history.replaceState`, que Next sincroniza con
   `useSearchParams` sin volver a pedir la página. Lo inválido en la URL se ignora.
 - Un juego **sin** un dato no pasa el filtro de ese dato (se avisa en el panel).
-- "¿A qué jugamos?" sortea entre los juegos visibles (con los filtros
-  aplicados), con una animación corta que respeta `prefers-reduced-motion`.
+- "¿A qué jugamos hoy?" es una pizarra arriba de la búsqueda; "Sortear"
+  elige entre los juegos visibles (con los filtros aplicados), con una
+  animación corta que respeta `prefers-reduced-motion`.
   "Otro" nunca repite el anterior si hay alternativas.
 - La búsqueda ignora tildes y mayúsculas (`normalizar`).
 
@@ -471,9 +473,27 @@ parser o el cliente.
 
 ### UI / mobile
 
-- Colores siempre con los tokens de `globals.css` (`bg-fondo`, `bg-superficie`,
-  `text-texto`, `text-texto-suave`, `bg-primario`, `border-borde`...), que ya
-  resuelven el modo oscuro y la impresión. Íconos de `lucide-react`.
+- Estética "café de juegos": papel crema, espresso, paño de mesa (primario),
+  terracota (`acento`), `miel`, `pizarra`/`tiza`/`marco` y `nota` (post-it). El
+  modo oscuro es un "café de noche". Colores siempre con los tokens de
+  `globals.css` (`bg-fondo`, `bg-superficie`, `text-texto`, `text-texto-suave`,
+  `bg-primario`, `bg-acento`, `border-borde`...), que ya resuelven el modo
+  oscuro y la impresión. Íconos de `lucide-react`.
+- Letras (`next/font` en `app/layout.tsx`): Nunito para el texto (`font-sans`),
+  Fraunces para títulos y números grandes (`font-display`; los `h1` y `h2` ya
+  la usan) y Caveat (`font-mano`) solo para detalles a mano (pizarra, notas).
+- Botones redondeados (`rounded-full`) con "relieve": sombra dura abajo
+  (utilidades `relieve`, `relieve-primario`, `relieve-acento`) que desaparece
+  al apretar. `Boton` tiene las variantes `primario`, `secundario` y `acento`
+  (acciones fuertes, como "Terminar partida"). Las tarjetas llevan `relieve`.
+- Barra inferior: Estante · Jugar · (+ agregar, botón central) · Ranking ·
+  Cuenta; se marca la ruta más larga que coincide (`itemActivo`,
+  `lib/navegacion.ts`). El catálogo se llama "Tu estante" en la UI (la ruta
+  sigue siendo `/catalogo`).
+- Peso de un juego: Liviano (1–2), Mediano (2–3) y Pesado (3–5), igual en la
+  Ficha, las tarjetas y el filtro (`nivelDeComplejidad`).
+- Avatares como posavasos de color: `colorDeNombre` (siempre el mismo color
+  para el mismo nombre).
 
 - Mobile-first: diseñar a 360 px y agrandar con `sm:`/`md:`.
 - Áreas táctiles de al menos 44 px; acciones principales al alcance del pulgar

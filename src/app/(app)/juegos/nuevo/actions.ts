@@ -95,7 +95,7 @@ export async function guardarJuego(
     if (duplicado) {
       return {
         ok: false,
-        error: `Ya tenés "${duplicado.nombre}" en tu catálogo.`,
+        error: `Ya tenés "${duplicado.nombre}" en tu estante.`,
         duplicado,
       };
     }
@@ -126,12 +126,12 @@ export async function guardarJuego(
     if (error.code === "23505") {
       return {
         ok: false,
-        error: "Ese juego ya está en tu catálogo.",
+        error: "Ese juego ya está en tu estante.",
         duplicado: { id: juegoId, nombre: datos.nombre },
       };
     }
     console.error("No se pudo agregar al catálogo", error);
-    return { ok: false, error: "No se pudo agregar al catálogo. Probá de nuevo." };
+    return { ok: false, error: "No se pudo agregar a tu estante. Probá de nuevo." };
   }
 
   redirect(`/juegos/${juegoId}?agregado=1`);

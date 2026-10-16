@@ -16,7 +16,7 @@ export default function PestanasLayout({ children, params }: LayoutProps<"/juego
         className="text-texto-suave hover:text-texto -ml-1 inline-flex min-h-11 items-center gap-1 text-sm font-medium print:hidden"
       >
         <ChevronLeft aria-hidden className="size-5" />
-        Catálogo
+        Tu estante
       </Link>
       <Suspense fallback={<div className="bg-borde h-8 w-2/3 animate-pulse rounded" />}>
         {params.then(({ id }) => (
@@ -41,10 +41,12 @@ async function Encabezado({ id }: { id: string }) {
   const { juego } = resultado;
   return (
     <header>
-      <h1 className="text-2xl leading-tight font-bold tracking-tight print:text-3xl">
+      <h1 className="text-[2rem] leading-tight font-bold print:text-3xl">
         {juego.nombre}
         {juego.anio && (
-          <span className="text-texto-suave ml-2 text-lg font-normal">({juego.anio})</span>
+          <span className="text-texto-suave ml-2 font-sans text-lg font-semibold">
+            ({juego.anio})
+          </span>
         )}
       </h1>
     </header>

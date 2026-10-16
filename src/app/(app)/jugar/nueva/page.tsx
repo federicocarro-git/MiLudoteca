@@ -18,7 +18,7 @@ export default function NuevaSalaPage() {
         Elegí un juego de tu catálogo. Se crea la sala y después invitás a los demás con el QR o el
         código.
       </p>
-      <div className="border-borde bg-superficie mb-4 flex flex-wrap items-center justify-between gap-3 rounded-2xl border p-4">
+      <div className="border-borde bg-superficie relieve mb-4 flex flex-wrap items-center justify-between gap-3 rounded-2xl border p-4">
         <p className="text-sm">
           <span className="block font-semibold">¿Todavía no saben?</span>
           <span className="text-texto-suave">Elijan después, entre los juegos de todos.</span>

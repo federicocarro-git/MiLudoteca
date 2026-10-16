@@ -68,7 +68,7 @@ test("escribir con la barra de formato, vista previa, borrador y guardar", async
   });
   await page
     .getByRole("navigation", { name: "Navegación principal" })
-    .getByRole("link", { name: "Catálogo" })
+    .getByRole("link", { name: "Estante" })
     .click();
   await expect.poll(() => avisos).toBe(1);
   expect(page.url()).toContain("/resumen/editar");

@@ -17,7 +17,7 @@ import {
   type Persona,
 } from "@/lib/partidas/ranking";
 
-const TARJETA = "border-borde bg-superficie space-y-3 rounded-2xl border p-4";
+const TARJETA = "border-borde bg-superficie space-y-3 relieve rounded-2xl border p-4";
 
 const porcentaje = (p: number | null) => (p === null ? "—" : `${Math.round(p * 100)}%`);
 

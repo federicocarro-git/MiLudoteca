@@ -78,7 +78,7 @@ export function ReabrirPartida({
 
   if (!vigente) return null;
   return (
-    <section className="border-borde bg-superficie flex flex-wrap items-center justify-between gap-3 rounded-2xl border p-4">
+    <section className="border-borde bg-superficie relieve flex flex-wrap items-center justify-between gap-3 rounded-2xl border p-4">
       <p className="text-sm">
         <span className="block font-semibold">¿La terminaste sin querer?</span>
         <span className="text-texto-suave">
