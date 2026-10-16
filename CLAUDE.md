@@ -128,8 +128,9 @@ src/
       tipos.ts                    Sala, JugadorSala, puntajeMasAlto(), soltarConfirmados(), y de la hoja:
                                   filasDeLaHoja(), casillerosVisibles(), totalesDeLaHoja(), leerCategorias()
     partidas/
-      consultas.ts                obtenerPartida(id), listarFotos(), obtenerHistorial(), resumenDePartidasDelJuego()
-      resultado.ts                ganadoresPrevistos(), textoResultado(), duración y fecha (puras)
+      consultas.ts                obtenerPartida(id), listarFotos(), obtenerHistorial(), resumenDePartidasDelJuego(),
+                                  obtenerRevancha(id)
+      resultado.ts                ganadoresPrevistos(), textoResultado(), duración, fecha, tiempoParaReabrir() (puras)
       historial.ts                opciones y filtros del historial (puras)
       ranking.ts                  calcularRanking(), calcularCaraACara(), duelo(), nemesis(),
                                   calcularRankingCooperativo(), calcularDuplas() (puras)
@@ -162,6 +163,7 @@ supabase/
   tests/cierre.test.sql           terminar partidas, notas, fotos y borrar (28 casos)
   tests/mesa.test.sql             catálogos de amigos y de la mesa, cambiar el juego (16 casos)
   tests/puntaje.test.sql          rondas, categorías, anotar y hojas guardadas (26 casos)
+  tests/revancha.test.sql         sala sin juego, revancha y reabrir (22 casos)
 tests/e2e/                        Playwright: un spec por área + helpers.ts (usuarios, juegos, Mailpit)
 .github/workflows/ci.yml          CI: lint/tipos/unitarios/build + pgTAP/integración/e2e con Supabase local
 docs/PLAN.md                      plan por hitos y decisiones
@@ -247,6 +249,18 @@ modo, ganadores, ganamos)` (solo el anfitrión, en curso). Modos
   anfitrión y antes de que haya puntos; si no, `hint = 'ya_hay_puntos'`) y
   `agregar_ronda` (cualquiera de la sala). `hojas_de_puntuacion`: categorías
   guardadas por `(juego_id, autor_id)`, privadas como los resúmenes.
+- Sala sin juego, revancha y reabrir
+  (`20261020000000_sala_sin_juego_revancha_reabrir.sql`):
+  `partidas.juego_nombre` puede ser null **solo en curso** (check
+  `partidas_terminada_con_juego`); `crear_sala_sin_juego()` y
+  `terminar_partida` exige juego (`hint = 'sin_juego'`). `revancha(partida)`
+  (solo el anfitrión, terminada): sala nueva con el mismo juego, la misma
+  forma de anotar y `revancha_de`; suma a los amigos con cuenta y a los
+  jugadores sin celular (no a anónimos ni a quienes no son amigos); si ya hay
+  una en curso, devuelve esa. `reabrir_partida(partida)` (solo el anfitrión,
+  hasta 10 minutos después de terminar; si no, `hint = 'muy_tarde'`): vuelve
+  a `en_curso`, borra el resultado (`gano`, `posicion`, modo) y conserva los
+  puntos; si otra sala tomó el código, genera otro.
 
 ### Alta de juegos (`/juegos/nuevo`)
 
@@ -528,7 +542,9 @@ Plan, decisiones e hitos en `docs/PLAN.md`. Hecho: hito 9 (perfiles y
 amigos), hito 10 (salas en vivo), hito 11 (cierre, historial, notas y
 fotos), hito 12 (ranking y cara a cara), hito 13 (catálogos de la mesa) y
 hito 14 (puntuación por rondas y hojas de puntuación). La fase 2 está
-completa. Importar la colección de BGG sigue pendiente aparte.
+completa. Después: elegir el juego de la sala de una lista con filtro por
+dueño, salas sin juego ("Elegimos en la mesa"), revancha con los mismos
+jugadores y reabrir una partida recién terminada. Importar la colección de BGG sigue pendiente aparte.
 
 ### Amigos (`/jugar/amigos`)
 
@@ -544,7 +560,10 @@ completa. Importar la colección de BGG sigue pendiente aparte.
 ### Salas (`/jugar/nueva` → `/sala/<código>`)
 
 - Se crea desde Jugar (elegir un juego del catálogo) o con "Jugar una
-  partida" en la Ficha (`crearSala`). Unirse: el QR o el link
+  partida" en la Ficha (`crearSala`). "Elegimos en la mesa" (en Jugar y en
+  Nueva sala; `crearSala(null)`) la crea **sin juego**: el encabezado dice
+  "Sin juego todavía" (`SIN_JUEGO`), un aviso lleva a "¿A qué jugamos?" y
+  "Terminar partida" queda deshabilitado hasta que el anfitrión elige. Unirse: el QR o el link
   (`/sala/<código>`), o el código en Jugar (`irASala` valida que exista).
 - `/sala/[codigo]` está fuera de `(app)` (sin barra inferior) y es **ruta
   pública** en `rutas.ts`. Sin sesión o como anónimo: vista previa y "Entrar
@@ -594,8 +613,15 @@ completa. Importar la colección de BGG sigue pendiente aparte.
 - Resultado ("Ganó Beto", "Empate", "Perdieron todos": `textoResultado`),
   posiciones, duración, notas (`guardarNotas`, solo el anfitrión), fotos
   (subidas desde el navegador como las del alta, `borrarFoto`) y, para el
-  anfitrión, "Jugar otra vez" y "Borrar partida" (`borrarPartida`, borra las
+  anfitrión, "Revancha" y "Borrar partida" (`borrarPartida`, borra las
   fotos primero).
+- Revancha y reabrir (`components/partidas/revancha.tsx`): "Revancha"
+  (`armarRevancha`) lleva a la sala nueva con los mismos jugadores. "Reabrir
+  partida" (`reabrirPartida`) aparece para el anfitrión durante 10 minutos
+  (se decide en el navegador: `Date.now()` no va en el render del servidor).
+  A los demás, `AvisoRevancha` (media hora después del cierre: aviso de la
+  sala más una revisión cada 10 s) los vuelve a la sala si se reabre y les
+  muestra "¡Hay revancha!" con el link si los sumaron.
 - Historial: todas las terminadas del usuario; filtros en el navegador
   (`filtrarHistorial`) por juego (`juego_id`, o el nombre si el juego se
   borró) y por persona (`?con=`), en la query string con `replaceState`.
@@ -638,8 +664,7 @@ completa. Importar la colección de BGG sigue pendiente aparte.
   catálogo) y duración máxima. El anfitrión puede "Jugar este"
   (`cambiarJuegoDeSala`); a los demás se les actualiza el
   encabezado porque la recarga nota el `juego_id` nuevo y hace
-  `router.refresh()`. "Jugar otra vez" en el resultado aparece solo si el
-  anfitrión puede ver el juego (no si era un manual de un amigo).
+  `router.refresh()` (también cuando una sala sin juego recibe el primero).
 
 Los resúmenes **no** se generan con IA (se descartó): "Cómo se juega" y "Hoja
 de turno" se escriben a mano. No agregar integraciones con la API de Claude ni

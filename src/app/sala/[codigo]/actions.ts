@@ -236,6 +236,9 @@ export async function terminarPartida(
     ...(ganamos === null ? {} : { ganamos }),
   });
   if (error) {
+    if (error.hint === "sin_juego") {
+      return { ok: false, error: "Antes de terminar, elijan a qué juegan." };
+    }
     console.error("terminarPartida", partidaId, error);
     return { ok: false, error: "No se pudo terminar la partida. Probá de nuevo." };
   }

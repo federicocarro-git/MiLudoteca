@@ -7,14 +7,19 @@ import type { Resultado } from "@/lib/resultado";
 import { createClient } from "@/lib/supabase/server";
 import { codigoSalaSchema } from "@/lib/validations/salas";
 
-/** Crea una sala con un juego y lleva a ella. */
-export async function crearSala(juegoId: string): Promise<Resultado<null>> {
-  if (!esUuid(juegoId)) return { ok: false, error: "Ese juego no existe." };
+/**
+ * Crea una sala y lleva a ella. Sin juego ("Elegimos en la mesa"), se elige
+ * después entre los catálogos de todos los que se sumen.
+ */
+export async function crearSala(juegoId: string | null): Promise<Resultado<null>> {
+  if (juegoId !== null && !esUuid(juegoId)) return { ok: false, error: "Ese juego no existe." };
   if (!(await getUsuarioActual()))
     return { ok: false, error: "Tu sesión venció. Volvé a ingresar." };
 
   const supabase = await createClient();
-  const { data, error } = await supabase.rpc("crear_partida", { juego: juegoId });
+  const { data, error } = juegoId
+    ? await supabase.rpc("crear_partida", { juego: juegoId })
+    : await supabase.rpc("crear_sala_sin_juego");
   const sala = data?.[0];
   if (error || !sala) {
     console.error("crearSala", juegoId, error);

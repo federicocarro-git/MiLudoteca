@@ -41,7 +41,8 @@ export const obtenerSala = cache(
 );
 
 export type VistaPrevia = {
-  juego_nombre: string;
+  /** Null mientras la sala no tiene juego. */
+  juego_nombre: string | null;
   juego_imagen_url: string | null;
   anfitrion: string;
   jugadores: number;

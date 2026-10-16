@@ -3,10 +3,12 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { Suspense } from "react";
 import { EncabezadoPagina } from "@/components/layout/encabezado-pagina";
+import { BotonCrearSala } from "@/components/salas/boton-crear-sala";
 import { UnirseConCodigo } from "@/components/salas/unirse-con-codigo";
 import { BotonLink } from "@/components/ui/boton";
 import { obtenerAmistades } from "@/lib/amigos/consultas";
 import { obtenerMisSalasEnCurso } from "@/lib/salas/consultas";
+import { SIN_JUEGO } from "@/lib/salas/tipos";
 
 export const metadata: Metadata = { title: "Jugar" };
 
@@ -23,10 +25,16 @@ export default function JugarPage() {
           </h2>
           <p className="text-texto-suave text-sm">
             Elegí un juego, invitá a la mesa con un QR y cada uno anota sus puntos desde su celular.
+            ¿No saben a qué jugar? Creá la sala sin juego y elijan entre los catálogos de todos.
           </p>
-          <BotonLink href="/jugar/nueva">
-            <Plus aria-hidden className="size-4" /> Crear una sala
-          </BotonLink>
+          <div className="flex flex-wrap gap-3">
+            <BotonLink href="/jugar/nueva">
+              <Plus aria-hidden className="size-4" /> Crear una sala
+            </BotonLink>
+            <BotonCrearSala juegoId={null} variante="secundario">
+              Elegimos en la mesa
+            </BotonCrearSala>
+          </div>
         </section>
 
         <Suspense>
@@ -121,7 +129,7 @@ async function SalasEnCurso() {
                 <span className="relative inline-flex size-2.5 rounded-full bg-green-600" />
               </span>
               <span className="min-w-0 flex-1">
-                <span className="block truncate font-medium">{s.juego_nombre}</span>
+                <span className="block truncate font-medium">{s.juego_nombre ?? SIN_JUEGO}</span>
                 <span className="text-texto-suave block text-sm">
                   {s.jugadores === 1 ? "1 jugador" : `${s.jugadores} jugadores`}
                   {s.soyAnfitrion ? " · sos anfitrión" : ""} · {s.codigo}

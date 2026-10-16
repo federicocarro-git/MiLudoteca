@@ -1,5 +1,11 @@
 import { describe, expect, it } from "vitest";
-import { ganadoresPrevistos, minutosDePartida, textoResultado, unirNombres } from "./resultado";
+import {
+  ganadoresPrevistos,
+  minutosDePartida,
+  textoResultado,
+  tiempoParaReabrir,
+  unirNombres,
+} from "./resultado";
 
 const jugadores = [
   { id: "a", puntos: 10 },
@@ -57,5 +63,23 @@ describe("unirNombres y minutosDePartida", () => {
     expect(minutosDePartida("2026-10-15T20:00:00Z", "2026-10-15T21:35:20Z")).toBe(95);
     expect(minutosDePartida("2026-10-15T20:00:00Z", "2026-10-15T20:00:10Z")).toBe(1);
     expect(minutosDePartida("2026-10-15T20:00:00Z", null)).toBeNull();
+  });
+});
+
+describe("tiempoParaReabrir", () => {
+  const terminada = "2026-10-16T20:00:00.000Z";
+  const t = Date.parse(terminada);
+
+  it("cuenta lo que falta para los 10 minutos", () => {
+    expect(tiempoParaReabrir(terminada, t + 4 * 60_000)).toBe(6 * 60_000);
+  });
+
+  it("después de los 10 minutos ya no se puede", () => {
+    expect(tiempoParaReabrir(terminada, t + 10 * 60_000)).toBe(0);
+    expect(tiempoParaReabrir(terminada, t + 60 * 60_000)).toBe(0);
+  });
+
+  it("sin fecha de cierre no se puede", () => {
+    expect(tiempoParaReabrir(null, t)).toBe(0);
   });
 });

@@ -151,18 +151,11 @@ test("cooperativo, ganadores elegidos a mano y borrar del historial", async ({ p
   await page.waitForURL(/\/partida\//);
   await expect(page.getByText("Perdieron todos").first()).toBeVisible();
 
-  // Otra partida, con el ganador elegido a mano (aunque tenga menos puntos).
-  await page.getByRole("button", { name: "Jugar otra vez" }).click();
+  // Revancha (Beto ya viene sumado), con el ganador elegido a mano aunque
+  // tenga menos puntos.
+  await page.getByRole("button", { name: "Revancha" }).click();
   await page.waitForURL(/\/sala\/[A-Z2-9]{6}$/);
-  await page
-    .getByRole("button", { name: "Agregar", exact: true })
-    .filter({ visible: true })
-    .click();
-  const agregar = page.getByRole("dialog", { name: "Agregar jugadores" });
-  await agregar.getByRole("checkbox").check();
-  await agregar.getByRole("button", { name: "Agregar (1)" }).click();
-  await expect(agregar).toBeHidden();
-  await expect(fila(page, "Beto")).toBeVisible();
+  await expect(fila(page, "Beto").filter({ visible: true })).toBeVisible();
   await cargarPuntos(page, "Beto", 50);
   await page.getByRole("button", { name: "Terminar partida" }).filter({ visible: true }).click();
   await dialogo.getByLabel("Elegir a los ganadores").check();

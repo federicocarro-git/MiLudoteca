@@ -290,6 +290,7 @@ export function SalaEnVivo({
   }
 
   const lideres = puntajeMasAlto(jugadores);
+  const sinJuego = sala.juego_nombre === null;
 
   return (
     <div className="space-y-4">
@@ -337,6 +338,25 @@ export function SalaEnVivo({
       >
         {error}
       </p>
+
+      {sinJuego && (
+        <section
+          aria-label="Falta elegir el juego"
+          className="bg-primario/10 border-primario space-y-3 rounded-2xl border p-4"
+        >
+          <p className="text-sm">
+            <span className="block font-semibold">Todavía no eligieron el juego</span>
+            <span className="text-texto-suave">
+              {soyAnfitrion
+                ? "Cuando estén todos, elegí entre los juegos de la mesa: los tuyos y los de los que se sumaron."
+                : "Cuando estén todos, el anfitrión elige entre los juegos de la mesa (también los tuyos)."}
+            </span>
+          </p>
+          <Boton onClick={() => setHoja("sortear")}>
+            <Dices aria-hidden className="size-4" /> Ver los juegos de la mesa
+          </Boton>
+        </section>
+      )}
 
       <ul className="space-y-2" aria-label="Jugadores">
         {jugadores.map((j) => {
@@ -416,9 +436,16 @@ export function SalaEnVivo({
       )}
 
       {soyAnfitrion && (
-        <Boton className="w-full" onClick={() => setHoja("terminar")}>
-          <Flag aria-hidden className="size-4" /> Terminar partida
-        </Boton>
+        <div className="space-y-1">
+          <Boton className="w-full" disabled={sinJuego} onClick={() => setHoja("terminar")}>
+            <Flag aria-hidden className="size-4" /> Terminar partida
+          </Boton>
+          {sinJuego && (
+            <p className="text-texto-suave text-center text-xs">
+              Para terminar, primero elijan a qué juegan.
+            </p>
+          )}
+        </div>
       )}
 
       <div className="pt-2">

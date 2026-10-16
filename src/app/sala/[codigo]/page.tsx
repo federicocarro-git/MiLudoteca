@@ -18,6 +18,7 @@ import {
   type VistaPrevia,
 } from "@/lib/salas/consultas";
 import { urlDelSitio } from "@/lib/sitio";
+import { SIN_JUEGO } from "@/lib/salas/tipos";
 import { codigoSalaSchema } from "@/lib/validations/salas";
 
 export const metadata: Metadata = { title: "Sala" };
@@ -70,12 +71,14 @@ async function SalaActiva({
       <header className="mb-4 flex items-center gap-3">
         <ImagenJuego
           url={sala.juego_imagen_url}
-          nombre={sala.juego_nombre}
+          nombre={sala.juego_nombre ?? SIN_JUEGO}
           sizes="64px"
           className="size-16 shrink-0 rounded-xl"
         />
         <div className="min-w-0">
-          <h1 className="truncate text-2xl font-bold tracking-tight">{sala.juego_nombre}</h1>
+          <h1 className="truncate text-2xl font-bold tracking-tight">
+            {sala.juego_nombre ?? SIN_JUEGO}
+          </h1>
           <p className="text-texto-suave text-sm">
             Sala <span className="font-mono font-semibold tracking-widest">{sala.codigo}</span>
           </p>
@@ -127,13 +130,13 @@ function Unirse({
         <div className="flex items-center gap-3">
           <ImagenJuego
             url={previa.juego_imagen_url}
-            nombre={previa.juego_nombre}
+            nombre={previa.juego_nombre ?? SIN_JUEGO}
             sizes="64px"
             className="size-16 shrink-0 rounded-xl"
           />
           <div className="min-w-0">
             <p className="text-texto-suave text-sm">{previa.anfitrion} te invita a jugar</p>
-            <h1 className="truncate text-xl font-bold">{previa.juego_nombre}</h1>
+            <h1 className="truncate text-xl font-bold">{previa.juego_nombre ?? SIN_JUEGO}</h1>
             <p className="text-texto-suave flex items-center gap-1 text-sm">
               <Users aria-hidden className="size-4" />
               {previa.jugadores === 1 ? "1 jugador" : `${previa.jugadores} jugadores`} · sala{" "}

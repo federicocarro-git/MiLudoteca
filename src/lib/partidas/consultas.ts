@@ -2,6 +2,7 @@ import "server-only";
 import { cache } from "react";
 import { esUuid } from "@/lib/juegos/consultas";
 import { createClient } from "@/lib/supabase/server";
+import { SIN_JUEGO } from "@/lib/salas/tipos";
 import { BUCKET_FOTOS, autorDeFoto } from "./fotos";
 
 const COLUMNAS_PARTIDA =
@@ -78,6 +79,8 @@ export async function obtenerHistorial() {
   if (error) throw error;
   return data.map(({ partida_jugadores, ...partida }) => ({
     ...partida,
+    // Las terminadas siempre tienen juego (check partidas_terminada_con_juego).
+    juego_nombre: partida.juego_nombre ?? SIN_JUEGO,
     jugadores: ordenarJugadores(partida_jugadores),
   }));
 }
@@ -96,4 +99,21 @@ export async function resumenDePartidasDelJuego(juegoId: string) {
     .limit(1);
   if (error) throw error;
   return { cantidad: count ?? 0, ultima: data[0]?.terminada_en ?? null };
+}
+
+/** Código de la revancha en curso de una partida, si me sumaron (RLS). */
+export async function obtenerRevancha(partidaId: string): Promise<string | null> {
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("partidas")
+    .select("codigo")
+    .eq("revancha_de", partidaId)
+    .eq("estado", "en_curso")
+    .limit(1)
+    .maybeSingle();
+  if (error) {
+    console.error("obtenerRevancha", partidaId, error);
+    return null;
+  }
+  return data?.codigo ?? null;
 }
