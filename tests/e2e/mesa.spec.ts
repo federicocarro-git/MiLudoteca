@@ -1,5 +1,6 @@
 import { expect, test, type Page } from "@playwright/test";
 import {
+  admin,
   borrarUsuario,
   crearJuego,
   crearUsuario,
@@ -71,6 +72,17 @@ test("¿Quién lo tiene?: juegos de los amigos y ocultar el catálogo", async ({
     await interruptor.uncheck();
     await expect(interruptor).not.toBeChecked({ timeout: 2000 });
   }).toPass();
+  // El interruptor es optimista: esperar a que se guarde antes de recargar.
+  await expect
+    .poll(async () => {
+      const { data } = await admin
+        .from("perfiles")
+        .select("catalogo_visible")
+        .eq("id", caro.id)
+        .single();
+      return data?.catalogo_visible;
+    })
+    .toBe(false);
   await paginaCaro.reload();
   await expect(paginaCaro.getByRole("switch", { name: /Mostrar mis juegos/ })).not.toBeChecked();
 
