@@ -136,7 +136,8 @@ src/
       fotos.ts                    bucket, máximo y nombre de archivo <partida>/<autor>_<uuid>
       borrar-fotos.ts             borrarFotosDePartida() antes de borrar o cancelar una partida
     mesa/
-      juegos.ts                   agruparPorJuego(), claveDeJuego(), juegosParaLaMesa(), filtros (puras)
+      juegos.ts                   agruparPorJuego(), claveDeJuego(), juegosParaLaMesa(), duenosDeLosJuegos(),
+                                  filtrarPorDuenos(), filtros (puras)
       consultas.ts                obtenerJuegosDeAmigos() (rpc catalogo_de_amigos, con cache())
     resumenes/
       formato.ts                  barra de formato del editor (funciones puras) y plantillas
@@ -629,10 +630,13 @@ completa. Importar la colección de BGG sigue pendiente aparte.
   por amigo, en el navegador. En la Ficha: "También lo tiene Beto y Caro".
 - Cuenta → "Mostrar mis juegos" (`cambiarVisibilidadCatalogo`, optimista).
 - Sala → "¿A qué jugamos?" (`SorteoMesa`): pide `juegos_de_la_mesa` desde
-  el navegador al abrir, filtra por la cantidad de jugadores de la sala
-  (`juegosParaLaMesa`; sin el dato no entra, como en el catálogo) y una
-  duración máxima opcional, y sortea con `elegirAlAzar`. El anfitrión puede
-  "Jugar este" (`cambiarJuegoDeSala`); a los demás se les actualiza el
+  el navegador al abrir. Dos modos: **Elegir** (desplegable con todos los
+  juegos de la mesa, "Nombre · dueños") y **Al azar** (`elegirAlAzar`);
+  cambiar de modo limpia la elección. Filtros comunes: chips por dueño
+  (`filtrarPorDuenos`, varios a la vez; ninguno = todos), "Solo para N
+  jugadores" (`juegosParaLaMesa`; sin el dato no entra, como en el
+  catálogo) y duración máxima. El anfitrión puede "Jugar este"
+  (`cambiarJuegoDeSala`); a los demás se les actualiza el
   encabezado porque la recarga nota el `juego_id` nuevo y hace
   `router.refresh()`. "Jugar otra vez" en el resultado aparece solo si el
   anfitrión puede ver el juego (no si era un manual de un amigo).

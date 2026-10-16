@@ -120,29 +120,52 @@ test("¿A qué jugamos? con la mesa y cambiar el juego de la sala", async ({ bro
 
   // Dos en la mesa: sirven Azul (de Ana) y Patchwork (de Beto); Catan es de 3 a 4.
   const sorteo = await abrirSorteo(anfitrion);
-  await expect(sorteo.getByText("3 juegos entre los catálogos de la mesa")).toBeVisible();
-  await expect(sorteo.getByText("2 sirven para 2")).toBeVisible();
-  await expect(sorteo.getByText("1 juego no entra")).toBeVisible();
-  await sorteo.getByRole("button", { name: "Sortear" }).click();
-  // "Otro" nunca repite: con dos opciones, alterna.
-  if (await sorteo.getByText("Lo tiene Ana").isVisible()) {
-    await expect(sorteo.getByRole("button", { name: "Ya es el de la sala" })).toBeDisabled();
-    await sorteo.getByRole("button", { name: "Otro" }).click();
-  }
+  await expect(sorteo.getByText("3 juegos en la mesa")).toBeVisible();
+  await expect(sorteo.getByText("2 con estos filtros")).toBeVisible();
+  const juego = sorteo.getByLabel("Juego", { exact: true });
+  await expect(juego.getByRole("option")).toHaveText([
+    "Elegí un juego",
+    "Azul · Ana",
+    "Patchwork · Beto",
+  ]);
+  // Sin el filtro de jugadores aparece Catan.
+  await sorteo.getByLabel("Solo para 2 jugadores").uncheck();
+  await expect(sorteo.getByText("3 con estos filtros")).toBeVisible();
+  await expect(juego.getByRole("option", { name: "Catan casero · Beto" })).toHaveCount(1);
+  await sorteo.getByLabel("Solo para 2 jugadores").check();
+
+  // Elegir el juego que ya es el de la sala no cambia nada.
+  await juego.selectOption({ label: "Azul · Ana" });
+  await expect(sorteo.getByText("Lo tiene Ana")).toBeVisible();
+  await expect(sorteo.getByRole("button", { name: "Ya es el de la sala" })).toBeDisabled();
+
+  // Filtrar por dueño: solo los de Beto (Azul deja de estar elegido).
+  await sorteo
+    .getByRole("group", { name: "Filtrar por dueño" })
+    .getByRole("button", { name: "Beto" })
+    .click();
+  await expect(sorteo.getByText("1 con estos filtros")).toBeVisible();
+  await expect(juego).toHaveValue("");
+  await juego.selectOption({ label: "Patchwork · Beto" });
   await expect(sorteo.getByText("Lo tiene Beto")).toBeVisible();
-  await expect(sorteo.getByText("Patchwork", { exact: true })).toBeVisible();
 
   // Con duración máxima de 15 minutos no queda ninguno.
   await sorteo.getByLabel("Duración máxima").selectOption({ label: "Hasta 15 min" });
-  await expect(sorteo.getByText("0 sirven para 2")).toBeVisible();
+  await expect(sorteo.getByText("0 con estos filtros")).toBeVisible();
+  await expect(sorteo.getByText("Ningún juego de la mesa pasa estos filtros.")).toBeVisible();
   await sorteo.getByLabel("Duración máxima").selectOption({ label: "Cualquiera" });
-  await sorteo.getByRole("button", { name: "Sortear" }).click();
-  if (await sorteo.getByText("Lo tiene Ana").isVisible()) {
-    await sorteo.getByRole("button", { name: "Otro" }).click();
-  }
 
-  // Beto también puede sortear, pero no cambiar el juego.
+  // Al azar, con el filtro de Beto, solo puede salir Patchwork.
+  await sorteo.getByRole("button", { name: "Al azar" }).click();
+  await sorteo.getByRole("button", { name: "Sortear" }).click();
+  await expect(sorteo.getByText("Patchwork", { exact: true })).toBeVisible();
+
+  // Beto también puede elegir y sortear, pero no cambiar el juego.
   const sorteoBeto = await abrirSorteo(jugador);
+  await sorteoBeto.getByLabel("Juego", { exact: true }).selectOption({ label: "Patchwork · Beto" });
+  await expect(sorteoBeto.getByText("Lo tiene Beto")).toBeVisible();
+  await expect(sorteoBeto.getByRole("button", { name: "Jugar este" })).toHaveCount(0);
+  await sorteoBeto.getByRole("button", { name: "Al azar" }).click();
   await sorteoBeto.getByRole("button", { name: "Sortear" }).click();
   await expect(sorteoBeto.getByRole("button", { name: "Jugar este" })).toHaveCount(0);
   await sorteoBeto.getByRole("button", { name: "Cerrar" }).click();
