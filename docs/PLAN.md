@@ -208,9 +208,15 @@ vivo.
 - Reabrir: el anfitrión puede volver a poner en curso una partida durante
   los 10 minutos después de terminarla.
 
-### Pendiente aparte
+### Colección de BGG (hecho)
 
-- **Importar la colección de BGG**: `BggProvider` ya maneja el 202 (el
-  endpoint `collection` lo usa mucho) y la cache en `juegos`. Falta
-  `importarColeccion(usuario)`, pedidos de `thing` en lotes, pantalla de
-  progreso y alta masiva en `catalogo_usuario`.
+- No hay "Iniciar sesión con BGG" (BGG no lo ofrece a otras apps): se
+  vincula el **usuario** de BGG en Cuenta y se lee su colección pública.
+- "Traer mis juegos" importa lo marcado como "Own", en tandas de 20 con
+  progreso. Lo que ya está en el estante no se toca y nada se quita: lo que
+  alguien saca de BGG lo quita a mano si quiere.
+- La puntuación viene de BGG (redondeada) solo al agregar el juego; después
+  se cambia en la Ficha.
+- Las expansiones se importan vinculadas a su juego base: en el estante van
+  adentro del juego ("+N expansiones") y se ven en su Ficha. La mesa no las
+  ofrece para jugar.

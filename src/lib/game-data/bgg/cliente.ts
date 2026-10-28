@@ -1,7 +1,7 @@
 import { ErrorGameData } from "../types";
 
 // Cliente HTTP de la XML API2 de BGG. Solo se usa desde el servidor.
-// Pendiente de verificar con la API real: ver la checklist en CLAUDE.md.
+// Verificado con la API real: ver la checklist en CLAUDE.md.
 
 export const BGG_BASE_URL = "https://boardgamegeek.com/xmlapi2";
 
@@ -50,11 +50,17 @@ export class ClienteBgg {
    * - 5xx o error de red: se reintenta con backoff.
    * - 401/403: token inválido; no se reintenta.
    */
-  async pedir(endpoint: string, params: Record<string, string>): Promise<string> {
+  async pedir(
+    endpoint: string,
+    params: Record<string, string>,
+    /** `collection` suele tardar más en armarse: se le dan más intentos. */
+    opciones: { maxIntentos?: number } = {},
+  ): Promise<string> {
     const url = `${this.baseUrl}/${endpoint}?${new URLSearchParams(params)}`;
+    const maxIntentos = opciones.maxIntentos ?? this.maxIntentos;
     let ultimoError: ErrorGameData | null = null;
 
-    for (let intento = 0; intento < this.maxIntentos; intento++) {
+    for (let intento = 0; intento < maxIntentos; intento++) {
       const backoff = this.esperaBaseMs * 2 ** intento;
       let respuesta: Response;
       try {
@@ -68,7 +74,7 @@ export class ClienteBgg {
         });
       } catch {
         ultimoError = new ErrorGameData("no_disponible", "No se pudo conectar con BGG.");
-        await this.esperarSiQuedanIntentos(intento, backoff);
+        await this.esperarSiQuedanIntentos(intento, maxIntentos, backoff);
         continue;
       }
 
@@ -86,7 +92,7 @@ export class ClienteBgg {
           "no_disponible",
           "BGG todavía está preparando la respuesta.",
         );
-        await this.esperarSiQuedanIntentos(intento, backoff);
+        await this.esperarSiQuedanIntentos(intento, maxIntentos, backoff);
         continue;
       }
 
@@ -97,13 +103,13 @@ export class ClienteBgg {
         );
         const pedida = leerRetryAfter(respuesta.headers.get("retry-after"));
         if (pedida !== null && pedida > this.esperaMaximaMs) throw ultimoError;
-        await this.esperarSiQuedanIntentos(intento, pedida ?? backoff * 2);
+        await this.esperarSiQuedanIntentos(intento, maxIntentos, pedida ?? backoff * 2);
         continue;
       }
 
       if (respuesta.status >= 500) {
         ultimoError = new ErrorGameData("no_disponible", "BGG no está disponible en este momento.");
-        await this.esperarSiQuedanIntentos(intento, backoff);
+        await this.esperarSiQuedanIntentos(intento, maxIntentos, backoff);
         continue;
       }
 
@@ -116,8 +122,8 @@ export class ClienteBgg {
     throw ultimoError ?? new ErrorGameData("no_disponible", "No se pudo consultar BGG.");
   }
 
-  private async esperarSiQuedanIntentos(intento: number, ms: number) {
-    if (intento < this.maxIntentos - 1) await this.esperar(Math.min(ms, this.esperaMaximaMs));
+  private async esperarSiQuedanIntentos(intento: number, maxIntentos: number, ms: number) {
+    if (intento < maxIntentos - 1) await this.esperar(Math.min(ms, this.esperaMaximaMs));
   }
 }
 

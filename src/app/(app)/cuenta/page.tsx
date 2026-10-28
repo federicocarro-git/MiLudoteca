@@ -3,11 +3,13 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { Suspense } from "react";
 import { FormularioNombre } from "@/components/cuenta/formulario-nombre";
+import { VincularBgg } from "@/components/cuenta/vincular-bgg";
 import { VisibilidadCatalogo } from "@/components/cuenta/visibilidad-catalogo";
 import { EncabezadoPagina } from "@/components/layout/encabezado-pagina";
 import { Boton } from "@/components/ui/boton";
 import { obtenerMiPerfil } from "@/lib/amigos/consultas";
 import { getUsuarioActual } from "@/lib/auth";
+import { elegirProvider } from "@/lib/game-data";
 import { cerrarSesion } from "./actions";
 
 export const metadata: Metadata = { title: "Cuenta" };
@@ -27,6 +29,18 @@ export default function CuentaPage() {
             <Perfil />
           </Suspense>
         </section>
+
+        {/* Sin token de BGG (en producción) no hay de dónde leer la colección. */}
+        {elegirProvider(process.env) !== null && (
+          <section className={TARJETA} aria-labelledby="titulo-bgg">
+            <h2 id="titulo-bgg" className="font-semibold">
+              BoardGameGeek
+            </h2>
+            <Suspense fallback={<div className="bg-borde h-24 animate-pulse rounded-xl" />}>
+              <CuentaBgg />
+            </Suspense>
+          </section>
+        )}
 
         <section className={TARJETA}>
           <Suspense fallback={<p className="bg-borde h-5 w-48 animate-pulse rounded" />}>
@@ -64,6 +78,12 @@ async function Perfil() {
       <VisibilidadCatalogo visible={perfil.catalogo_visible} />
     </>
   );
+}
+
+async function CuentaBgg() {
+  const perfil = await obtenerMiPerfil();
+  if (!perfil) return null;
+  return <VincularBgg usuario={perfil.bgg_usuario} importadoEn={perfil.bgg_importado_en} />;
 }
 
 async function DatosUsuario() {

@@ -7,6 +7,10 @@ import { TIPOS, type Tipo } from "@/lib/game-data/tipos";
 
 export type JuegoCatalogo = {
   id: string;
+  bgg_id: number | null;
+  es_expansion: boolean;
+  /** Si es una expansión: bgg_id de sus juegos base. */
+  expande: number[];
   nombre: string;
   imagen_url: string | null;
   jugadores_min: number | null;
@@ -144,7 +148,7 @@ const COMPARADORES: Record<Orden, (a: JuegoCatalogo, b: JuegoCatalogo) => number
   duracion: (a, b) => compararConNulos(a.duracion_min, b.duracion_min, false) || porNombre(a, b),
 };
 
-export function filtrarCatalogo(juegos: JuegoCatalogo[], filtros: Filtros): JuegoCatalogo[] {
+export function filtrarCatalogo<T extends JuegoCatalogo>(juegos: T[], filtros: Filtros): T[] {
   return juegos
     .filter((j) => cumpleFiltros(j, filtros))
     .sort(COMPARADORES[filtros.orden ?? "nombre"]);

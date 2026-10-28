@@ -1,14 +1,14 @@
-import { Clock, Star, Users } from "lucide-react";
+import { Clock, Puzzle, Star, Users } from "lucide-react";
 import Link from "next/link";
 import { ImagenJuego } from "@/components/juegos/imagen-juego";
-import type { JuegoCatalogo } from "@/lib/catalogo/filtros";
+import type { JuegoEstante } from "@/lib/catalogo/expansiones";
 import { formatearDuracion, jugadoresCorto, nivelDeComplejidad } from "@/lib/formato";
 
 export function TarjetaJuego({
   juego,
   prioridad = false,
 }: {
-  juego: JuegoCatalogo;
+  juego: JuegoEstante;
   prioridad?: boolean;
 }) {
   const jugadores = jugadoresCorto(juego.jugadores_min, juego.jugadores_max);
@@ -57,6 +57,16 @@ export function TarjetaJuego({
           )}
           {nivel && <span>{nivel}</span>}
         </p>
+        {(juego.expansiones > 0 || juego.es_expansion) && (
+          <p className="text-acento flex items-center gap-1 text-xs font-extrabold">
+            <Puzzle aria-hidden className="size-3.5" />
+            {juego.es_expansion
+              ? "Expansión"
+              : juego.expansiones === 1
+                ? "+1 expansión"
+                : `+${juego.expansiones} expansiones`}
+          </p>
+        )}
       </div>
     </Link>
   );

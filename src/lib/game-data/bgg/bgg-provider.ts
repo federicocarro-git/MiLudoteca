@@ -4,10 +4,11 @@ import {
   MAXIMO_RESULTADOS,
   type DatosJuego,
   type GameDataProvider,
+  type ItemColeccion,
   type ResultadoBusqueda,
 } from "../types";
 import type { ClienteBgg } from "./cliente";
-import { parsearBusqueda, parsearDetalle } from "./parser";
+import { parsearBusqueda, parsearColeccion, parsearDetalle } from "./parser";
 
 /** Cache de detalles de BGG (en producción, las filas `origen = 'bgg'` de `juegos`). */
 export interface CacheJuegosBgg {
@@ -16,6 +17,10 @@ export interface CacheJuegosBgg {
 }
 
 export const VIGENCIA_CACHE_MS = 30 * 24 * 60 * 60 * 1000;
+/** Ids por pedido a `thing` (verificado con la API real). */
+export const IDS_POR_PEDIDO = 20;
+/** `collection` puede tardar en armarse (BGG responde 202 mientras tanto). */
+const INTENTOS_COLECCION = 6;
 
 export class BggProvider implements GameDataProvider {
   readonly id = "bgg" as const;
@@ -63,6 +68,73 @@ export class BggProvider implements GameDataProvider {
         .catch((error) => this.registrar("guardar", error));
     }
     return datos;
+  }
+
+  /** Varios a la vez: primero la cache y lo que falta, de a 20 por pedido. */
+  async obtenerDetalles(bggIds: number[]): Promise<DatosJuego[]> {
+    const ids = [...new Set(bggIds.filter((id) => Number.isInteger(id) && id > 0))];
+    const ahora = this.deps.ahora?.() ?? new Date();
+    const encontrados = new Map<number, DatosJuego>();
+    const viejos = new Map<number, DatosJuego>();
+
+    for (const id of ids) {
+      const cacheado = await this.leerCache(id);
+      if (!cacheado) continue;
+      if (ahora.getTime() - cacheado.sincronizadoEn.getTime() < VIGENCIA_CACHE_MS) {
+        encontrados.set(id, cacheado.datos);
+      } else {
+        viejos.set(id, cacheado.datos);
+      }
+    }
+
+    const faltan = ids.filter((id) => !encontrados.has(id));
+    for (let i = 0; i < faltan.length; i += IDS_POR_PEDIDO) {
+      const lote = faltan.slice(i, i + IDS_POR_PEDIDO);
+      let datos: DatosJuego[];
+      try {
+        const xml = await this.deps.cliente.pedir("thing", { id: lote.join(","), stats: "1" });
+        datos = parsearDetalle(xml);
+      } catch (error) {
+        // Sin BGG, lo que haya en la cache (aunque esté vieja); si no hay nada, error.
+        const copias = lote.flatMap((id) => viejos.get(id) ?? []);
+        if (copias.length === 0) throw error;
+        for (const d of copias) encontrados.set(d.bgg_id!, d);
+        continue;
+      }
+      for (const d of datos) {
+        if (!d.bgg_id || !lote.includes(d.bgg_id)) continue;
+        encontrados.set(d.bgg_id, d);
+        await this.deps.cache.guardar(d, ahora).catch((error) => this.registrar("guardar", error));
+      }
+    }
+    return ids.flatMap((id) => encontrados.get(id) ?? []);
+  }
+
+  /**
+   * Lo que el usuario marcó como "Own" en BGG. Dos pedidos: con
+   * `subtype=boardgame` BGG también devuelve las expansiones (marcadas como
+   * juegos), así que los juegos se piden sin expansiones y las expansiones,
+   * aparte.
+   */
+  async coleccion(usuario: string): Promise<ItemColeccion[]> {
+    const base = { username: usuario.trim(), own: "1", stats: "1" };
+    const opciones = { maxIntentos: INTENTOS_COLECCION };
+    const juegos = parsearColeccion(
+      await this.deps.cliente.pedir(
+        "collection",
+        { ...base, subtype: "boardgame", excludesubtype: "boardgameexpansion" },
+        opciones,
+      ),
+    );
+    const expansiones = parsearColeccion(
+      await this.deps.cliente.pedir(
+        "collection",
+        { ...base, subtype: "boardgameexpansion" },
+        opciones,
+      ),
+    ).map((e) => ({ ...e, es_expansion: true }));
+    const vistos = new Set(juegos.map((j) => j.bgg_id));
+    return [...juegos, ...expansiones.filter((e) => !vistos.has(e.bgg_id))];
   }
 
   private async leerCache(bggId: number) {

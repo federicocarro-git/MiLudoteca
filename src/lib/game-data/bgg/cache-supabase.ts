@@ -4,7 +4,7 @@ import type { DatosJuego } from "../types";
 import type { CacheJuegosBgg } from "./bgg-provider";
 
 const COLUMNAS =
-  "bgg_id, nombre, imagen_url, jugadores_min, jugadores_max, duracion_min, complejidad, anio, descripcion, tipos, bgg_sincronizado_en";
+  "bgg_id, nombre, imagen_url, jugadores_min, jugadores_max, duracion_min, complejidad, anio, descripcion, tipos, es_expansion, expande, bgg_sincronizado_en";
 
 type Admin = ReturnType<typeof createAdminClient>;
 

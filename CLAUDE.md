@@ -69,7 +69,7 @@ src/
         ranking/                    competitivo (victorias, cara a cara) y cooperativo (ganadas, duplas); ?modo= y ?juego=
         quien-lo-tiene/             juegos de los amigos (buscador y filtro por amigo)
         amigos/                     código de amigo, solicitudes y lista (+ actions.ts)
-      cuenta/                     nombre visible, código de amigo, mostrar mis juegos, cerrar sesión (+ actions.ts)
+      cuenta/                     nombre visible, código de amigo, mostrar mis juegos, BGG, cerrar sesión (+ actions.ts)
       juegos/nuevo/               alta manual + panel de búsqueda
       juegos/[id]/
         (pestanas)/                 layout con encabezado + pestañas (una ruta por pestaña):
@@ -93,7 +93,7 @@ src/
                                   QR (svg en el servidor), invitar, agregar, terminar, sorteo de la mesa
     mesa/                         "¿Quién lo tiene?"
     partidas/                     tabla de resultado, notas, fotos, historial filtrado, ranking, borrar partida
-    cuenta/                       formulario del nombre visible e interruptor "Mostrar mis juegos"
+    cuenta/                       nombre visible, "Mostrar mis juegos" y vincular BGG / importar la colección
     layout/                       barra inferior, encabezado de página, enlace "volver"
     markdown.tsx                  render de resúmenes (react-markdown + remark-gfm; estilos .md en globals.css)
     <feature>/                    componentes de cada feature (catalogo/, juegos/, ...)
@@ -114,9 +114,14 @@ src/
     validations/                  esquemas zod compartidos por formularios y acciones
     catalogo/
       filtros.ts                  leer/escribir filtros de la URL, filtrar, ordenar, sortear
+      expansiones.ts              organizarEstante(): las expansiones adentro de su juego base
       consultas.ts                obtenerMiCatalogo() (vista mi_catalogo; lee cookies)
+    coleccion-bgg/
+      planificar.ts               planificarImportacion() (qué falta en el estante) y enTandas() (puras)
+      importar.ts                 importarTanda(): datos de BGG, fila compartida y alta en el catálogo
     juegos/
-      consultas.ts                obtenerJuego(id) y obtenerResumen(id), con cache() por request
+      consultas.ts                obtenerJuego(id), obtenerResumen(id) (con cache() por request) y
+                                  obtenerRelacionados() (expansiones o juegos base)
       comparar.ts                 mismosDatos() (¿se editó lo que vino de BGG?) y escaparLike()
       storage.ts                  rutaImagenPropia(): qué fotos del bucket se pueden borrar
       valores-formulario.ts       valores del formulario de juego (alta y edición)
@@ -165,6 +170,7 @@ supabase/
   tests/mesa.test.sql             catálogos de amigos y de la mesa, cambiar el juego (16 casos)
   tests/puntaje.test.sql          rondas, categorías, anotar y hojas guardadas (26 casos)
   tests/revancha.test.sql         sala sin juego, revancha y reabrir (22 casos)
+  tests/bgg.test.sql              usuario de BGG vinculado y expansiones (9 casos)
 tests/e2e/                        Playwright: un spec por área + helpers.ts (usuarios, juegos, Mailpit)
 .github/workflows/ci.yml          CI: lint/tipos/unitarios/build + pgTAP/integración/e2e con Supabase local
 docs/PLAN.md                      plan por hitos y decisiones
@@ -262,6 +268,12 @@ modo, ganadores, ganamos)` (solo el anfitrión, en curso). Modos
   hasta 10 minutos después de terminar; si no, `hint = 'muy_tarde'`): vuelve
   a `en_curso`, borra el resultado (`gano`, `posicion`, modo) y conserva los
   puntos; si otra sala tomó el código, genera otro.
+- Colección de BGG (`20261028000000_coleccion_bgg.sql`): `perfiles.bgg_usuario`
+  (usuario de BGG vinculado; check de formato) y `bgg_importado_en` (grant de
+  las dos columnas). `juegos.es_expansion` y `juegos.expande` (bgg_id de los
+  juegos base, hasta 50; índice GIN): los completa el parser en las filas de
+  BGG. `mi_catalogo` suma esas dos columnas al final. `juegos_de_la_mesa`
+  deja afuera las expansiones.
 
 ### Alta de juegos (`/juegos/nuevo`)
 
@@ -303,6 +315,11 @@ modo, ganadores, ganamos)` (solo el anfitrión, en curso). Modos
   animación corta que respeta `prefers-reduced-motion`.
   "Otro" nunca repite el anterior si hay alternativas.
 - La búsqueda ignora tildes y mayúsculas (`normalizar`).
+- Expansiones (`organizarEstante`): una expansión cuyo juego base está en el
+  estante no se muestra sola; el juego lleva "+N expansiones" y la lista
+  está en su Ficha. Una expansión sin su juego base se muestra marcada como
+  "Expansión". El conteo, los filtros y el sorteo usan el estante ya
+  organizado, y el sorteo deja afuera las expansiones.
 
 ### Ficha del juego (`/juegos/[id]`)
 
@@ -322,6 +339,9 @@ modo, ganadores, ganamos)` (solo el anfitrión, en curso). Modos
   con "Descripción: BoardGameGeek" y link a la página del juego. Un juego
   manual con `bgg_id` de referencia **no** se atribuye (la descripción pudo
   haberse editado), pero igual muestra "Ver en BoardGameGeek".
+- Expansiones (`obtenerRelacionados`): en un juego base, "Expansiones (N)"
+  con las que tenés en el estante; en una expansión, "Expansión de …" con
+  link al juego base (si la fila de BGG existe) y sin "Jugar una partida".
 - "Ver en BoardGameGeek" (`EnlaceBgg`, `urlJuegoBgg`): en la Ficha y en las
   pestañas vacías de cualquier juego con `bgg_id`. Abre en otra pestaña.
 - "Cómo se juega" y "Hoja de turno" son **opcionales** y se completan a mano.
@@ -354,6 +374,8 @@ interface GameDataProvider {
   readonly id: "bgg" | "mock";
   buscar(nombre: string): Promise<ResultadoBusqueda[]>;
   obtenerDetalle(id: string): Promise<DatosJuego | null>;
+  obtenerDetalles(bggIds: number[]): Promise<DatosJuego[]>;
+  coleccion(usuario: string): Promise<ItemColeccion[]>;
 }
 ```
 
@@ -383,7 +405,11 @@ Archivos en `src/lib/game-data/bgg/`:
   - **401/403**: `no_autorizado`, sin reintentar.
   - Cada espera tiene un tope de 15 s, para no colgar una Server Action.
 - `parser.ts`: `parsearBusqueda` (`search`; sin repetidos, porque BGG devuelve
-  una entrada por cada nombre que coincide) y `parsearDetalle` (`thing&stats=1`).
+  una entrada por cada nombre que coincide), `parsearDetalle` (`thing&stats=1`;
+  una expansión es `type="boardgameexpansion"` y sus juegos base son los
+  links `boardgameexpansion` con `inbound="true"`) y `parsearColeccion`
+  (`collection`; puntuación redondeada con `puntuacionDeBgg`, "N/A" → null;
+  un `<errors>` con "Invalid username" es `usuario_inexistente`).
   Decodifica entidades HTML (con `he`, incluidas las doblemente escapadas como
   `&amp;quot;`), y en la descripción (`limpiarDescripcion`) respeta los párrafos
   (`&#10;&#10;`) y los saltos simples, quita los espacios al final de cada línea
@@ -391,8 +417,12 @@ Archivos en `src/lib/game-data/bgg/`:
   usa la imagen `https` (o el thumbnail) y traduce categorías y mecánicas a
   `tipos` (vocabulario en `src/lib/game-data/tipos.ts`).
 - `bgg-provider.ts`: `buscar` (mínimo 2 caracteres; ordena primero el nombre
-  exacto, después los que empiezan igual, después el resto) y
-  `obtenerDetalle` (cache primero; vigencia de 30 días). Si BGG falla y hay una
+  exacto, después los que empiezan igual, después el resto),
+  `obtenerDetalles` (cache primero y lo que falta de a 20 por pedido) y
+  `coleccion` (dos pedidos a `collection`, porque con `subtype=boardgame` BGG
+  mezcla las expansiones: juegos con `excludesubtype=boardgameexpansion` y
+  expansiones aparte; 6 intentos, porque suele responder 202 mientras la
+  arma), y `obtenerDetalle` (cache primero; vigencia de 30 días). Si BGG falla y hay una
   copia vencida, devuelve la copia. Si la cache falla, sigue sin ella.
 - `cache-supabase.ts`: cache en `juegos` (`origen = 'bgg'`) con el cliente
   admin. Primero intenta un update y después un insert, porque PostgREST no
@@ -406,7 +436,9 @@ Archivos en `src/lib/game-data/bgg/`:
 
 El `MockProvider` (`mock/`) tiene 12 juegos en `juegos.json`, sin `bgg_id` ni
 imagen (no se hace pasar por BGG); varias descripciones tienen más de un
-párrafo para probar cómo se muestran. En desarrollo agrega 300 ms de latencia para
+párrafo para probar cómo se muestran. Su colección (`coleccion.json`) existe
+solo para el usuario `prueba`: 2 juegos y 3 expansiones (una sin su juego
+base) con bgg_id desde 990.000.000, que no chocan con los de BGG. En desarrollo agrega 300 ms de latencia para
 que se vean los estados de carga.
 
 #### Verificación con la API real
@@ -443,6 +475,8 @@ Todavía sin observar:
       y cómo es su cuerpo (el fixture `respuesta-202.xml` sigue siendo una
       suposición basada en `collection`).
 - [ ] Límites reales de rate limit, si el 429 trae `Retry-After` y en qué formato.
+- [ ] Que una expansión (325, Seafarers) traiga `inbound="true"` hacia Catan
+      (13) y cómo responde `collection` (correr con `BGG_USUARIO=...`).
 - [ ] Si todos los nombres de categorías y mecánicas coinciden con los de
       `tipos.ts` (los de Catan sí: `eurogame`, `negociación`).
 - [ ] Requisitos de atribución de los términos de uso de la API ("Powered by BGG").
@@ -579,7 +613,23 @@ fotos), hito 12 (ranking y cara a cara), hito 13 (catálogos de la mesa) y
 hito 14 (puntuación por rondas y hojas de puntuación). La fase 2 está
 completa. Después: elegir el juego de la sala de una lista con filtro por
 dueño, salas sin juego ("Elegimos en la mesa"), revancha con los mismos
-jugadores y reabrir una partida recién terminada. Importar la colección de BGG sigue pendiente aparte.
+jugadores y reabrir una partida recién terminada. Además, la colección de BGG (vincular el usuario e importar los juegos, con las expansiones adentro de su juego).
+
+### Colección de BGG (Cuenta → BoardGameGeek)
+
+- No hay login con BGG: se vincula el **usuario** (`vincularBgg`,
+  `usuarioBggSchema`; no el email) y se lee la colección pública. La sección
+  aparece si hay provider (con token o el mock).
+- "Traer mis juegos": `leerColeccionBgg` (colección + `planificarImportacion`
+  contra el estante: ya está si coincide el `bgg_id` o el nombre sin tildes
+  ni mayúsculas) y después, desde el navegador, `importarTandaBgg` de a 20
+  (`tandaBggSchema`) con barra de progreso, y `terminarImportacionBgg`
+  (refresh). Cada tanda (`importarTanda`): `obtenerDetalles`, crea la fila
+  compartida de BGG si falta (con la cache, clave secreta) y da de alta en
+  `catalogo_usuario` con la sesión (upsert `ignoreDuplicates`: lo que ya
+  estaba no se toca, ni su puntuación). Nada se quita.
+- La puntuación de BGG entra solo al agregar el juego; después se cambia en
+  la Ficha. "Desvincular" no toca los juegos importados.
 
 ### Amigos (`/jugar/amigos`)
 

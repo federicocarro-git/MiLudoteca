@@ -1,0 +1,67 @@
+[
+  {
+    "bgg_id": 990000013,
+    "nombre": "Catan",
+    "anio": 1995,
+    "puntuacion": 8,
+    "jugadores_min": 3,
+    "jugadores_max": 4,
+    "duracion_min": 90,
+    "complejidad": 2.29,
+    "tipos": ["eurogame", "negociación"],
+    "descripcion": "Colección de prueba: colonizar una isla juntando recursos.",
+    "expande": []
+  },
+  {
+    "bgg_id": 990000822,
+    "nombre": "Carcassonne",
+    "anio": 2000,
+    "puntuacion": null,
+    "jugadores_min": 2,
+    "jugadores_max": 5,
+    "duracion_min": 45,
+    "complejidad": 1.9,
+    "tipos": ["losetas"],
+    "descripcion": "Colección de prueba: armar el paisaje con losetas.",
+    "expande": []
+  },
+  {
+    "bgg_id": 990000325,
+    "nombre": "Catan: Navegantes",
+    "anio": 1997,
+    "puntuacion": 7,
+    "jugadores_min": 3,
+    "jugadores_max": 4,
+    "duracion_min": 90,
+    "complejidad": 2.4,
+    "tipos": [],
+    "descripcion": "Colección de prueba: expansión con barcos e islas.",
+    "expande": [990000013]
+  },
+  {
+    "bgg_id": 990000002,
+    "nombre": "Carcassonne: Posadas y Catedrales",
+    "anio": 2002,
+    "puntuacion": null,
+    "jugadores_min": 2,
+    "jugadores_max": 6,
+    "duracion_min": 60,
+    "complejidad": 2,
+    "tipos": [],
+    "descripcion": "Colección de prueba: expansión con posadas y catedrales.",
+    "expande": [990000822]
+  },
+  {
+    "bgg_id": 990031627,
+    "nombre": "Ticket to Ride: Europa 1912",
+    "anio": 2009,
+    "puntuacion": null,
+    "jugadores_min": 2,
+    "jugadores_max": 5,
+    "duracion_min": 60,
+    "complejidad": 1.9,
+    "tipos": [],
+    "descripcion": "Colección de prueba: expansión de un juego que no está en la colección.",
+    "expande": [990000009]
+  }
+]

@@ -1,10 +1,11 @@
 import { describe, expect, it } from "vitest";
-import { parsearBusqueda, parsearDetalle } from "./parser";
+import { parsearBusqueda, parsearColeccion, parsearDetalle } from "./parser";
 import { BGG_BASE_URL, ClienteBgg } from "./cliente";
 
 // Verifica la checklist "Verificación con la API real" de CLAUDE.md.
 // Uso: BGG_API_TOKEN=... npm run test:bgg-real
 // Imprime lo observado (códigos, headers) para completar la checklist.
+// Con BGG_USUARIO=... también lee la colección de ese usuario.
 const token = process.env.BGG_API_TOKEN?.trim();
 const habilitado = process.env.BGG_REAL === "1" && Boolean(token);
 
@@ -58,5 +59,40 @@ describe.skipIf(!habilitado)("API real de BGG", { timeout: 60_000 }, () => {
     const veinte = [...ids, ...ids.map((i) => i + 1)].join(",");
     const xml = await cliente().pedir("thing", { id: veinte });
     console.info("thing con 20 ids →", parsearDetalle(xml).length, "juegos");
+  });
+
+  it("una expansión (Seafarers, 325) apunta a Catan (13) con un link inbound", async () => {
+    const xml = await cliente().pedir("thing", { id: "325", stats: "1" });
+    const [navegantes] = parsearDetalle(xml);
+    console.info("thing 325 →", {
+      nombre: navegantes?.nombre,
+      es_expansion: navegantes?.es_expansion,
+      expande: navegantes?.expande,
+    });
+    expect(navegantes.es_expansion).toBe(true);
+    expect(navegantes.expande).toContain(13);
+  });
+
+  it.skipIf(!process.env.BGG_USUARIO)("lee la colección de BGG_USUARIO", async () => {
+    const usuario = process.env.BGG_USUARIO!;
+    const pedir = (subtype: string, extra: Record<string, string> = {}) =>
+      cliente().pedir(
+        "collection",
+        { username: usuario, own: "1", stats: "1", subtype, ...extra },
+        { maxIntentos: 6 },
+      );
+    const juegos = parsearColeccion(
+      await pedir("boardgame", { excludesubtype: "boardgameexpansion" }),
+    );
+    const expansiones = parsearColeccion(await pedir("boardgameexpansion"));
+    console.info(
+      `colección de ${usuario} →`,
+      juegos.length,
+      "juegos y",
+      expansiones.length,
+      "expansiones; primeros:",
+      [...juegos.slice(0, 3), ...expansiones.slice(0, 2)],
+    );
+    expect(juegos.every((j) => !j.es_expansion)).toBe(true);
   });
 });

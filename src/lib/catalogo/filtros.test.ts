@@ -12,6 +12,9 @@ import {
 function juego(parcial: Partial<JuegoCatalogo> & { nombre: string }): JuegoCatalogo {
   return {
     id: parcial.nombre.toLowerCase(),
+    bgg_id: null,
+    es_expansion: false,
+    expande: [],
     imagen_url: null,
     jugadores_min: null,
     jugadores_max: null,
