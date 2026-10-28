@@ -73,7 +73,7 @@ Cada hito termina con lint, typecheck y tests en verde, y un commit.
 - [x] `getGameDataProvider()` / `elegirProvider()` según el entorno.
 - [x] 58 tests nuevos (fixtures XML + `fetch` simulado), 5 de integración
       contra Supabase local y `npm run test:bgg-real` para cuando llegue el token.
-- [ ] Correr `test:bgg-real` con el token y completar la checklist de `CLAUDE.md`.
+- [x] Correr `test:bgg-real` con el token y completar la checklist de `CLAUDE.md` (2026-10-28).
 
 ### 4. Agregar juego — _hecho_
 
@@ -148,7 +148,7 @@ Cada hito termina con lint, typecheck y tests en verde, y un commit.
 - [ ] Deploy en Vercel y configuración de Auth en el proyecto real (pasos en
       `docs/DEPLOY.md` y `docs/AUTH.md`).
 - [ ] Probar Google con credenciales reales.
-- [ ] Token de BGG: correr `npm run test:bgg-real` y completar la checklist de `CLAUDE.md`.
+- [x] Token de BGG: correr `npm run test:bgg-real` y completar la checklist de `CLAUDE.md` (2026-10-28).
 - [ ] Limpiar fotos huérfanas en Storage (subidas y no guardadas) con un cron.
 
 ## Cambios después de la fase 1

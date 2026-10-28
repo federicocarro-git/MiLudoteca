@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { parsearBusqueda, parsearDetalle } from "./parser";
 import { BGG_BASE_URL, ClienteBgg } from "./cliente";
 
-// Verifica la checklist "Pendiente de verificar con la API real" de CLAUDE.md.
+// Verifica la checklist "Verificación con la API real" de CLAUDE.md.
 // Uso: BGG_API_TOKEN=... npm run test:bgg-real
 // Imprime lo observado (códigos, headers) para completar la checklist.
 const token = process.env.BGG_API_TOKEN?.trim();

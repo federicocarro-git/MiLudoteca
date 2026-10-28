@@ -409,29 +409,43 @@ imagen (no se hace pasar por BGG); varias descripciones tienen más de un
 párrafo para probar cómo se muestran. En desarrollo agrega 300 ms de latencia para
 que se vean los estados de carga.
 
-#### Pendiente de verificar con la API real (cuando se apruebe el token)
+#### Verificación con la API real
 
-Correr `BGG_API_TOKEN=... npm run test:bgg-real`: verifica lo que se puede
-automatizar e imprime lo observado (códigos, headers) para completar esta lista.
-Si algo no coincide, actualizar los fixtures con respuestas reales y ajustar el
-parser o el cliente.
+`BGG_API_TOKEN=... npm run test:bgg-real` (en Windows, cargar antes la
+variable: `$env:BGG_API_TOKEN="..."` en PowerShell o `set BGG_API_TOKEN=...`
+en cmd) verifica lo que se puede automatizar e imprime lo observado (códigos,
+headers). Si algo no coincide, actualizar los fixtures con respuestas reales y
+ajustar el parser o el cliente.
 
-- [ ] Que el header `Authorization: Bearer` sea el esquema que BGG acepta, y
-      qué devuelve un pedido sin token o con un token inválido (código y cuerpo).
-- [ ] Que el dominio sin `www` responda sin redirecciones (un redirect podría perder el header).
-- [ ] En qué endpoints aparece realmente el 202 (¿solo en `collection` o también en `thing`?) y cuánto conviene esperar.
+Verificado el 2026-10-28 con el token real:
+
+- [x] `Authorization: Bearer` es el esquema que acepta BGG. Sin token o con un
+      token inválido responde **401** (`Unauthorized. See
+    https://boardgamegeek.com/using_the_xml_api`): el cliente lo trata como
+      `no_autorizado`.
+- [x] El dominio sin `www` responde 200 sin redirecciones.
+- [x] `thing` acepta 20 ids en un pedido (un id que no existe simplemente no
+      viene en la respuesta).
+- [x] La estructura del XML coincide con los fixtures: Catan (id 13) se parsea
+      completo (jugadores, duración, complejidad 2,28, año, categorías).
+- [x] `description` llega sin entidades HTML después de decodificarla.
+- [x] Las imágenes vienen de `cf.geekdo-images.com` (ya está en
+      `images.remotePatterns`). Son las `__original`, pesadas: el optimizador
+      de Next las achica.
+- [x] `search` con `type=boardgame` incluye juegos derivados y expansiones de
+      fans ("The 7 Wonders of Catan (fan expansion for Catan)"), y no viene
+      ordenado por relevancia: el orden lo pone `bgg-provider` (exacto,
+      empieza igual, el resto).
+- [x] La duración es `playingtime` (Catan: 120 min).
+
+Todavía sin observar:
+
+- [ ] En qué endpoints aparece el 202 (no apareció en `search` ni en `thing`)
+      y cómo es su cuerpo (el fixture `respuesta-202.xml` sigue siendo una
+      suposición basada en `collection`).
 - [ ] Límites reales de rate limit, si el 429 trae `Retry-After` y en qué formato.
-- [ ] Cantidad máxima de ids por pedido a `thing` (se supone 20).
-- [ ] Que la estructura del XML coincida con los fixtures: `name[@type=primary]`,
-      `statistics/ratings/averageweight`, `link[@type=boardgamecategory]`, `image`.
-- [ ] Codificación de `description` (entidades HTML, `&#10;` como salto de línea).
-- [ ] Dominio de las imágenes (se supone `cf.geekdo-images.com`) para
-      `images.remotePatterns` de `next.config`.
-- [ ] Si `search` incluye expansiones aunque se pida `type=boardgame`.
-- [ ] Si los nombres de categorías y mecánicas coinciden con los de `tipos.ts`
-      (por ejemplo, "Solo / Solitaire Game", "Deck, Bag, and Pool Building").
-- [ ] Cómo es el cuerpo de un 202 en `thing` (el fixture `respuesta-202.xml` es
-      una suposición basada en `collection`).
+- [ ] Si todos los nombres de categorías y mecánicas coinciden con los de
+      `tipos.ts` (los de Catan sí: `eurogame`, `negociación`).
 - [ ] Requisitos de atribución de los términos de uso de la API ("Powered by BGG").
 
 ## Convenciones
