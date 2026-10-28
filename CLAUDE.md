@@ -420,9 +420,8 @@ ajustar el parser o el cliente.
 Verificado el 2026-10-28 con el token real:
 
 - [x] `Authorization: Bearer` es el esquema que acepta BGG. Sin token o con un
-      token inválido responde **401** (`Unauthorized. See
-    https://boardgamegeek.com/using_the_xml_api`): el cliente lo trata como
-      `no_autorizado`.
+      token inválido responde **401** ("Unauthorized", con un link a la guía
+      de uso de la XML API): el cliente lo trata como `no_autorizado`.
 - [x] El dominio sin `www` responde 200 sin redirecciones.
 - [x] `thing` acepta 20 ids en un pedido (un id que no existe simplemente no
       viene en la respuesta).
@@ -500,10 +499,12 @@ Todavía sin observar:
   (utilidades `relieve`, `relieve-primario`, `relieve-acento`) que desaparece
   al apretar. `Boton` tiene las variantes `primario`, `secundario` y `acento`
   (acciones fuertes, como "Terminar partida"). Las tarjetas llevan `relieve`.
-- Barra inferior: Estante · Jugar · (+ agregar, botón central) · Ranking ·
+- Barra inferior: Estante · Historial · **Jugar** (botón central destacado:
+  la app es, antes que nada, el registro de lo que se juega) · Ranking ·
   Cuenta; se marca la ruta más larga que coincide (`itemActivo`,
-  `lib/navegacion.ts`). El catálogo se llama "Tu estante" en la UI (la ruta
-  sigue siendo `/catalogo`).
+  `lib/navegacion.ts`). "Agregar juego" es un botón del Estante (y
+  `/juegos/nuevo` marca el Estante). El catálogo se llama "Tu estante" en la
+  UI (la ruta sigue siendo `/catalogo`).
 - Peso de un juego: Liviano (1–2), Mediano (2–3) y Pesado (3–5), igual en la
   Ficha, las tarjetas y el filtro (`nivelDeComplejidad`).
 - Avatares como posavasos de color: `colorDeNombre` (siempre el mismo color

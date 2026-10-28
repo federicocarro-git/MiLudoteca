@@ -1,4 +1,4 @@
-import { Dices } from "lucide-react";
+import { Dices, Plus } from "lucide-react";
 import type { Metadata } from "next";
 import { Suspense } from "react";
 import { CatalogoInteractivo } from "@/components/catalogo/catalogo-interactivo";
@@ -11,7 +11,12 @@ export const metadata: Metadata = { title: "Tu estante" };
 export default function CatalogoPage() {
   return (
     <>
-      <EncabezadoPagina titulo="Tu estante" />
+      <EncabezadoPagina titulo="Tu estante">
+        <BotonLink href="/juegos/nuevo" variante="secundario" className="px-4">
+          <Plus aria-hidden className="size-5" />
+          Agregar juego
+        </BotonLink>
+      </EncabezadoPagina>
       <Suspense fallback={<EsqueletoCatalogo />}>
         <Catalogo />
       </Suspense>
