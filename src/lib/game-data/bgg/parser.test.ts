@@ -1,7 +1,7 @@
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import { ErrorGameData } from "../types";
-import { parsearBusqueda, parsearDetalle } from "./parser";
+import { parsearBusqueda, parsearColeccion, parsearDetalle, puntuacionDeBgg } from "./parser";
 
 const fixture = (nombre: string) =>
   readFileSync(new URL(`./__fixtures__/${nombre}`, import.meta.url), "utf8");
@@ -50,6 +50,18 @@ describe("parsearDetalle", () => {
       anio: 1995,
       descripcion: expect.any(String),
       tipos: ["eurogame", "negociación"],
+      es_expansion: false,
+      expande: [],
+    });
+  });
+
+  it("una expansión trae los juegos base (links inbound), sin repetir", () => {
+    const [navegantes] = parsearDetalle(fixture("thing-expansion.xml"));
+    expect(navegantes).toMatchObject({
+      bgg_id: 325,
+      nombre: "Catan: Seafarers",
+      es_expansion: true,
+      expande: [13, 926],
     });
   });
 
@@ -86,6 +98,8 @@ describe("parsearDetalle", () => {
       anio: null,
       descripcion: null,
       tipos: ["cooperativo"],
+      es_expansion: false,
+      expande: [],
     });
   });
 
@@ -101,5 +115,51 @@ describe("parsearDetalle", () => {
       jugadores_min: 2,
       jugadores_max: 5,
     });
+  });
+});
+
+describe("parsearColeccion", () => {
+  it("lee los juegos, sin repetir, con la puntuación redondeada", () => {
+    expect(parsearColeccion(fixture("coleccion.xml"))).toEqual([
+      { bgg_id: 13, nombre: "CATAN", anio: 1995, es_expansion: false, puntuacion: 8 },
+      {
+        bgg_id: 822,
+        nombre: "Carcassonne & Friends",
+        anio: null,
+        es_expansion: false,
+        puntuacion: null,
+      },
+      { bgg_id: 30549, nombre: "Pandemic", anio: 2008, es_expansion: false, puntuacion: 10 },
+    ]);
+  });
+
+  it("marca las expansiones por el subtype", () => {
+    expect(parsearColeccion(fixture("coleccion-expansiones.xml"))).toEqual([
+      { bgg_id: 325, nombre: "Catan: Seafarers", anio: 1997, es_expansion: true, puntuacion: 8 },
+    ]);
+  });
+
+  it("un usuario que no existe es usuario_inexistente", () => {
+    expect(() => parsearColeccion(fixture("coleccion-usuario-inexistente.xml"))).toThrow(
+      expect.objectContaining({ codigo: "usuario_inexistente" }),
+    );
+  });
+
+  it("colección vacía", () => {
+    expect(parsearColeccion('<items totalitems="0"></items>')).toEqual([]);
+  });
+});
+
+describe("puntuacionDeBgg", () => {
+  it.each([
+    ["7.5", 8],
+    ["7.49", 7],
+    ["10", 10],
+    ["1", 1],
+    ["N/A", null],
+    ["0", null],
+    [undefined, null],
+  ])("%j → %j", (valor, esperado) => {
+    expect(puntuacionDeBgg(valor)).toBe(esperado);
   });
 });

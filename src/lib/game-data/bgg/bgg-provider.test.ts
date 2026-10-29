@@ -19,7 +19,12 @@ class CacheEnMemoria implements CacheJuegosBgg {
 
 function crear(respuestas: Record<string, string | Error>) {
   const pedir = vi.fn(async (endpoint: string, params: Record<string, string>) => {
-    const clave = endpoint === "thing" ? `thing:${params.id}` : endpoint;
+    const clave =
+      endpoint === "thing"
+        ? `thing:${params.id}`
+        : endpoint === "collection"
+          ? `collection:${params.subtype}`
+          : endpoint;
     const r = respuestas[clave];
     if (r instanceof Error) throw r;
     if (r === undefined) throw new Error(`pedido inesperado: ${clave}`);
@@ -117,5 +122,77 @@ describe("BggProvider.obtenerDetalle", () => {
     cache.guardar.mockRejectedValueOnce(new Error("db caída"));
     expect((await provider.obtenerDetalle("13"))?.nombre).toBe("CATAN");
     expect(log).toHaveBeenCalledTimes(2);
+  });
+});
+
+describe("BggProvider.obtenerDetalles", () => {
+  it("usa la cache vigente y pide el resto de una vez", async () => {
+    const { provider, pedir, cache } = crear({ "thing:13,325": fixture("thing-13.xml") });
+    cache.filas.set(822, {
+      datos: { nombre: "Carcassonne", bgg_id: 822 } as DatosJuego,
+      sincronizadoEn: AHORA,
+    });
+    const datos = await provider.obtenerDetalles([822, 13, 325, 13]);
+    expect(pedir).toHaveBeenCalledWith("thing", { id: "13,325", stats: "1" });
+    // 325 no vino en la respuesta: no aparece.
+    expect(datos.map((d) => d.bgg_id)).toEqual([822, 13]);
+    expect(cache.guardar).toHaveBeenCalledOnce();
+  });
+
+  it("pide de a 20 ids", async () => {
+    const ids = Array.from({ length: 25 }, (_, i) => i + 1);
+    const { provider, pedir } = crear({
+      [`thing:${ids.slice(0, 20).join(",")}`]: "<items></items>",
+      [`thing:${ids.slice(20).join(",")}`]: "<items></items>",
+    });
+    await provider.obtenerDetalles(ids);
+    expect(pedir).toHaveBeenCalledTimes(2);
+  });
+
+  it("si BGG falla, usa la copia vencida; sin copia, propaga el error", async () => {
+    const falla = new ErrorGameData("no_disponible", "caído");
+    const { provider, cache } = crear({ "thing:13": falla });
+    await expect(provider.obtenerDetalles([13])).rejects.toBe(falla);
+    cache.filas.set(13, {
+      datos: { nombre: "Viejo", bgg_id: 13 } as DatosJuego,
+      sincronizadoEn: new Date(AHORA.getTime() - VIGENCIA_CACHE_MS - 1),
+    });
+    expect((await provider.obtenerDetalles([13]))[0].nombre).toBe("Viejo");
+  });
+});
+
+describe("BggProvider.coleccion", () => {
+  it("pide juegos y expansiones por separado y los junta", async () => {
+    const { provider, pedir } = crear({
+      "collection:boardgame": fixture("coleccion.xml"),
+      "collection:boardgameexpansion": fixture("coleccion-expansiones.xml"),
+    });
+    const items = await provider.coleccion(" fede ");
+    expect(pedir).toHaveBeenCalledWith(
+      "collection",
+      {
+        username: "fede",
+        own: "1",
+        stats: "1",
+        subtype: "boardgame",
+        excludesubtype: "boardgameexpansion",
+      },
+      { maxIntentos: 6 },
+    );
+    expect(items.map((i) => [i.bgg_id, i.es_expansion])).toEqual([
+      [13, false],
+      [822, false],
+      [30549, false],
+      [325, true],
+    ]);
+  });
+
+  it("un usuario que no existe corta con usuario_inexistente", async () => {
+    const { provider } = crear({
+      "collection:boardgame": fixture("coleccion-usuario-inexistente.xml"),
+    });
+    await expect(provider.coleccion("nadie")).rejects.toMatchObject({
+      codigo: "usuario_inexistente",
+    });
   });
 });

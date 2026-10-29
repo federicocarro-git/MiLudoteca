@@ -7,6 +7,8 @@ export type Perfil = {
   nombre: string;
   codigo_amigo: string;
   catalogo_visible: boolean;
+  bgg_usuario: string | null;
+  bgg_importado_en: string | null;
 };
 
 /** Perfil del usuario actual (null si no hay sesión). Lee cookies: dentro de <Suspense>. */
@@ -17,7 +19,7 @@ export const obtenerMiPerfil = cache(async (): Promise<Perfil | null> => {
   if (!id) return null;
   const { data, error } = await supabase
     .from("perfiles")
-    .select("id, nombre, codigo_amigo, catalogo_visible")
+    .select("id, nombre, codigo_amigo, catalogo_visible, bgg_usuario, bgg_importado_en")
     .eq("id", id)
     .maybeSingle();
   if (error) throw error;

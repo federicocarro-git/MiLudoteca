@@ -1,4 +1,4 @@
-import { CircleCheck, History, Pencil, Users } from "lucide-react";
+import { ChevronRight, CircleCheck, History, Pencil, Puzzle, Users } from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
@@ -10,7 +10,7 @@ import { BotonCrearSala } from "@/components/salas/boton-crear-sala";
 import { BotonLink } from "@/components/ui/boton";
 import { formatearDuracion, jugadoresCorto, nivelDeComplejidad } from "@/lib/formato";
 import { urlJuegoBgg } from "@/lib/game-data/bgg/enlaces";
-import { obtenerJuego } from "@/lib/juegos/consultas";
+import { obtenerJuego, obtenerRelacionados } from "@/lib/juegos/consultas";
 import { obtenerJuegosDeAmigos } from "@/lib/mesa/consultas";
 import { claveDeJuego } from "@/lib/mesa/juegos";
 import { resumenDePartidasDelJuego } from "@/lib/partidas/consultas";
@@ -86,11 +86,16 @@ async function Ficha({ id, aviso }: { id: string; aviso: keyof typeof AVISOS | n
         <p className="text-texto-suave text-sm">{juego.tipos.join(" · ")}</p>
       )}
 
+      <Suspense>
+        <Relacionados juego={juego} />
+      </Suspense>
+
       {/* Cualquier juego con bgg_id: los de BGG y los manuales que lo guardan de referencia. */}
       {juego.bgg_id && <EnlaceBgg bggId={juego.bgg_id} className="print:hidden" />}
 
       <section className="space-y-2 print:hidden" aria-label="Partidas">
-        <BotonCrearSala juegoId={juego.id} />
+        {/* Una expansión no se juega sola: la partida se arma con el juego base. */}
+        {!juego.es_expansion && <BotonCrearSala juegoId={juego.id} />}
         <Suspense fallback={<p className="bg-borde h-5 w-48 animate-pulse rounded" />}>
           <PartidasDelJuego juegoId={juego.id} />
         </Suspense>
@@ -140,6 +145,69 @@ async function Ficha({ id, aviso }: { id: string; aviso: keyof typeof AVISOS | n
         </BotonLink>
       )}
     </article>
+  );
+}
+
+/** Las expansiones que tenés de este juego, o de qué juego es esta expansión. */
+async function Relacionados({
+  juego,
+}: {
+  juego: { bgg_id: number | null; es_expansion: boolean; expande: number[] };
+}) {
+  const { expansiones, bases } = await obtenerRelacionados(juego);
+  if (juego.es_expansion) {
+    if (bases.length === 0) {
+      return (
+        <p className="text-acento flex items-center gap-1.5 text-sm font-bold">
+          <Puzzle aria-hidden className="size-4" /> Expansión
+        </p>
+      );
+    }
+    return (
+      <p className="flex flex-wrap items-center gap-x-1.5 text-sm">
+        <Puzzle aria-hidden className="text-acento size-4" />
+        <span className="text-texto-suave">Expansión de</span>
+        {bases.map((b, i) => (
+          <span key={b.id}>
+            <Link
+              href={`/juegos/${b.id}`}
+              className="text-primario font-bold underline-offset-2 hover:underline"
+            >
+              {b.nombre}
+            </Link>
+            {i < bases.length - 1 ? "," : ""}
+          </span>
+        ))}
+      </p>
+    );
+  }
+  if (expansiones.length === 0) return null;
+  return (
+    <section className="space-y-2" aria-labelledby="titulo-expansiones">
+      <h2 id="titulo-expansiones" className="flex items-center gap-2 text-lg font-bold">
+        <Puzzle aria-hidden className="text-acento size-5" />
+        Expansiones ({expansiones.length})
+      </h2>
+      <ul className="space-y-2">
+        {expansiones.map((e) => (
+          <li key={e.id}>
+            <Link
+              href={`/juegos/${e.id}`}
+              className="border-borde bg-superficie hover:border-primario relieve flex min-h-14 items-center gap-3 rounded-2xl border-[1.5px] p-2"
+            >
+              <ImagenJuego
+                url={e.imagen_url}
+                nombre={e.nombre}
+                sizes="48px"
+                className="size-12 shrink-0 rounded-xl"
+              />
+              <span className="font-display flex-1 leading-tight font-semibold">{e.nombre}</span>
+              <ChevronRight aria-hidden className="text-texto-suave size-5 shrink-0" />
+            </Link>
+          </li>
+        ))}
+      </ul>
+    </section>
   );
 }
 

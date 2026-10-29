@@ -1,7 +1,12 @@
 import { XMLParser } from "fast-xml-parser";
 import { decode } from "he";
 import { tiposDesdeBgg } from "../tipos";
-import { ErrorGameData, type DatosJuego, type ResultadoBusqueda } from "../types";
+import {
+  ErrorGameData,
+  type DatosJuego,
+  type ItemColeccion,
+  type ResultadoBusqueda,
+} from "../types";
 
 // Parser de las respuestas XML de la API2 de BGG (search y thing).
 // La estructura está documentada en CLAUDE.md, en "Pendiente de verificar".
@@ -20,7 +25,7 @@ const parser = new XMLParser({
 
 type Valor = { value?: string };
 type Nombre = { type?: string; value?: string };
-type Link = { type?: string; value?: string };
+type Link = { type?: string; id?: string; value?: string; inbound?: string };
 type ItemXml = {
   id?: string;
   type?: string;
@@ -145,7 +150,66 @@ export function parsearDetalle(xml: string): DatosJuego[] {
         anio: enteroPositivo(item.yearpublished?.value),
         descripcion: limpiarDescripcion(item.description),
         tipos,
+        ...expansion(item, links),
       },
     ];
   });
+}
+
+/**
+ * Si es una expansión, de qué juegos base: en `thing`, una expansión trae
+ * links `boardgameexpansion` con `inbound="true"` hacia sus juegos base (los
+ * de un juego base, sin `inbound`, son sus expansiones).
+ */
+function expansion(item: ItemXml, links: Link[]): Pick<DatosJuego, "es_expansion" | "expande"> {
+  if (item.type !== "boardgameexpansion") return { es_expansion: false, expande: [] };
+  const bases = links
+    .filter((l) => l.type === "boardgameexpansion" && l.inbound === "true")
+    .flatMap((l) => enteroPositivo(l.id) ?? []);
+  return { es_expansion: true, expande: [...new Set(bases)].slice(0, 50) };
+}
+
+type ItemColeccionXml = {
+  objectid?: string;
+  subtype?: string;
+  name?: (string | { "#text"?: string })[];
+  yearpublished?: string;
+  stats?: { rating?: { value?: string } };
+};
+
+/** Texto de un nodo que puede venir solo o con atributos (`#text`). */
+function textoNodo(nodo: string | { "#text"?: string } | undefined): string {
+  return texto(typeof nodo === "string" ? nodo : nodo?.["#text"]);
+}
+
+/** Puntuación de BGG (1–10 con decimales, o "N/A") redondeada a un entero. */
+export function puntuacionDeBgg(valor: string | undefined): number | null {
+  const n = Number.parseFloat(valor ?? "");
+  if (!Number.isFinite(n) || n < 1) return null;
+  return Math.min(10, Math.max(1, Math.round(n)));
+}
+
+/**
+ * `collection?username=...&own=1&stats=1`. Si el usuario no existe, BGG
+ * responde 200 con `<errors>`: eso es `usuario_inexistente`.
+ */
+export function parsearColeccion(xml: string): ItemColeccion[] {
+  if (/<error[\s>][\s\S]*invalid username/i.test(xml)) {
+    throw new ErrorGameData("usuario_inexistente", "No existe ese usuario en BoardGameGeek.");
+  }
+  const items = parsearDocumento(xml) as unknown as ItemColeccionXml[];
+  const vistos = new Map<number, ItemColeccion>();
+  for (const item of items) {
+    const bggId = enteroPositivo(item.objectid);
+    const nombre = textoNodo(item.name?.[0]);
+    if (!bggId || !nombre || vistos.has(bggId)) continue;
+    vistos.set(bggId, {
+      bgg_id: bggId,
+      nombre: nombre.slice(0, 200),
+      anio: enteroPositivo(typeof item.yearpublished === "string" ? item.yearpublished : undefined),
+      es_expansion: item.subtype === "boardgameexpansion",
+      puntuacion: puntuacionDeBgg(item.stats?.rating?.value),
+    });
+  }
+  return [...vistos.values()];
 }

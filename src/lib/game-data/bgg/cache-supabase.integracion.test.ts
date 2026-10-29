@@ -29,6 +29,8 @@ describe.skipIf(!habilitado)("CacheSupabase (integración)", () => {
     anio: 2020,
     descripcion: "Descripción",
     tipos: ["cooperativo"],
+    es_expansion: false,
+    expande: [],
   };
 
   afterAll(async () => {

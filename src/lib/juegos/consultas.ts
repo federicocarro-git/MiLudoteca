@@ -46,3 +46,43 @@ export const obtenerResumen = cache(async (juegoId: string) => {
   if (error) throw error;
   return data;
 });
+
+export type JuegoRelacionado = { id: string; nombre: string; imagen_url: string | null };
+
+/**
+ * Las expansiones de un juego base que el usuario tiene en su estante, o los
+ * juegos base de una expansión (los de BGG que ya están en la base). Lee
+ * cookies: usar dentro de <Suspense>.
+ */
+export async function obtenerRelacionados(juego: {
+  bgg_id: number | null;
+  es_expansion: boolean;
+  expande: number[];
+}): Promise<{ expansiones: JuegoRelacionado[]; bases: JuegoRelacionado[] }> {
+  const supabase = await createClient();
+  if (juego.es_expansion) {
+    if (juego.expande.length === 0) return { expansiones: [], bases: [] };
+    const { data, error } = await supabase
+      .from("juegos")
+      .select("id, nombre, imagen_url")
+      .eq("origen", "bgg")
+      .in("bgg_id", juego.expande)
+      .order("nombre");
+    if (error) throw error;
+    return { expansiones: [], bases: data };
+  }
+  if (juego.bgg_id === null) return { expansiones: [], bases: [] };
+  const { data, error } = await supabase
+    .from("mi_catalogo")
+    .select("id, nombre, imagen_url")
+    .eq("es_expansion", true)
+    .contains("expande", [juego.bgg_id])
+    .order("nombre");
+  if (error) throw error;
+  return {
+    expansiones: data.flatMap((e) =>
+      e.id && e.nombre ? [{ id: e.id, nombre: e.nombre, imagen_url: e.imagen_url }] : [],
+    ),
+    bases: [],
+  };
+}

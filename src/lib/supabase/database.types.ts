@@ -154,6 +154,8 @@ export type Database = {
           creado_por: string | null;
           descripcion: string | null;
           duracion_min: number | null;
+          es_expansion: boolean;
+          expande: number[];
           id: string;
           imagen_url: string | null;
           jugadores_max: number | null;
@@ -173,6 +175,8 @@ export type Database = {
           creado_por?: string | null;
           descripcion?: string | null;
           duracion_min?: number | null;
+          es_expansion?: boolean;
+          expande?: number[];
           id?: string;
           imagen_url?: string | null;
           jugadores_max?: number | null;
@@ -191,6 +195,8 @@ export type Database = {
           creado_por?: string | null;
           descripcion?: string | null;
           duracion_min?: number | null;
+          es_expansion?: boolean;
+          expande?: number[];
           id?: string;
           imagen_url?: string | null;
           jugadores_max?: number | null;
@@ -376,6 +382,8 @@ export type Database = {
       perfiles: {
         Row: {
           actualizado_en: string;
+          bgg_importado_en: string | null;
+          bgg_usuario: string | null;
           catalogo_visible: boolean;
           codigo_amigo: string;
           creado_en: string;
@@ -385,6 +393,8 @@ export type Database = {
         ComputedFields: never;
         Insert: {
           actualizado_en?: string;
+          bgg_importado_en?: string | null;
+          bgg_usuario?: string | null;
           catalogo_visible?: boolean;
           codigo_amigo: string;
           creado_en?: string;
@@ -393,6 +403,8 @@ export type Database = {
         };
         Update: {
           actualizado_en?: string;
+          bgg_importado_en?: string | null;
+          bgg_usuario?: string | null;
           catalogo_visible?: boolean;
           codigo_amigo?: string;
           creado_en?: string;
@@ -456,6 +468,8 @@ export type Database = {
           bgg_id: number | null;
           complejidad: number | null;
           duracion_min: number | null;
+          es_expansion: boolean | null;
+          expande: number[] | null;
           id: string | null;
           imagen_url: string | null;
           jugadores_max: number | null;

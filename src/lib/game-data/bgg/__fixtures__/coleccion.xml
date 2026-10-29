@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<items totalitems="4" termsofuse="https://boardgamegeek.com/xmlapi/termsofuse" pubdate="Tue, 28 Oct 2026 18:00:00 +0000">
+  <item objecttype="thing" objectid="13" subtype="boardgame" collid="1">
+    <name sortindex="1">CATAN</name>
+    <yearpublished>1995</yearpublished>
+    <image>https://cf.geekdo-images.com/catan__original/img/x.jpg</image>
+    <stats minplayers="3" maxplayers="4" playingtime="120" numowned="1">
+      <rating value="7.5"><usersrated value="1" /></rating>
+    </stats>
+    <status own="1" prevowned="0" fortrade="0" want="0" wanttoplay="0" wanttobuy="0" wishlist="0" preordered="0" lastmodified="2026-10-01 10:00:00" />
+    <numplays>3</numplays>
+  </item>
+  <item objecttype="thing" objectid="822" subtype="boardgame" collid="2">
+    <name sortindex="1">Carcassonne &amp; Friends</name>
+    <stats minplayers="2" maxplayers="5" playingtime="45" numowned="1">
+      <rating value="N/A"><usersrated value="1" /></rating>
+    </stats>
+    <status own="1" />
+  </item>
+  <item objecttype="thing" objectid="822" subtype="boardgame" collid="3">
+    <name sortindex="1">Carcassonne (otra copia)</name>
+    <status own="1" />
+  </item>
+  <item objecttype="thing" objectid="30549" subtype="boardgame" collid="4">
+    <name sortindex="1">Pandemic</name>
+    <yearpublished>2008</yearpublished>
+    <stats minplayers="2" maxplayers="4" playingtime="45" numowned="1">
+      <rating value="10"><usersrated value="1" /></rating>
+    </stats>
+    <status own="1" />
+  </item>
+</items>

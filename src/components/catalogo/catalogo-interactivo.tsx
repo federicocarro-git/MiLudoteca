@@ -15,6 +15,7 @@ import {
   type JuegoCatalogo,
   type Orden,
 } from "@/lib/catalogo/filtros";
+import { organizarEstante } from "@/lib/catalogo/expansiones";
 import { formatearDuracion } from "@/lib/formato";
 import { PanelFiltros } from "./panel-filtros";
 import { SorteoJuego } from "./sorteo-juego";
@@ -31,8 +32,10 @@ export function CatalogoInteractivo({ juegos }: { juegos: JuegoCatalogo[] }) {
   const [texto, setTexto] = useState(filtros.q ?? "");
   const [panelAbierto, setPanelAbierto] = useState(false);
 
-  const visibles = useMemo(() => filtrarCatalogo(juegos, filtros), [juegos, filtros]);
-  const tiposDisponibles = useMemo(() => tiposDelCatalogo(juegos), [juegos]);
+  // Las expansiones van adentro de su juego base (se ven en la Ficha).
+  const estante = useMemo(() => organizarEstante(juegos), [juegos]);
+  const visibles = useMemo(() => filtrarCatalogo(estante, filtros), [estante, filtros]);
+  const tiposDisponibles = useMemo(() => tiposDelCatalogo(estante), [estante]);
   const cantidadFiltros = contarFiltros(filtros);
 
   function actualizar(nuevos: Filtros) {
@@ -64,7 +67,8 @@ export function CatalogoInteractivo({ juegos }: { juegos: JuegoCatalogo[] }) {
 
   return (
     <div className="space-y-4">
-      <SorteoJuego juegos={visibles} />
+      {/* Una expansión sola no se juega: no entra en el sorteo. */}
+      <SorteoJuego juegos={visibles.filter((j) => !j.es_expansion)} />
 
       <div className="flex gap-2">
         <div className="relative flex-1">
@@ -119,9 +123,9 @@ export function CatalogoInteractivo({ juegos }: { juegos: JuegoCatalogo[] }) {
 
       <div className="flex items-center justify-between gap-3">
         <p aria-live="polite" className="text-texto-suave text-sm">
-          {visibles.length === juegos.length
-            ? `${juegos.length} ${juegos.length === 1 ? "juego" : "juegos"}`
-            : `${visibles.length} de ${juegos.length} juegos`}
+          {visibles.length === estante.length
+            ? `${estante.length} ${estante.length === 1 ? "juego" : "juegos"}`
+            : `${visibles.length} de ${estante.length} juegos`}
         </p>
         <label className="text-texto-suave flex items-center gap-1.5 text-sm">
           <span className="sr-only">Ordenar por</span>

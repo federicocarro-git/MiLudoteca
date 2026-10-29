@@ -1,20 +1,21 @@
 "use client";
 
-import { CircleUser, Dices, LibraryBig, Plus, Trophy, type LucideIcon } from "lucide-react";
+import { CircleUser, Dices, History, LibraryBig, Trophy, type LucideIcon } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { RUTA_AGREGAR as AGREGAR, itemActivo } from "@/lib/navegacion";
+import { RUTA_JUGAR, itemActivo } from "@/lib/navegacion";
 
 type Item = { href: string; etiqueta: string; Icono: LucideIcon };
 
 const IZQUIERDA: Item[] = [
   { href: "/catalogo", etiqueta: "Estante", Icono: LibraryBig },
-  { href: "/jugar", etiqueta: "Jugar", Icono: Dices },
+  { href: "/jugar/historial", etiqueta: "Historial", Icono: History },
 ];
 const DERECHA: Item[] = [
   { href: "/jugar/ranking", etiqueta: "Ranking", Icono: Trophy },
   { href: "/cuenta", etiqueta: "Cuenta", Icono: CircleUser },
 ];
+
 export function BarraInferior() {
   return <BarraInferiorVista pathname={usePathname()} />;
 }
@@ -44,21 +45,27 @@ export function BarraInferiorVista({ pathname }: { pathname: string | null }) {
     );
   }
 
+  const jugarActivo = activo === RUTA_JUGAR;
   return (
     <nav
       aria-label="Navegación principal"
       className="border-borde bg-superficie/95 fixed inset-x-0 bottom-0 z-40 border-t-[1.5px] pb-[env(safe-area-inset-bottom)] backdrop-blur print:hidden"
     >
-      <ul className="mx-auto flex max-w-lg items-center px-1">
+      <ul className="mx-auto flex max-w-lg items-end px-1">
         {IZQUIERDA.map(enlace)}
+        {/* Jugar, en el centro y destacado: lo principal de la app. */}
         <li className="flex flex-1 justify-center">
           <Link
-            href={AGREGAR}
-            aria-label="Agregar juego"
-            aria-current={activo === AGREGAR ? "page" : undefined}
-            className="bg-acento text-sobre-acento border-fondo relieve-acento -mt-7 flex size-15 items-center justify-center rounded-full border-4 transition active:translate-y-0.5"
+            href={RUTA_JUGAR}
+            aria-current={jugarActivo ? "page" : undefined}
+            className={`-mt-7 flex flex-col items-center gap-0.5 pb-1.5 text-xs font-extrabold ${
+              jugarActivo ? "text-acento" : "text-texto-suave hover:text-texto"
+            }`}
           >
-            <Plus aria-hidden className="size-7" strokeWidth={3} />
+            <span className="bg-acento text-sobre-acento border-fondo relieve-acento flex size-15 items-center justify-center rounded-full border-4 transition active:translate-y-0.5">
+              <Dices aria-hidden className="size-7" strokeWidth={2.4} />
+            </span>
+            Jugar
           </Link>
         </li>
         {DERECHA.map(enlace)}

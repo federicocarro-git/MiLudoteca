@@ -13,6 +13,8 @@ const base: DatosJuego = {
   anio: 1995,
   descripcion: "Texto\nlargo",
   tipos: ["eurogame", "negociación"],
+  es_expansion: false,
+  expande: [],
 };
 
 describe("mismosDatos", () => {
