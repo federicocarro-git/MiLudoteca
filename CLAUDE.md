@@ -468,6 +468,12 @@ Verificado el 2026-10-28 con el token real:
       ordenado por relevancia: el orden lo pone `bgg-provider` (exacto,
       empieza igual, el resto).
 - [x] La duración es `playingtime` (Catan: 120 min).
+- [x] Una expansión trae `type="boardgameexpansion"` y links `inbound="true"`
+      hacia sus juegos base (Seafarers, 325 → Catan, 13).
+- [x] `collection` con `own=1&stats=1` y los dos pedidos (juegos sin
+      expansiones, y expansiones aparte) devuelve bien una colección real
+      (90 juegos y 5 expansiones en unos 4 s); sin puntuación, `rating` es
+      "N/A" → null.
 
 Todavía sin observar:
 
@@ -475,8 +481,6 @@ Todavía sin observar:
       y cómo es su cuerpo (el fixture `respuesta-202.xml` sigue siendo una
       suposición basada en `collection`).
 - [ ] Límites reales de rate limit, si el 429 trae `Retry-After` y en qué formato.
-- [ ] Que una expansión (325, Seafarers) traiga `inbound="true"` hacia Catan
-      (13) y cómo responde `collection` (correr con `BGG_USUARIO=...`).
 - [ ] Si todos los nombres de categorías y mecánicas coinciden con los de
       `tipos.ts` (los de Catan sí: `eurogame`, `negociación`).
 - [ ] Requisitos de atribución de los términos de uso de la API ("Powered by BGG").
