@@ -49,6 +49,8 @@ export function SorteoMesa({
   const [modo, setModo] = useState<Modo>("elegir");
   const [duenos, setDuenos] = useState<string[]>([]);
   const [soloParaLaMesa, setSoloParaLaMesa] = useState(true);
+  // Más estricto: los que la comunidad de BGG recomienda para esa cantidad.
+  const [soloRecomendados, setSoloRecomendados] = useState(false);
   const [duracion, setDuracion] = useState<number | null>(null);
   const [elegido, setElegido] = useState<Candidato | null>(null);
   const [girando, setGirando] = useState<string | null>(null);
@@ -73,7 +75,7 @@ export function SorteoMesa({
 
   const deLosDuenos = todos ? filtrarPorDuenos(todos, duenos) : [];
   const candidatos = soloParaLaMesa
-    ? juegosParaLaMesa(deLosDuenos, jugadores, duracion)
+    ? juegosParaLaMesa(deLosDuenos, jugadores, duracion, soloRecomendados)
     : deLosDuenos.filter(
         (j) => duracion === null || (j.duracion_min !== null && j.duracion_min <= duracion),
       );
@@ -194,6 +196,17 @@ export function SorteoMesa({
             </option>
           ))}
         </Selector>
+        {soloParaLaMesa && (
+          <label className="col-span-2 flex min-h-11 cursor-pointer items-center gap-2 text-sm">
+            <input
+              type="checkbox"
+              checked={soloRecomendados}
+              onChange={(e) => cambiarFiltro(() => setSoloRecomendados(e.target.checked))}
+              className="accent-primario size-5"
+            />
+            Que estén recomendados para {jugadores} (según BGG)
+          </label>
+        )}
       </div>
 
       <p className="text-sm" aria-live="polite">

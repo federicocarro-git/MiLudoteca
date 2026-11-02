@@ -31,6 +31,10 @@ describe.skipIf(!habilitado)("CacheSupabase (integración)", () => {
     tipos: ["cooperativo"],
     es_expansion: false,
     expande: [],
+    jugadores_mejor: [4],
+    jugadores_recomendados: [3, 4],
+    nombres_alternativos: ["Catán"],
+    imagen_es: null,
   };
 
   afterAll(async () => {

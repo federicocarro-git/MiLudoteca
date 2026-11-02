@@ -220,3 +220,15 @@ vivo.
 - Las expansiones se importan vinculadas a su juego base: en el estante van
   adentro del juego ("+N expansiones") y se ven en su Ficha. La mesa no las
   ofrece para jugar.
+
+### Más datos de BGG (hecho)
+
+- **Cantidad ideal de jugadores** (encuesta de BGG): "Ideal con 4 ·
+  recomendado con 3–4" en la Ficha, y "recomendados para N" en el filtro del
+  estante y en "¿A qué jugamos?" de la sala.
+- **Nombre y caja en español**: la caja sale sola de la edición en español
+  de BGG; el nombre lo elige quien tiene el juego entre los nombres de BGG
+  (BGG no dice en qué idioma está cada uno) y lo ven todos.
+- **Partidas registradas en BGG**: "Traer mis partidas" las pasa al
+  historial; los amigos que vincularon su usuario de BGG entran con su cuenta
+  (y suman al ranking), el resto con su nombre.

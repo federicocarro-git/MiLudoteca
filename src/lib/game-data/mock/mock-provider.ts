@@ -6,9 +6,11 @@ import {
   type DatosJuego,
   type GameDataProvider,
   type ItemColeccion,
+  type PartidaBgg,
   type ResultadoBusqueda,
 } from "../types";
 import coleccionDePrueba from "./coleccion.json";
+import partidasDePrueba from "./partidas.json";
 import juegos from "./juegos.json";
 
 /** El único usuario de BGG que existe en el mock (para desarrollo y e2e). */
@@ -53,6 +55,7 @@ export class MockProvider implements GameDataProvider {
       .map(({ puntuacion: _puntuacion, ...j }) => ({
         ...j,
         imagen_url: null,
+        imagen_es: null,
         es_expansion: j.expande.length > 0,
       }));
   }
@@ -69,6 +72,18 @@ export class MockProvider implements GameDataProvider {
       es_expansion: j.expande.length > 0,
       puntuacion: j.puntuacion,
     }));
+  }
+
+  /** Las partidas de prueba del usuario "prueba" (una sola página). */
+  async partidas(
+    usuario: string,
+    pagina: number,
+  ): Promise<{ total: number; partidas: PartidaBgg[] }> {
+    await this.esperar();
+    if (usuario.trim().toLowerCase() !== USUARIO_BGG_DE_PRUEBA) {
+      throw new ErrorGameData("usuario_inexistente", "No existe ese usuario en BoardGameGeek.");
+    }
+    return { total: partidasDePrueba.length, partidas: pagina === 1 ? partidasDePrueba : [] };
   }
 
   private async esperar() {
@@ -91,5 +106,9 @@ function aDatosJuego(j: JuegoMock): DatosJuego {
     tipos: [...j.tipos],
     es_expansion: false,
     expande: [],
+    jugadores_mejor: [],
+    jugadores_recomendados: [],
+    nombres_alternativos: [],
+    imagen_es: null,
   };
 }

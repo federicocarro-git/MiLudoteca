@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { parsearBusqueda, parsearColeccion, parsearDetalle } from "./parser";
+import { parsearBusqueda, parsearColeccion, parsearDetalle, parsearPartidas } from "./parser";
 import { BGG_BASE_URL, ClienteBgg } from "./cliente";
 
 // Verifica la checklist "Verificación con la API real" de CLAUDE.md.
@@ -54,6 +54,21 @@ describe.skipIf(!habilitado)("API real de BGG", { timeout: 60_000 }, () => {
     expect(catan.descripcion).not.toMatch(/&#\d+;|&[a-z]+;/);
   });
 
+  it("thing 13 con versions: encuesta de jugadores, otros nombres y caja en español", async () => {
+    const xml = await cliente().pedir("thing", { id: "13", stats: "1", versions: "1" });
+    const [catan] = parsearDetalle(xml);
+    console.info("thing 13 (versions) →", {
+      jugadores_mejor: catan.jugadores_mejor,
+      jugadores_recomendados: catan.jugadores_recomendados,
+      nombres_alternativos: catan.nombres_alternativos.slice(0, 15),
+      imagen_es: catan.imagen_es,
+      kb: Math.round(xml.length / 1024),
+    });
+    expect(catan.jugadores_recomendados).toContain(4);
+    expect(catan.nombres_alternativos.length).toBeGreaterThan(0);
+    expect(catan.imagen_es).toMatch(/^https:\/\//);
+  });
+
   it("thing acepta 20 ids en un pedido", async () => {
     const ids = [13, 822, 30549, 68448, 36218, 9209, 230802, 266192, 148228, 70323];
     const veinte = [...ids, ...ids.map((i) => i + 1)].join(",");
@@ -94,5 +109,21 @@ describe.skipIf(!habilitado)("API real de BGG", { timeout: 60_000 }, () => {
       [...juegos.slice(0, 3), ...expansiones.slice(0, 2)],
     );
     expect(juegos.every((j) => !j.es_expansion)).toBe(true);
+  });
+
+  it.skipIf(!process.env.BGG_USUARIO)("lee las partidas de BGG_USUARIO", async () => {
+    const xml = await cliente().pedir(
+      "plays",
+      { username: process.env.BGG_USUARIO!, page: "1" },
+      { maxIntentos: 6 },
+    );
+    const { total, partidas } = parsearPartidas(xml);
+    console.info(
+      `partidas de ${process.env.BGG_USUARIO} →`,
+      total,
+      "en total; primeras:",
+      JSON.stringify(partidas.slice(0, 2), null, 1),
+    );
+    expect(total).toBeGreaterThanOrEqual(partidas.length);
   });
 });

@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest";
 import {
   colorDeNombre,
+  formatearCantidades,
+  formatearRecomendados,
   formatearDuracion,
   formatearJugadores,
   jugadoresCorto,
@@ -64,5 +66,19 @@ describe("colorDeNombre", () => {
   it("reparte nombres distintos entre varios colores", () => {
     const colores = new Set(["Ana", "Beto", "Caro", "Dani", "Eli", "Fran"].map(colorDeNombre));
     expect(colores.size).toBeGreaterThan(2);
+  });
+});
+
+describe("formatearRecomendados", () => {
+  it("junta los tramos seguidos", () => {
+    expect(formatearCantidades([4, 2, 5, 6])).toBe("2, 4–6");
+    expect(formatearCantidades([3])).toBe("3");
+  });
+
+  it("ideal y recomendado en una frase", () => {
+    expect(formatearRecomendados([4], [3, 4])).toBe("Ideal con 4 · recomendado con 3–4");
+    expect(formatearRecomendados([], [2, 3])).toBe("Recomendado con 2–3");
+    expect(formatearRecomendados(null, null)).toBeNull();
+    expect(formatearRecomendados([], [])).toBeNull();
   });
 });

@@ -46,3 +46,33 @@ export function colorDeNombre(nombre: string): string {
   for (const letra of nombre.trim().toLowerCase()) suma = (suma * 31 + letra.charCodeAt(0)) >>> 0;
   return COLORES_AVATAR[suma % COLORES_AVATAR.length];
 }
+
+/** "2, 4–6": una lista de cantidades con los tramos seguidos juntos. */
+export function formatearCantidades(cantidades: number[]): string {
+  const ordenadas = [...new Set(cantidades)].sort((a, b) => a - b);
+  const tramos: string[] = [];
+  for (let i = 0; i < ordenadas.length; i++) {
+    let fin = i;
+    while (fin + 1 < ordenadas.length && ordenadas[fin + 1] === ordenadas[fin] + 1) fin++;
+    tramos.push(fin > i ? `${ordenadas[i]}–${ordenadas[fin]}` : `${ordenadas[i]}`);
+    i = fin;
+  }
+  return tramos.join(", ");
+}
+
+/**
+ * La encuesta de BGG en una frase: "Ideal con 4 · recomendado de 3 a 4".
+ * Null si no hay votos.
+ */
+export function formatearRecomendados(
+  mejor: number[] | null,
+  recomendados: number[] | null,
+): string | null {
+  const partes = [
+    mejor?.length ? `Ideal con ${formatearCantidades(mejor)}` : null,
+    recomendados?.length ? `recomendado con ${formatearCantidades(recomendados)}` : null,
+  ].filter(Boolean);
+  if (partes.length === 0) return null;
+  const texto = partes.join(" · ");
+  return texto.charAt(0).toUpperCase() + texto.slice(1);
+}

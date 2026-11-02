@@ -1,7 +1,13 @@
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import { ErrorGameData } from "../types";
-import { parsearBusqueda, parsearColeccion, parsearDetalle, puntuacionDeBgg } from "./parser";
+import {
+  parsearBusqueda,
+  parsearColeccion,
+  parsearDetalle,
+  parsearPartidas,
+  puntuacionDeBgg,
+} from "./parser";
 
 const fixture = (nombre: string) =>
   readFileSync(new URL(`./__fixtures__/${nombre}`, import.meta.url), "utf8");
@@ -52,6 +58,10 @@ describe("parsearDetalle", () => {
       tipos: ["eurogame", "negociación"],
       es_expansion: false,
       expande: [],
+      jugadores_mejor: [4],
+      jugadores_recomendados: [3, 4],
+      nombres_alternativos: ["Die Siedler von Catan", "Los Colonos de Catán"],
+      imagen_es: "https://cf.geekdo-images.com/es-nueva__original/img/x.jpg",
     });
   });
 
@@ -100,6 +110,10 @@ describe("parsearDetalle", () => {
       tipos: ["cooperativo"],
       es_expansion: false,
       expande: [],
+      jugadores_mejor: [],
+      jugadores_recomendados: [],
+      nombres_alternativos: ["Fan Edition Alt"],
+      imagen_es: null,
     });
   });
 
@@ -161,5 +175,51 @@ describe("puntuacionDeBgg", () => {
     [undefined, null],
   ])("%j → %j", (valor, esperado) => {
     expect(puntuacionDeBgg(valor)).toBe(esperado);
+  });
+});
+
+describe("parsearPartidas", () => {
+  it("lee las partidas de juegos de mesa con fecha, jugadores, puntos y ganadores", () => {
+    const { total, partidas } = parsearPartidas(fixture("plays.xml"));
+    expect(total).toBe(104);
+    expect(partidas).toEqual([
+      {
+        bgg_play_id: 9001,
+        fecha: "2026-10-20",
+        minutos: 75,
+        bgg_id: 13,
+        nombre: "CATAN",
+        jugadores: [
+          { nombre: "Fede", usuario_bgg: "Fedesin", puntos: 10, gano: true },
+          { nombre: "Abuela", usuario_bgg: null, puntos: 8, gano: false },
+        ],
+      },
+      {
+        bgg_play_id: 9002,
+        fecha: "2026-10-21",
+        minutos: null,
+        bgg_id: 30549,
+        nombre: "Pandemic",
+        jugadores: [],
+      },
+      {
+        bgg_play_id: 9005,
+        fecha: "2026-10-23",
+        minutos: 20,
+        bgg_id: 129622,
+        nombre: "Love Letter",
+        jugadores: [{ nombre: "beto_bgg", usuario_bgg: "beto_bgg", puntos: null, gano: true }],
+      },
+    ]);
+  });
+
+  it("sin partidas y con un usuario que no existe", () => {
+    expect(parsearPartidas('<plays username="x" total="0" page="1"></plays>')).toEqual({
+      total: 0,
+      partidas: [],
+    });
+    expect(() =>
+      parsearPartidas("<div class='messagebox error'>Invalid object or user</div>"),
+    ).toThrow(expect.objectContaining({ codigo: "usuario_inexistente" }));
   });
 });

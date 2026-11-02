@@ -1,0 +1,58 @@
+[
+  {
+    "bgg_play_id": 880000001,
+    "fecha": "2026-10-20",
+    "minutos": 75,
+    "bgg_id": 990000013,
+    "nombre": "Catan",
+    "jugadores": [
+      {
+        "nombre": "Yo",
+        "usuario_bgg": "prueba",
+        "puntos": 10,
+        "gano": true
+      },
+      {
+        "nombre": "Beto",
+        "usuario_bgg": "beto_bgg",
+        "puntos": 8,
+        "gano": false
+      },
+      {
+        "nombre": "Abuela",
+        "usuario_bgg": null,
+        "puntos": 6,
+        "gano": false
+      }
+    ]
+  },
+  {
+    "bgg_play_id": 880000002,
+    "fecha": "2026-10-25",
+    "minutos": 40,
+    "bgg_id": 990000822,
+    "nombre": "Carcassonne",
+    "jugadores": [
+      {
+        "nombre": "Yo",
+        "usuario_bgg": "prueba",
+        "puntos": null,
+        "gano": false
+      },
+      {
+        "nombre": "Beto",
+        "usuario_bgg": "beto_bgg",
+        "puntos": null,
+        "gano": true
+      }
+    ]
+  },
+  {
+    "bgg_play_id": 880000003,
+    "fecha": "2026-10-28",
+    "minutos": null,
+    "bgg_id": 990777777,
+    "nombre": "Juego que no está en el estante",
+    "jugadores": []
+  }
+]

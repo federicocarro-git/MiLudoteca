@@ -6,9 +6,15 @@ import { Suspense } from "react";
 import { AccionesCatalogo } from "@/components/juegos/acciones-catalogo";
 import { EnlaceBgg } from "@/components/juegos/enlace-bgg";
 import { ImagenJuego } from "@/components/juegos/imagen-juego";
+import { NombreEnEspanol } from "@/components/juegos/nombre-en-espanol";
 import { BotonCrearSala } from "@/components/salas/boton-crear-sala";
 import { BotonLink } from "@/components/ui/boton";
-import { formatearDuracion, jugadoresCorto, nivelDeComplejidad } from "@/lib/formato";
+import {
+  formatearDuracion,
+  formatearRecomendados,
+  jugadoresCorto,
+  nivelDeComplejidad,
+} from "@/lib/formato";
 import { urlJuegoBgg } from "@/lib/game-data/bgg/enlaces";
 import { obtenerJuego, obtenerRelacionados } from "@/lib/juegos/consultas";
 import { obtenerJuegosDeAmigos } from "@/lib/mesa/consultas";
@@ -46,6 +52,7 @@ async function Ficha({ id, aviso }: { id: string; aviso: keyof typeof AVISOS | n
     { etiqueta: "Duración", valor: formatearDuracion(juego.duracion_min) },
     { etiqueta: "Peso", valor: nivelDeComplejidad(juego.complejidad) },
   ].filter((d) => d.valor);
+  const recomendados = formatearRecomendados(juego.jugadores_mejor, juego.jugadores_recomendados);
 
   return (
     <article className="space-y-5">
@@ -66,6 +73,18 @@ async function Ficha({ id, aviso }: { id: string; aviso: keyof typeof AVISOS | n
         className="aspect-[4/3] w-full rounded-[1.5rem]"
       />
 
+      {/* Solo en juegos de BGG con otros nombres, y para quien lo tiene en su estante. */}
+      {juego.origen === "bgg" && catalogo && juego.nombres_alternativos.length > 0 && (
+        <div className="-mt-3">
+          <NombreEnEspanol
+            juegoId={juego.id}
+            nombreBgg={juego.nombre_original}
+            nombreActual={juego.nombre}
+            alternativos={juego.nombres_alternativos}
+          />
+        </div>
+      )}
+
       {datos.length > 0 && (
         <dl className="grid grid-cols-3 gap-2">
           {datos.map(({ etiqueta, valor }) => (
@@ -80,6 +99,14 @@ async function Ficha({ id, aviso }: { id: string; aviso: keyof typeof AVISOS | n
             </div>
           ))}
         </dl>
+      )}
+      {recomendados && (
+        <p className="text-texto-suave -mt-3 flex items-center gap-1.5 text-sm">
+          <Users aria-hidden className="text-primario size-4 shrink-0" />
+          <span>
+            {recomendados} <span className="text-xs">(votos en BGG)</span>
+          </span>
+        </p>
       )}
 
       {juego.tipos.length > 0 && (

@@ -8,7 +8,7 @@ export async function obtenerMiCatalogo(): Promise<JuegoCatalogo[]> {
   const { data, error } = await supabase
     .from("mi_catalogo")
     .select(
-      "id, bgg_id, es_expansion, expande, nombre, imagen_url, jugadores_min, jugadores_max, duracion_min, complejidad, anio, tipos, puntuacion, agregado_en",
+      "id, bgg_id, es_expansion, expande, jugadores_mejor, jugadores_recomendados, nombre, imagen_url, jugadores_min, jugadores_max, duracion_min, complejidad, anio, tipos, puntuacion, agregado_en",
     )
     .order("nombre");
   if (error) throw error;

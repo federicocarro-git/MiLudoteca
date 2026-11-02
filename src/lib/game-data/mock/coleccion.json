@@ -10,7 +10,10 @@
     "complejidad": 2.29,
     "tipos": ["eurogame", "negociación"],
     "descripcion": "Colección de prueba: colonizar una isla juntando recursos.",
-    "expande": []
+    "expande": [],
+    "jugadores_mejor": [4],
+    "jugadores_recomendados": [3, 4],
+    "nombres_alternativos": ["Catán", "Die Siedler von Catan", "Колонизаторы"]
   },
   {
     "bgg_id": 990000822,
@@ -23,7 +26,10 @@
     "complejidad": 1.9,
     "tipos": ["losetas"],
     "descripcion": "Colección de prueba: armar el paisaje con losetas.",
-    "expande": []
+    "expande": [],
+    "jugadores_mejor": [2],
+    "jugadores_recomendados": [2, 3, 4],
+    "nombres_alternativos": []
   },
   {
     "bgg_id": 990000325,
@@ -36,7 +42,10 @@
     "complejidad": 2.4,
     "tipos": [],
     "descripcion": "Colección de prueba: expansión con barcos e islas.",
-    "expande": [990000013]
+    "expande": [990000013],
+    "jugadores_mejor": [],
+    "jugadores_recomendados": [],
+    "nombres_alternativos": []
   },
   {
     "bgg_id": 990000002,
@@ -49,7 +58,10 @@
     "complejidad": 2,
     "tipos": [],
     "descripcion": "Colección de prueba: expansión con posadas y catedrales.",
-    "expande": [990000822]
+    "expande": [990000822],
+    "jugadores_mejor": [],
+    "jugadores_recomendados": [],
+    "nombres_alternativos": []
   },
   {
     "bgg_id": 990031627,
@@ -62,6 +74,9 @@
     "complejidad": 1.9,
     "tipos": [],
     "descripcion": "Colección de prueba: expansión de un juego que no está en la colección.",
-    "expande": [990000009]
+    "expande": [990000009],
+    "jugadores_mejor": [],
+    "jugadores_recomendados": [],
+    "nombres_alternativos": []
   }
 ]

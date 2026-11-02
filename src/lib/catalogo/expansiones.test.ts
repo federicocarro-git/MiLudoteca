@@ -18,6 +18,8 @@ function juego(nombre: string, bgg_id: number | null, expande: number[] = []): J
     tipos: [],
     puntuacion: null,
     agregado_en: "2026-10-28T00:00:00Z",
+    jugadores_mejor: null,
+    jugadores_recomendados: null,
   };
 }
 

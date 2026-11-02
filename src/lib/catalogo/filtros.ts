@@ -21,6 +21,9 @@ export type JuegoCatalogo = {
   tipos: string[];
   puntuacion: number | null;
   agregado_en: string;
+  /** Encuesta de BGG: con cuántos es mejor y con cuántos se recomienda (null: sin dato). */
+  jugadores_mejor: number[] | null;
+  jugadores_recomendados: number[] | null;
 };
 
 export const NIVELES_COMPLEJIDAD = {
@@ -44,6 +47,8 @@ export const OPCIONES_DURACION = [15, 30, 45, 60, 90, 120, 180] as const;
 export type Filtros = {
   /** Cantidad de personas que van a jugar. */
   jugadores?: number;
+  /** Con `jugadores`: solo los que la comunidad de BGG recomienda para esa cantidad. */
+  ideal?: boolean;
   /** Duración máxima en minutos. */
   duracion?: number;
   complejidad?: NivelComplejidad;
@@ -71,7 +76,10 @@ function enteroEntre(texto: string | undefined, min: number, max: number) {
 export function leerFiltros(params: Parametros): Filtros {
   const filtros: Filtros = {};
   const jugadores = enteroEntre(leer(params, "jugadores"), 1, 100);
-  if (jugadores) filtros.jugadores = jugadores;
+  if (jugadores) {
+    filtros.jugadores = jugadores;
+    if (leer(params, "ideal") === "1") filtros.ideal = true;
+  }
   const duracion = enteroEntre(leer(params, "duracion"), 1, 10000);
   if (duracion) filtros.duracion = duracion;
   const complejidad = leer(params, "complejidad");
@@ -92,6 +100,7 @@ export function escribirFiltros(filtros: Filtros): string {
   const params = new URLSearchParams();
   if (filtros.q) params.set("q", filtros.q);
   if (filtros.jugadores) params.set("jugadores", String(filtros.jugadores));
+  if (filtros.jugadores && filtros.ideal) params.set("ideal", "1");
   if (filtros.duracion) params.set("duracion", String(filtros.duracion));
   if (filtros.complejidad) params.set("complejidad", filtros.complejidad);
   if (filtros.tipo) params.set("tipo", filtros.tipo);
@@ -111,10 +120,15 @@ export function contarFiltros(filtros: Filtros): number {
  * filtro de ese dato (no sabemos si sirve).
  */
 export function cumpleFiltros(juego: JuegoCatalogo, filtros: Filtros): boolean {
-  const { jugadores, duracion, complejidad, tipo, q } = filtros;
+  const { jugadores, ideal, duracion, complejidad, tipo, q } = filtros;
   if (jugadores !== undefined) {
-    if (juego.jugadores_min === null || juego.jugadores_max === null) return false;
-    if (juego.jugadores_min > jugadores || juego.jugadores_max < jugadores) return false;
+    if (ideal) {
+      // Recomendado por la comunidad de BGG (sin la encuesta, no pasa).
+      if (!juego.jugadores_recomendados?.includes(jugadores)) return false;
+    } else {
+      if (juego.jugadores_min === null || juego.jugadores_max === null) return false;
+      if (juego.jugadores_min > jugadores || juego.jugadores_max < jugadores) return false;
+    }
   }
   if (duracion !== undefined && (juego.duracion_min === null || juego.duracion_min > duracion)) {
     return false;

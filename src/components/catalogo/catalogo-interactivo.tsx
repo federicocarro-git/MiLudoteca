@@ -55,7 +55,12 @@ export function CatalogoInteractivo({ juegos }: { juegos: JuegoCatalogo[] }) {
 
   const activos: Array<{ clave: keyof Filtros; texto: string }> = [];
   if (filtros.jugadores)
-    activos.push({ clave: "jugadores", texto: `${filtros.jugadores} jugadores` });
+    activos.push({
+      clave: "jugadores",
+      texto: filtros.ideal
+        ? `Recomendado para ${filtros.jugadores}`
+        : `${filtros.jugadores} jugadores`,
+    });
   if (filtros.duracion)
     activos.push({ clave: "duracion", texto: `Hasta ${formatearDuracion(filtros.duracion)}` });
   if (filtros.complejidad)

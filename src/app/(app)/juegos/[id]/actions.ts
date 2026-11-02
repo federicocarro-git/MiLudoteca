@@ -161,3 +161,29 @@ export async function actualizarJuego(
 
   redirect(`/juegos/${juegoId}?editado=1`);
 }
+
+/**
+ * Elige el nombre en español de un juego de BGG (uno de sus otros nombres en
+ * BGG). Lo ven todos los que lo tienen. null vuelve al nombre de BGG.
+ */
+export async function elegirNombreEspanol(
+  juegoId: string,
+  nombre: string | null,
+): Promise<Resultado<null>> {
+  if (!esUuid(juegoId)) return { ok: false, error: "Ese juego no existe." };
+  if (nombre !== null && (typeof nombre !== "string" || nombre.length > 200)) {
+    return { ok: false, error: "Ese nombre no es válido." };
+  }
+  if (!(await getUsuarioActual())) return { ok: false, error: SESION_VENCIDA };
+  const supabase = await createClient();
+  const { error } = await supabase.rpc("elegir_nombre_es", {
+    juego: juegoId,
+    nombre: nombre ?? "",
+  });
+  if (error) {
+    console.error("elegirNombreEspanol", juegoId, error);
+    return { ok: false, error: "No se pudo cambiar el nombre. Probá de nuevo." };
+  }
+  refresh();
+  return { ok: true, data: null };
+}

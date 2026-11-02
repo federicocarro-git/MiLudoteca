@@ -15,6 +15,8 @@ export type FilaJuegoAjeno = {
   duracion_min: number | null;
   complejidad: number | null;
   tipos: string[];
+  /** Cantidades recomendadas por la comunidad de BGG (null: sin dato). */
+  jugadores_recomendados: number[] | null;
 };
 
 export type JuegoConDuenos = Omit<FilaJuegoAjeno, "dueno_id" | "dueno_nombre"> & {
@@ -58,6 +60,7 @@ export function agruparPorJuego(filas: FilaJuegoAjeno[]): JuegoConDuenos[] {
     actual.duracion_min ??= juego.duracion_min;
     actual.complejidad ??= juego.complejidad;
     if (actual.tipos.length === 0) actual.tipos = juego.tipos;
+    actual.jugadores_recomendados ??= juego.jugadores_recomendados;
   }
   const porNombre = (a: { nombre: string }, b: { nombre: string }) =>
     a.nombre.localeCompare(b.nombre, "es", { sensitivity: "base", numeric: true });
@@ -77,14 +80,25 @@ export function agruparPorJuego(filas: FilaJuegoAjeno[]): JuegoConDuenos[] {
  * tanto). Como en el catálogo, un juego sin el dato no pasa: no sabemos si sirve.
  */
 export function juegosParaLaMesa<
-  T extends Pick<FilaJuegoAjeno, "jugadores_min" | "jugadores_max" | "duracion_min">,
->(juegos: T[], jugadores: number, duracionMaxima: number | null = null): T[] {
+  T extends Pick<
+    FilaJuegoAjeno,
+    "jugadores_min" | "jugadores_max" | "duracion_min" | "jugadores_recomendados"
+  >,
+>(
+  juegos: T[],
+  jugadores: number,
+  duracionMaxima: number | null = null,
+  /** Solo los que la comunidad de BGG recomienda para esa cantidad. */
+  soloRecomendados = false,
+): T[] {
   return juegos.filter(
     (j) =>
-      j.jugadores_min !== null &&
-      j.jugadores_max !== null &&
-      j.jugadores_min <= jugadores &&
-      j.jugadores_max >= jugadores &&
+      (soloRecomendados
+        ? (j.jugadores_recomendados?.includes(jugadores) ?? false)
+        : j.jugadores_min !== null &&
+          j.jugadores_max !== null &&
+          j.jugadores_min <= jugadores &&
+          j.jugadores_max >= jugadores) &&
       (duracionMaxima === null || (j.duracion_min !== null && j.duracion_min <= duracionMaxima)),
   );
 }

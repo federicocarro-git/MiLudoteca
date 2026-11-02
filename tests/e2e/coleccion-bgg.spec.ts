@@ -1,9 +1,12 @@
 import { expect, test } from "@playwright/test";
 import {
+  admin,
   borrarJuegosBgg,
   borrarUsuario,
   crearUsuario,
+  hacerAmigos,
   iniciarSesion,
+  prepararPerfil,
   type Usuario,
 } from "./helpers";
 
@@ -71,4 +74,53 @@ test("vincular BGG, importar la colección y ver las expansiones en su juego", a
   await bgg.getByRole("button", { name: "Traer mis juegos" }).click();
   await expect(bgg.getByText("Ya tenías todos tus juegos de BGG.")).toBeVisible();
   await expect(bgg.getByText("5 ya estaban en tu estante.")).toBeVisible();
+});
+
+test("nombre en español, recomendados de BGG y partidas importadas", async ({ page }) => {
+  // Beto es amigo y vinculó su usuario de BGG: en las partidas importadas
+  // entra con su cuenta.
+  const beto = await crearUsuario("beto");
+  await prepararPerfil(beto, "Beto");
+  await admin.from("perfiles").update({ bgg_usuario: "beto_bgg" }).eq("id", beto.id);
+  await hacerAmigos(ana, beto);
+
+  await iniciarSesion(page, ana);
+  await page.goto("/cuenta");
+  await page.waitForLoadState("networkidle");
+  const bgg = page.getByRole("region", { name: "BoardGameGeek" });
+  await bgg.getByLabel("Tu usuario de BGG").fill("prueba");
+  await bgg.getByRole("button", { name: "Vincular" }).click();
+  await bgg.getByRole("button", { name: "Traer mis juegos" }).click();
+  await expect(bgg.getByText("¡Listo! Agregaste 2 juegos y 3 expansiones.")).toBeVisible();
+
+  // Partidas registradas en BGG → historial.
+  await bgg.getByRole("button", { name: "Traer mis partidas" }).click();
+  await expect(bgg.getByText("¡Listo! Agregaste 3 partidas a tu historial.")).toBeVisible();
+  await bgg.getByRole("button", { name: "Traer mis partidas" }).click();
+  await expect(bgg.getByText("No había partidas nuevas en BGG.")).toBeVisible();
+  await page.goto("/jugar/historial");
+  await expect(page.getByText("3 partidas · ganaste 1")).toBeVisible();
+
+  // Recomendados para 2 (encuesta de BGG): solo Carcassonne.
+  await page.goto("/catalogo?jugadores=2&ideal=1");
+  await expect(page.getByText("1 de 3 juegos")).toBeVisible();
+  await expect(page.getByRole("link", { name: /Carcassonne/ })).toBeVisible();
+
+  // Ficha de Catan: la encuesta y el nombre en español.
+  await page.goto("/catalogo");
+  await page.getByRole("link", { name: /Catan/ }).click();
+  await expect(page.getByText("Ideal con 4 · recomendado con 3–4")).toBeVisible();
+  await page.waitForLoadState("networkidle");
+  await page.getByRole("button", { name: "¿Se llama distinto en español?" }).click();
+  const nombres = page.getByRole("dialog", { name: "Nombre en español" });
+  await nombres.getByRole("button", { name: "Catán", exact: true }).click();
+  await expect(nombres).toBeHidden();
+  await expect(page.getByRole("heading", { name: "Catán", level: 1 })).toBeVisible();
+  await expect(page.getByRole("button", { name: "En BGG: Catan · cambiar" })).toBeVisible();
+
+  // En el estante también.
+  await page.goto("/catalogo");
+  await expect(page.getByRole("link", { name: /Catán/ })).toBeVisible();
+
+  await borrarUsuario(beto);
 });

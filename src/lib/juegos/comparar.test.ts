@@ -15,6 +15,10 @@ const base: DatosJuego = {
   tipos: ["eurogame", "negociación"],
   es_expansion: false,
   expande: [],
+  jugadores_mejor: [],
+  jugadores_recomendados: [],
+  nombres_alternativos: [],
+  imagen_es: null,
 };
 
 describe("mismosDatos", () => {

@@ -15,6 +15,8 @@ function juego(parcial: Partial<JuegoCatalogo> & { nombre: string }): JuegoCatal
     bgg_id: null,
     es_expansion: false,
     expande: [],
+    jugadores_mejor: null,
+    jugadores_recomendados: null,
     imagen_url: null,
     jugadores_min: null,
     jugadores_max: null,
@@ -153,6 +155,34 @@ describe("filtrarCatalogo", () => {
   it("jugadores: el juego tiene que admitir esa cantidad", () => {
     expect(nombres(filtrarCatalogo(CATALOGO, { jugadores: 6 }))).toEqual(["Código Secreto"]);
     expect(nombres(filtrarCatalogo(CATALOGO, { jugadores: 1 }))).toEqual(["Gloomhaven"]);
+  });
+
+  it("recomendado para N: según la encuesta de BGG (sin el dato, no pasa)", () => {
+    const juegos = [
+      juego({
+        nombre: "Catan",
+        jugadores_min: 3,
+        jugadores_max: 4,
+        jugadores_recomendados: [3, 4],
+      }),
+      juego({ nombre: "Azul", jugadores_min: 2, jugadores_max: 4, jugadores_recomendados: [2, 3] }),
+      juego({ nombre: "Manual", jugadores_min: 2, jugadores_max: 6 }),
+    ];
+    const nombres = (f: Parameters<typeof filtrarCatalogo>[1]) =>
+      filtrarCatalogo(juegos, f).map((j) => j.nombre);
+    expect(nombres({ jugadores: 4 })).toEqual(["Azul", "Catan", "Manual"]);
+    expect(nombres({ jugadores: 4, ideal: true })).toEqual(["Catan"]);
+    expect(nombres({ jugadores: 2, ideal: true })).toEqual(["Azul"]);
+  });
+
+  it("ideal va en la URL solo junto con jugadores", () => {
+    expect(escribirFiltros({ jugadores: 4, ideal: true })).toBe("jugadores=4&ideal=1");
+    expect(escribirFiltros({ ideal: true })).toBe("");
+    expect(leerFiltros(new URLSearchParams("jugadores=4&ideal=1"))).toEqual({
+      jugadores: 4,
+      ideal: true,
+    });
+    expect(leerFiltros(new URLSearchParams("ideal=1"))).toEqual({});
   });
 
   it("duración máxima", () => {

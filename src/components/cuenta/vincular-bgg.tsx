@@ -12,6 +12,7 @@ import {
   type EstadoVincularBgg,
 } from "@/app/(app)/cuenta/actions";
 import { Boton } from "@/components/ui/boton";
+import { PartidasBgg } from "./partidas-bgg";
 import { Campo } from "@/components/ui/campo";
 import { enTandas } from "@/lib/coleccion-bgg/planificar";
 import { formatearFecha } from "@/lib/partidas/resultado";
@@ -199,6 +200,8 @@ function ColeccionBgg({ usuario, importadoEn }: { usuario: string; importadoEn: 
           Desvincular
         </Boton>
       </div>
+
+      <PartidasBgg deshabilitado={importando || desvinculando} />
     </div>
   );
 }

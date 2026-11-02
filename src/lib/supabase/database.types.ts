@@ -157,10 +157,15 @@ export type Database = {
           es_expansion: boolean;
           expande: number[];
           id: string;
+          imagen_es: string | null;
           imagen_url: string | null;
           jugadores_max: number | null;
+          jugadores_mejor: number[] | null;
           jugadores_min: number | null;
+          jugadores_recomendados: number[] | null;
           nombre: string;
+          nombre_es: string | null;
+          nombres_alternativos: string[];
           origen: string;
           tipos: string[];
         };
@@ -178,10 +183,15 @@ export type Database = {
           es_expansion?: boolean;
           expande?: number[];
           id?: string;
+          imagen_es?: string | null;
           imagen_url?: string | null;
           jugadores_max?: number | null;
+          jugadores_mejor?: number[] | null;
           jugadores_min?: number | null;
+          jugadores_recomendados?: number[] | null;
           nombre: string;
+          nombre_es?: string | null;
+          nombres_alternativos?: string[];
           origen: string;
           tipos?: string[];
         };
@@ -198,10 +208,15 @@ export type Database = {
           es_expansion?: boolean;
           expande?: number[];
           id?: string;
+          imagen_es?: string | null;
           imagen_url?: string | null;
           jugadores_max?: number | null;
+          jugadores_mejor?: number[] | null;
           jugadores_min?: number | null;
+          jugadores_recomendados?: number[] | null;
           nombre?: string;
+          nombre_es?: string | null;
+          nombres_alternativos?: string[];
           origen?: string;
           tipos?: string[];
         };
@@ -295,6 +310,7 @@ export type Database = {
       partidas: {
         Row: {
           anfitrion_id: string | null;
+          bgg_play_id: number | null;
           categorias: string[];
           codigo: string;
           cooperativo_ganado: boolean | null;
@@ -314,6 +330,7 @@ export type Database = {
         ComputedFields: never;
         Insert: {
           anfitrion_id?: string | null;
+          bgg_play_id?: number | null;
           categorias?: string[];
           codigo: string;
           cooperativo_ganado?: boolean | null;
@@ -332,6 +349,7 @@ export type Database = {
         };
         Update: {
           anfitrion_id?: string | null;
+          bgg_play_id?: number | null;
           categorias?: string[];
           codigo?: string;
           cooperativo_ganado?: boolean | null;
@@ -473,8 +491,11 @@ export type Database = {
           id: string | null;
           imagen_url: string | null;
           jugadores_max: number | null;
+          jugadores_mejor: number[] | null;
           jugadores_min: number | null;
+          jugadores_recomendados: number[] | null;
           nombre: string | null;
+          nombre_original: string | null;
           notas: string | null;
           origen: string | null;
           puntuacion: number | null;
@@ -504,6 +525,7 @@ export type Database = {
           juego_id: string;
           jugadores_max: number;
           jugadores_min: number;
+          jugadores_recomendados: number[];
           nombre: string;
           tipos: string[];
         }[];
@@ -526,11 +548,19 @@ export type Database = {
           id: string;
         }[];
       };
+      elegir_nombre_es: { Args: { juego: string; nombre: string }; Returns: undefined };
       enviar_solicitud_amistad: { Args: { codigo: string }; Returns: string };
       es_amigo: { Args: { otro: string }; Returns: boolean };
       es_anfitrion: { Args: { partida: string }; Returns: boolean };
       es_anonimo: { Args: Record<PropertyKey, never>; Returns: boolean };
       generar_codigo: { Args: { largo: number }; Returns: string };
+      importar_partidas_bgg: {
+        Args: { partidas: Json };
+        Returns: {
+          nuevas: number;
+          repetidas: number;
+        }[];
+      };
       juego_en_partida: { Args: { partida: string }; Returns: boolean };
       juegos_de_la_mesa: {
         Args: { partida: string };
@@ -544,6 +574,7 @@ export type Database = {
           juego_id: string;
           jugadores_max: number;
           jugadores_min: number;
+          jugadores_recomendados: number[];
           nombre: string;
           tipos: string[];
         }[];
