@@ -5,13 +5,26 @@ import {
   ErrorGameData,
   type DatosJuego,
   type ItemColeccion,
+  type JugadorBgg,
+  type PartidaBgg,
   type ResultadoBusqueda,
 } from "../types";
 
 // Parser de las respuestas XML de la API2 de BGG (search y thing).
 // La estructura está documentada en CLAUDE.md, en "Pendiente de verificar".
 
-const SIEMPRE_ARRAY = new Set(["item", "name", "link", "error"]);
+const SIEMPRE_ARRAY = new Set([
+  "item",
+  "name",
+  "link",
+  "error",
+  "poll",
+  "results",
+  "result",
+  "play",
+  "player",
+  "subtype",
+]);
 
 const parser = new XMLParser({
   ignoreAttributes: false,
@@ -20,7 +33,8 @@ const parser = new XMLParser({
   parseAttributeValue: false,
   parseTagValue: false,
   trimValues: true,
-  isArray: (nombre) => SIEMPRE_ARRAY.has(nombre),
+  // Solo etiquetas: hay atributos con el mismo nombre (`name`, `subtype`).
+  isArray: (nombre, _ruta, _esHoja, esAtributo) => !esAtributo && SIEMPRE_ARRAY.has(nombre),
 });
 
 type Valor = { value?: string };
@@ -40,6 +54,13 @@ type ItemXml = {
   maxplaytime?: Valor;
   link?: Link[];
   statistics?: { ratings?: { averageweight?: Valor } };
+  poll?: Encuesta[];
+  versions?: { item?: ItemXml[] } | "";
+};
+
+type Encuesta = {
+  name?: string;
+  results?: { numplayers?: string; result?: { value?: string; numvotes?: string }[] }[];
 };
 
 function parsearDocumento(xml: string): ItemXml[] {
@@ -151,9 +172,149 @@ export function parsearDetalle(xml: string): DatosJuego[] {
         descripcion: limpiarDescripcion(item.description),
         tipos,
         ...expansion(item, links),
+        ...cantidadDeJugadores(item),
+        nombres_alternativos: nombresAlternativos(item, nombre),
+        imagen_es: cajaEnEspanol(item),
       },
     ];
   });
+}
+
+/**
+ * La encuesta "suggested_numplayers" de BGG: para cada cantidad, votos de
+ * "Best", "Recommended" y "Not Recommended". Es "mejor" si "Best" es lo más
+ * votado, y "recomendada" si Best + Recommended le ganan a Not Recommended
+ * (el mismo criterio que muestra BGG). Las filas como "4+" se ignoran.
+ */
+export function cantidadDeJugadores(
+  item: Pick<ItemXml, "poll">,
+): Pick<DatosJuego, "jugadores_mejor" | "jugadores_recomendados"> {
+  const encuesta = item.poll?.find((p) => p.name === "suggested_numplayers");
+  const mejor: number[] = [];
+  const recomendados: number[] = [];
+  for (const fila of encuesta?.results ?? []) {
+    if (!/^\d{1,3}$/.test(fila.numplayers ?? "")) continue;
+    const n = Number(fila.numplayers);
+    const votos = (valor: string) =>
+      Number.parseInt(fila.result?.find((r) => r.value === valor)?.numvotes ?? "0", 10) || 0;
+    const best = votos("Best");
+    const rec = votos("Recommended");
+    const no = votos("Not Recommended");
+    if (best + rec + no === 0 || n < 1 || n > 100) continue;
+    if (best > 0 && best >= rec && best >= no) mejor.push(n);
+    if (best + rec > no) recomendados.push(n);
+  }
+  return { jugadores_mejor: mejor, jugadores_recomendados: recomendados };
+}
+
+/** Los otros nombres del juego en BGG (sin repetir ni el principal). */
+function nombresAlternativos(item: ItemXml, principal: string): string[] {
+  const vistos = new Set([principal]);
+  for (const n of item.name ?? []) {
+    if (n.type !== "alternate") continue;
+    const valor = texto(n.value).slice(0, 200);
+    if (valor) vistos.add(valor);
+  }
+  vistos.delete(principal);
+  return [...vistos].slice(0, 100);
+}
+
+/**
+ * La caja de una edición en español (de `versions=1`): primero las ediciones
+ * solo en español y, entre ellas, la más nueva.
+ */
+function cajaEnEspanol(item: ItemXml): string | null {
+  const versiones = typeof item.versions === "object" ? (item.versions.item ?? []) : [];
+  const candidatas = versiones.flatMap((v) => {
+    const idiomas = (v.link ?? []).filter((l) => l.type === "language").map((l) => texto(l.value));
+    const url = texto(v.image) || texto(v.thumbnail);
+    if (!idiomas.includes("Spanish") || !url.startsWith("https://")) return [];
+    return [
+      { url, soloEspanol: idiomas.length === 1, anio: enteroPositivo(v.yearpublished?.value) ?? 0 },
+    ];
+  });
+  candidatas.sort((a, b) => Number(b.soloEspanol) - Number(a.soloEspanol) || b.anio - a.anio);
+  return candidatas[0]?.url ?? null;
+}
+
+type PartidaXml = {
+  id?: string;
+  date?: string;
+  length?: string;
+  item?: {
+    objectid?: string;
+    objecttype?: string;
+    name?: string;
+    subtypes?: { subtype?: { value?: string }[] };
+  }[];
+  players?: { player?: PlayerXml[] } | "";
+};
+type PlayerXml = { username?: string; name?: string; score?: string; win?: string };
+
+/** Puntaje de BGG: texto libre; si es un número, redondeado a entero. */
+function puntaje(valor: string | undefined): number | null {
+  const n = Number.parseFloat((valor ?? "").replace(",", "."));
+  if (!Number.isFinite(n)) return null;
+  return Math.max(-1000000, Math.min(1000000, Math.round(n)));
+}
+
+/**
+ * `plays?username=...&page=N`: hasta 100 partidas por página. Se quedan las
+ * de juegos de mesa con fecha válida. Si el usuario no existe, BGG lo dice en
+ * el cuerpo: es `usuario_inexistente`.
+ */
+export function parsearPartidas(xml: string): { total: number; partidas: PartidaBgg[] } {
+  if (/invalid (object or )?user/i.test(xml)) {
+    throw new ErrorGameData("usuario_inexistente", "No existe ese usuario en BoardGameGeek.");
+  }
+  let doc: Record<string, unknown>;
+  try {
+    doc = parser.parse(xml);
+  } catch {
+    throw new ErrorGameData(
+      "respuesta_invalida",
+      "BGG devolvió una respuesta que no se pudo leer.",
+    );
+  }
+  if ("errors" in doc || "error" in doc) {
+    throw new ErrorGameData("no_disponible", "BGG devolvió un error.");
+  }
+  const plays = doc.plays as { total?: string; play?: PartidaXml[] } | "" | undefined;
+  if (plays === undefined) {
+    throw new ErrorGameData("respuesta_invalida", "BGG devolvió una respuesta inesperada.");
+  }
+  if (typeof plays !== "object") return { total: 0, partidas: [] };
+
+  const partidas = (plays.play ?? []).flatMap((p): PartidaBgg[] => {
+    const id = enteroPositivo(p.id);
+    const juego = p.item?.[0];
+    const bggId = enteroPositivo(juego?.objectid);
+    const nombre = texto(juego?.name).slice(0, 200);
+    const subtipos = juego?.subtypes?.subtype?.map((s) => s.value) ?? ["boardgame"];
+    const fecha = p.date ?? "";
+    if (!id || !bggId || !nombre || juego?.objecttype !== "thing") return [];
+    if (!subtipos.includes("boardgame") || !/^\d{4}-\d{2}-\d{2}$/.test(fecha)) return [];
+    if (Number.isNaN(Date.parse(fecha)) || fecha.startsWith("0000")) return [];
+    const jugadores = (typeof p.players === "object" ? (p.players.player ?? []) : []).map(
+      (j): JugadorBgg => ({
+        nombre: (texto(j.name) || texto(j.username) || "Jugador").slice(0, 40),
+        usuario_bgg: texto(j.username) || null,
+        puntos: puntaje(j.score),
+        gano: j.win === "1",
+      }),
+    );
+    return [
+      {
+        bgg_play_id: id,
+        fecha,
+        minutos: enteroPositivo(p.length),
+        bgg_id: bggId,
+        nombre,
+        jugadores,
+      },
+    ];
+  });
+  return { total: Number.parseInt(plays.total ?? "0", 10) || 0, partidas };
 }
 
 /**

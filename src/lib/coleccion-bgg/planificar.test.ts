@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { ItemColeccion } from "@/lib/game-data/types";
-import { enTandas, planificarImportacion } from "./planificar";
+import { enTandas, nombreDeLaEdicion, planificarImportacion } from "./planificar";
 
 const item = (bgg_id: number, nombre: string, es_expansion = false): ItemColeccion => ({
   bgg_id,
@@ -40,5 +40,22 @@ describe("enTandas", () => {
     const tandas = enTandas(Array.from({ length: 45 }, (_, i) => i));
     expect(tandas.map((t) => t.length)).toEqual([20, 20, 5]);
     expect(enTandas([])).toEqual([]);
+  });
+});
+
+describe("nombreDeLaEdicion", () => {
+  const juego = {
+    nombre: "Abandon All Artichokes",
+    nombres_alternativos: ["¿Alcachofas?¡No, gracias!", "Artischocken"],
+  };
+
+  it("usa el nombre de la edición si es uno de los nombres de BGG", () => {
+    expect(nombreDeLaEdicion("¿Alcachofas?¡No, gracias!", juego)).toBe("¿Alcachofas?¡No, gracias!");
+  });
+
+  it("nada si es el mismo, no está entre los de BGG o no vino", () => {
+    expect(nombreDeLaEdicion("Abandon All Artichokes", juego)).toBeNull();
+    expect(nombreDeLaEdicion("Otro nombre", juego)).toBeNull();
+    expect(nombreDeLaEdicion(undefined, juego)).toBeNull();
   });
 });

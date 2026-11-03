@@ -12,6 +12,7 @@ import {
   type EstadoVincularBgg,
 } from "@/app/(app)/cuenta/actions";
 import { Boton } from "@/components/ui/boton";
+import { PartidasBgg } from "./partidas-bgg";
 import { Campo } from "@/components/ui/campo";
 import { enTandas } from "@/lib/coleccion-bgg/planificar";
 import { formatearFecha } from "@/lib/partidas/resultado";
@@ -103,7 +104,7 @@ function ColeccionBgg({ usuario, importadoEn }: { usuario: string; importadoEn: 
     setProgreso({ etapa: "agregando", hechos: 0, total: nuevos.length });
     for (const tanda of enTandas(nuevos)) {
       const r = await importarTandaBgg(
-        tanda.map(({ bgg_id, puntuacion }) => ({ bgg_id, puntuacion })),
+        tanda.map(({ bgg_id, puntuacion, nombre }) => ({ bgg_id, puntuacion, nombre })),
       );
       if (!r.ok) {
         setError(
@@ -199,6 +200,8 @@ function ColeccionBgg({ usuario, importadoEn }: { usuario: string; importadoEn: 
           Desvincular
         </Boton>
       </div>
+
+      <PartidasBgg deshabilitado={importando || desvinculando} />
     </div>
   );
 }

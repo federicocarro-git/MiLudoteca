@@ -50,6 +50,17 @@ export function PanelFiltros({
               {n}
             </Chip>
           ))}
+          {filtros.jugadores !== undefined && (
+            <label className="flex min-h-11 w-full cursor-pointer items-center gap-2 text-sm">
+              <input
+                type="checkbox"
+                checked={filtros.ideal === true}
+                onChange={(e) => onCambio({ ...filtros, ideal: e.target.checked || undefined })}
+                className="accent-primario size-5"
+              />
+              Solo los recomendados para {filtros.jugadores} (según la comunidad de BGG)
+            </label>
+          )}
         </Grupo>
 
         <Grupo titulo="Duración máxima">

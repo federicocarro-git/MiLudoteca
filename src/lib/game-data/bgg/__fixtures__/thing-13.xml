@@ -11,8 +11,35 @@
 		<minplayers value="3" />
 		<maxplayers value="4" />
 		<poll name="suggested_numplayers" title="User Suggested Number of Players" totalvotes="2361">
+			<results numplayers="1">
+				<result value="Best" numvotes="0" />
+				<result value="Recommended" numvotes="2" />
+				<result value="Not Recommended" numvotes="900" />
+			</results>
+			<results numplayers="2">
+				<result value="Best" numvotes="3" />
+				<result value="Recommended" numvotes="40" />
+				<result value="Not Recommended" numvotes="800" />
+			</results>
 			<results numplayers="3">
 				<result value="Best" numvotes="789" />
+				<result value="Recommended" numvotes="1100" />
+				<result value="Not Recommended" numvotes="80" />
+			</results>
+			<results numplayers="4">
+				<result value="Best" numvotes="1500" />
+				<result value="Recommended" numvotes="400" />
+				<result value="Not Recommended" numvotes="20" />
+			</results>
+			<results numplayers="4+">
+				<result value="Best" numvotes="10" />
+				<result value="Recommended" numvotes="30" />
+				<result value="Not Recommended" numvotes="900" />
+			</results>
+		</poll>
+		<poll name="language_dependence" title="Language Dependence" totalvotes="300">
+			<results>
+				<result level="1" value="No necessary in-game text" numvotes="250" />
 			</results>
 		</poll>
 		<playingtime value="120" />
@@ -26,6 +53,36 @@
 		<link type="boardgamefamily" id="3" value="Catan" />
 		<link type="boardgamedesigner" id="11" value="Klaus Teuber" />
 		<link type="boardgamepublisher" id="37" value="KOSMOS" />
+		<versions>
+			<item type="boardgameversion" id="1001">
+				<thumbnail>https://cf.geekdo-images.com/es-vieja__thumb/img/x.jpg</thumbnail>
+				<image>https://cf.geekdo-images.com/es-vieja__original/img/x.jpg</image>
+				<link type="boardgameversion" id="13" value="CATAN" inbound="true" />
+				<name type="primary" sortindex="1" value="Spanish edition 2005" />
+				<link type="boardgamepublisher" id="2366" value="Devir" />
+				<link type="language" id="2184" value="Spanish" />
+				<yearpublished value="2005" />
+			</item>
+			<item type="boardgameversion" id="1002">
+				<image>https://cf.geekdo-images.com/multi__original/img/x.jpg</image>
+				<name type="primary" sortindex="1" value="Multilingual edition" />
+				<link type="language" id="2184" value="Spanish" />
+				<link type="language" id="2181" value="English" />
+				<yearpublished value="2022" />
+			</item>
+			<item type="boardgameversion" id="1003">
+				<image>https://cf.geekdo-images.com/es-nueva__original/img/x.jpg</image>
+				<name type="primary" sortindex="1" value="Spanish edition 2015" />
+				<link type="language" id="2184" value="Spanish" />
+				<yearpublished value="2015" />
+			</item>
+			<item type="boardgameversion" id="1004">
+				<image>https://cf.geekdo-images.com/de__original/img/x.jpg</image>
+				<name type="primary" sortindex="1" value="German edition" />
+				<link type="language" id="2188" value="German" />
+				<yearpublished value="2020" />
+			</item>
+		</versions>
 		<statistics page="1">
 			<ratings>
 				<usersrated value="125000" />

@@ -1,0 +1,70 @@
+import type { PartidaBgg } from "@/lib/game-data/types";
+
+// Partidas registradas en BGG → lo que recibe importar_partidas_bgg().
+
+/** Partidas por página en `plays` de BGG. */
+export const PARTIDAS_POR_PAGINA = 100;
+
+/** Así anota BGG a un jugador al que no se le puso nombre. */
+const NOMBRE_ANONIMO_BGG = "anonymous player";
+
+export type PartidaParaImportar = {
+  bgg_play_id: number;
+  juego_id: string | null;
+  juego_nombre: string;
+  jugado_en: string;
+  minutos: number | null;
+  jugadores: { user_id: string | null; nombre: string; puntos: number | null; gano: boolean }[];
+};
+
+/**
+ * Arma las partidas para la base:
+ * - quien importa es el jugador con su usuario de BGG; si no figura, es el
+ *   primer "Anonymous player" (así anota BGG a los jugadores sin nombre) y,
+ *   si la partida no tiene jugadores cargados, se lo suma: es su registro;
+ * - los otros "Anonymous player" quedan como "Sin nombre";
+ * - un amigo es el jugador con el usuario de BGG que ese amigo vinculó;
+ * - el resto entra sin cuenta, con su nombre;
+ * - el juego se vincula si su fila de BGG ya está en la base (si no, queda
+ *   solo el nombre, como una partida de un juego que se borró).
+ */
+export function armarPartidasParaImportar(
+  partidas: PartidaBgg[],
+  contexto: {
+    yo: { id: string; usuarioBgg: string };
+    /** usuario de BGG (en minúsculas) → id del amigo */
+    amigos: ReadonlyMap<string, string>;
+    /** bgg_id → id de la fila de BGG en `juegos` */
+    juegos: ReadonlyMap<number, string>;
+  },
+): PartidaParaImportar[] {
+  const yo = contexto.yo.usuarioBgg.trim().toLowerCase();
+  return partidas.map((p) => {
+    const anonimo = (j: PartidaBgg["jugadores"][number]) =>
+      !j.usuario_bgg && j.nombre.trim().toLowerCase() === NOMBRE_ANONIMO_BGG;
+    const estoy = p.jugadores.some((j) => j.usuario_bgg?.trim().toLowerCase() === yo);
+    const primerAnonimo = estoy ? -1 : p.jugadores.findIndex(anonimo);
+    const jugadores = p.jugadores.map((j, i) => {
+      const usuario = j.usuario_bgg?.trim().toLowerCase() ?? null;
+      const userId =
+        usuario === yo || i === primerAnonimo
+          ? contexto.yo.id
+          : usuario
+            ? (contexto.amigos.get(usuario) ?? null)
+            : null;
+      const nombre = i === primerAnonimo ? "Yo" : anonimo(j) ? "Sin nombre" : j.nombre;
+      return { user_id: userId, nombre, puntos: j.puntos, gano: j.gano };
+    });
+    if (jugadores.length === 0) {
+      jugadores.push({ user_id: contexto.yo.id, nombre: "Yo", puntos: null, gano: false });
+    }
+    return {
+      bgg_play_id: p.bgg_play_id,
+      juego_id: contexto.juegos.get(p.bgg_id) ?? null,
+      juego_nombre: p.nombre,
+      jugado_en: p.fecha,
+      minutos: p.minutos,
+      jugadores,
+    };
+  });
+}

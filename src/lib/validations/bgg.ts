@@ -17,6 +17,7 @@ export const tandaBggSchema = z
     z.object({
       bgg_id: z.number().int().positive().max(999_999_999),
       puntuacion: z.number().int().min(1).max(10).nullable(),
+      nombre: z.string().trim().min(1).max(200).optional(),
     }),
   )
   .min(1)

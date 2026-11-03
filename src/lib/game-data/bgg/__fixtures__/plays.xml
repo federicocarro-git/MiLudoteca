@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="utf-8"?>
+<plays username="Fedesin" userid="123" total="104" page="1" termsofuse="https://boardgamegeek.com/xmlapi/termsofuse">
+	<play id="9001" date="2026-10-20" quantity="1" length="75" incomplete="0" nowinstats="0" location="Casa">
+		<item name="CATAN" objecttype="thing" objectid="13">
+			<subtypes><subtype value="boardgame" /></subtypes>
+		</item>
+		<players>
+			<player username="Fedesin" userid="123" name="Fede" startposition="1" color="rojo" score="10" new="0" rating="0" win="1" />
+			<player username="" userid="0" name="Abuela" startposition="2" color="" score="7.6" new="0" rating="0" win="0" />
+		</players>
+	</play>
+	<play id="9002" date="2026-10-21" quantity="1" length="0" incomplete="0" nowinstats="0" location="">
+		<item name="Pandemic" objecttype="thing" objectid="30549">
+			<subtypes><subtype value="boardgame" /></subtypes>
+		</item>
+	</play>
+	<play id="9003" date="2026-10-22" quantity="1" length="30" incomplete="0" nowinstats="0" location="">
+		<item name="Un videojuego" objecttype="thing" objectid="555">
+			<subtypes><subtype value="videogame" /></subtypes>
+		</item>
+	</play>
+	<play id="9004" date="0000-00-00" quantity="1" length="30" incomplete="0" nowinstats="0" location="">
+		<item name="Sin fecha" objecttype="thing" objectid="13">
+			<subtypes><subtype value="boardgame" /></subtypes>
+		</item>
+	</play>
+	<play id="9005" date="2026-10-23" quantity="1" length="20" incomplete="0" nowinstats="0" location="">
+		<item name="Love Letter" objecttype="thing" objectid="129622">
+			<subtypes><subtype value="boardgame" /><subtype value="boardgameimplementation" /></subtypes>
+		</item>
+		<players>
+			<player username="beto_bgg" userid="7" name="" score="" new="0" rating="0" win="1" />
+		</players>
+	</play>
+</plays>

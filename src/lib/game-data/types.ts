@@ -31,7 +31,31 @@ export type DatosJuego = Pick<
   | "tipos"
   | "es_expansion"
   | "expande"
+  | "jugadores_mejor"
+  | "jugadores_recomendados"
+  | "nombres_alternativos"
+  | "imagen_es"
 >;
+
+/** Un jugador de una partida registrada en BGG. */
+export type JugadorBgg = {
+  nombre: string;
+  /** Usuario de BGG, si lo cargaron (sirve para reconocer a los amigos). */
+  usuario_bgg: string | null;
+  puntos: number | null;
+  gano: boolean;
+};
+
+/** Una partida registrada en BGG ("plays"). */
+export type PartidaBgg = {
+  bgg_play_id: number;
+  /** Día en que se jugó (AAAA-MM-DD). */
+  fecha: string;
+  minutos: number | null;
+  bgg_id: number;
+  nombre: string;
+  jugadores: JugadorBgg[];
+};
 
 /** Un juego de la colección de un usuario de BGG (los que marcó como "Own"). */
 export type ItemColeccion = {
@@ -53,6 +77,8 @@ export interface GameDataProvider {
   obtenerDetalles(bggIds: number[]): Promise<DatosJuego[]>;
   /** Juegos y expansiones que un usuario de BGG tiene ("Own"). */
   coleccion(usuario: string): Promise<ItemColeccion[]>;
+  /** Partidas que un usuario registró en BGG, de a 100 por página (desde 1). */
+  partidas(usuario: string, pagina: number): Promise<{ total: number; partidas: PartidaBgg[] }>;
 }
 
 /** Error de un provider con un código estable y un mensaje para la UI. */

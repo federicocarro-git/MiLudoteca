@@ -119,10 +119,12 @@ src/
     coleccion-bgg/
       planificar.ts               planificarImportacion() (qué falta en el estante) y enTandas() (puras)
       importar.ts                 importarTanda(): datos de BGG, fila compartida y alta en el catálogo
+      partidas.ts                 armarPartidasParaImportar(): plays de BGG → importar_partidas_bgg (pura)
     juegos/
       consultas.ts                obtenerJuego(id), obtenerResumen(id) (con cache() por request) y
                                   obtenerRelacionados() (expansiones o juegos base)
       comparar.ts                 mismosDatos() (¿se editó lo que vino de BGG?) y escaparLike()
+      nombres.ts                  ordenarNombresParaEspanol(): los otros nombres de BGG, los en español primero
       storage.ts                  rutaImagenPropia(): qué fotos del bucket se pueden borrar
       valores-formulario.ts       valores del formulario de juego (alta y edición)
     amigos/
@@ -147,7 +149,8 @@ src/
       consultas.ts                obtenerJuegosDeAmigos() (rpc catalogo_de_amigos, con cache())
     resumenes/
       formato.ts                  barra de formato del editor (funciones puras) y plantillas
-    formato.ts                    textos de jugadores, duración y peso; colorDeNombre() de los avatares
+    formato.ts                    textos de jugadores, duración y peso; formatearRecomendados() (encuesta de BGG);
+                                  colorDeNombre() de los avatares
     navegacion.ts                 rutas de la barra inferior e itemActivo()
     imagenes.ts                   achica las fotos en el navegador (máx. 1200 px, WebP)
     auth.ts                       getUsuarioActual() (sin anónimos) y getSesionActual() (con anónimos, solo salas)
@@ -171,6 +174,7 @@ supabase/
   tests/puntaje.test.sql          rondas, categorías, anotar y hojas guardadas (26 casos)
   tests/revancha.test.sql         sala sin juego, revancha y reabrir (22 casos)
   tests/bgg.test.sql              usuario de BGG vinculado y expansiones (9 casos)
+  tests/bgg-partidas.test.sql     nombre en español y partidas importadas de BGG (16 casos)
 tests/e2e/                        Playwright: un spec por área + helpers.ts (usuarios, juegos, Mailpit)
 .github/workflows/ci.yml          CI: lint/tipos/unitarios/build + pgTAP/integración/e2e con Supabase local
 docs/PLAN.md                      plan por hitos y decisiones
@@ -274,6 +278,21 @@ modo, ganadores, ganamos)` (solo el anfitrión, en curso). Modos
   juegos base, hasta 50; índice GIN): los completa el parser en las filas de
   BGG. `mi_catalogo` suma esas dos columnas al final. `juegos_de_la_mesa`
   deja afuera las expansiones.
+- Más datos de BGG (`20261102000000_bgg_partidas_jugadores_espanol.sql`):
+  `juegos.jugadores_mejor` / `jugadores_recomendados` (encuesta de BGG; `null`
+  = todavía no se trajo, y la cache vuelve a pedir esa fila),
+  `nombres_alternativos`, `nombre_es` (elegido con `elegir_nombre_es(juego,
+nombre)`: solo quien lo tiene en su estante y solo uno de los nombres de
+  BGG; `null`/vacío vuelve al original) e `imagen_es` (caja de una edición en
+  español). Donde se muestra el juego va `coalesce(nombre_es, nombre)` y
+  `coalesce(imagen_es, imagen_url)`: `mi_catalogo` (suma `nombre_original` y
+  la encuesta al final), `crear_partida`, `cambiar_juego_de_sala`,
+  `catalogo_de_amigos` y `juegos_de_la_mesa` (estas dos suman
+  `jugadores_recomendados`). `partidas.bgg_play_id` (único por anfitrión) e
+  `importar_partidas_bgg(partidas jsonb)`: hasta 100 por vez, terminadas, modo
+  `manual` con los ganadores de BGG, posiciones por puntos si los hay; un
+  `user_id` solo vale si es quien importa o un amigo (si no, entra sin cuenta);
+  devuelve `(nuevas, repetidas)`.
 
 ### Alta de juegos (`/juegos/nuevo`)
 
@@ -310,6 +329,9 @@ modo, ganadores, ganamos)` (solo el anfitrión, en curso). Modos
   actualizan con `window.history.replaceState`, que Next sincroniza con
   `useSearchParams` sin volver a pedir la página. Lo inválido en la URL se ignora.
 - Un juego **sin** un dato no pasa el filtro de ese dato (se avisa en el panel).
+- `ideal=1` (solo junto con `jugadores`): en vez de "se puede jugar con N",
+  "la comunidad de BGG lo recomienda para N" (`jugadores_recomendados`; sin
+  la encuesta, no pasa). En el panel es un checkbox debajo de "¿Cuántos son?".
 - "¿A qué jugamos hoy?" es una pizarra arriba de la búsqueda; "Sortear"
   elige entre los juegos visibles (con los filtros aplicados), con una
   animación corta que respeta `prefers-reduced-motion`.
@@ -339,6 +361,12 @@ modo, ganadores, ganamos)` (solo el anfitrión, en curso). Modos
   con "Descripción: BoardGameGeek" y link a la página del juego. Un juego
   manual con `bgg_id` de referencia **no** se atribuye (la descripción pudo
   haberse editado), pero igual muestra "Ver en BoardGameGeek".
+- Nombre y caja en español: `obtenerJuego` ya devuelve `nombre` e
+  `imagen_url` en español si los hay (y `nombre_original`). En los juegos de
+  BGG con otros nombres, quien lo tiene ve "¿Se llama distinto en español?"
+  (`NombreEnEspanol`, `elegirNombreEspanol`): elige entre los nombres de BGG
+  (`ordenarNombresParaEspanol`) y lo ven todos. Debajo de los datos, la
+  encuesta: "Ideal con 4 · recomendado con 3–4" (`formatearRecomendados`).
 - Expansiones (`obtenerRelacionados`): en un juego base, "Expansiones (N)"
   con las que tenés en el estante; en una expansión, "Expansión de …" con
   link al juego base (si la fila de BGG existe) y sin "Jugar una partida".
@@ -376,6 +404,7 @@ interface GameDataProvider {
   obtenerDetalle(id: string): Promise<DatosJuego | null>;
   obtenerDetalles(bggIds: number[]): Promise<DatosJuego[]>;
   coleccion(usuario: string): Promise<ItemColeccion[]>;
+  partidas(usuario: string, pagina: number): Promise<{ total: number; partidas: PartidaBgg[] }>;
 }
 ```
 
@@ -409,7 +438,14 @@ Archivos en `src/lib/game-data/bgg/`:
   una expansión es `type="boardgameexpansion"` y sus juegos base son los
   links `boardgameexpansion` con `inbound="true"`) y `parsearColeccion`
   (`collection`; puntuación redondeada con `puntuacionDeBgg`, "N/A" → null;
-  un `<errors>` con "Invalid username" es `usuario_inexistente`).
+  un `<errors>` con "Invalid username" es `usuario_inexistente`) y
+  `parsearPartidas` (`plays`: solo juegos de mesa con fecha válida; puntos
+  redondeados, `win="1"` gana). `thing` también trae la encuesta
+  `suggested_numplayers` (`cantidadDeJugadores`: "mejor" si Best es lo más
+  votado; "recomendada" si Best + Recommended le ganan a Not Recommended; las
+  filas "N+" no cuentan), los nombres `alternate` y la caja de la edición en
+  español más nueva de `versions` (`cajaEnEspanol`). Ojo: `isArray` solo para
+  etiquetas (hay atributos `name` y `subtype` con el mismo nombre).
   Decodifica entidades HTML (con `he`, incluidas las doblemente escapadas como
   `&amp;quot;`), y en la descripción (`limpiarDescripcion`) respeta los párrafos
   (`&#10;&#10;`) y los saltos simples, quita los espacios al final de cada línea
@@ -418,7 +454,9 @@ Archivos en `src/lib/game-data/bgg/`:
   `tipos` (vocabulario en `src/lib/game-data/tipos.ts`).
 - `bgg-provider.ts`: `buscar` (mínimo 2 caracteres; ordena primero el nombre
   exacto, después los que empiezan igual, después el resto),
-  `obtenerDetalles` (cache primero y lo que falta de a 20 por pedido) y
+  `obtenerDetalles` (cache primero y lo que falta de a 20 por pedido; `thing`
+  siempre con `stats=1&versions=1`; una fila sin la encuesta se vuelve a
+  pedir), `partidas` (`plays`, de a 100 por página, 6 intentos) y
   `coleccion` (dos pedidos a `collection`, porque con `subtype=boardgame` BGG
   mezcla las expansiones: juegos con `excludesubtype=boardgameexpansion` y
   expansiones aparte; 6 intentos, porque suele responder 202 mientras la
@@ -438,7 +476,9 @@ El `MockProvider` (`mock/`) tiene 12 juegos en `juegos.json`, sin `bgg_id` ni
 imagen (no se hace pasar por BGG); varias descripciones tienen más de un
 párrafo para probar cómo se muestran. Su colección (`coleccion.json`) existe
 solo para el usuario `prueba`: 2 juegos y 3 expansiones (una sin su juego
-base) con bgg_id desde 990.000.000, que no chocan con los de BGG. En desarrollo agrega 300 ms de latencia para
+base) con bgg_id desde 990.000.000, que no chocan con los de BGG, con la
+encuesta y otros nombres en Catan; y 3 partidas (`partidas.json`), con un
+jugador `beto_bgg` y una sin jugadores. En desarrollo agrega 300 ms de latencia para
 que se vean los estados de carga.
 
 #### Verificación con la API real
@@ -468,6 +508,19 @@ Verificado el 2026-10-28 con el token real:
       ordenado por relevancia: el orden lo pone `bgg-provider` (exacto,
       empieza igual, el resto).
 - [x] La duración es `playingtime` (Catan: 120 min).
+- [x] Una expansión trae `type="boardgameexpansion"` y links `inbound="true"`
+      hacia sus juegos base (Seafarers, 325 → Catan, 13).
+- [x] `collection` con `own=1&stats=1` y los dos pedidos (juegos sin
+      expansiones, y expansiones aparte) devuelve bien una colección real
+      (90 juegos y 5 expansiones en unos 4 s); sin puntuación, `rating` es
+      "N/A" → null. El `name` de cada ítem es el de la edición que la persona
+      marcó que tiene (por ejemplo, el título en español).
+- [x] La encuesta `suggested_numplayers` (Catan: ideal con 4, recomendado con
+      3–4), los nombres `alternate` (Catan tiene 64, en todos los idiomas y sin
+      decir cuál es cuál) y la caja en español de `versions`. Un `thing` con
+      `versions=1` pesa unos 250 KB.
+- [x] `plays` devuelve los jugadores sin nombre como "Anonymous player", sin
+      usuario (verificado el 2026-11-03).
 
 Todavía sin observar:
 
@@ -475,8 +528,6 @@ Todavía sin observar:
       y cómo es su cuerpo (el fixture `respuesta-202.xml` sigue siendo una
       suposición basada en `collection`).
 - [ ] Límites reales de rate limit, si el 429 trae `Retry-After` y en qué formato.
-- [ ] Que una expansión (325, Seafarers) traiga `inbound="true"` hacia Catan
-      (13) y cómo responde `collection` (correr con `BGG_USUARIO=...`).
 - [ ] Si todos los nombres de categorías y mecánicas coinciden con los de
       `tipos.ts` (los de Catan sí: `eurogame`, `negociación`).
 - [ ] Requisitos de atribución de los términos de uso de la API ("Powered by BGG").
@@ -627,9 +678,22 @@ jugadores y reabrir una partida recién terminada. Además, la colección de BGG
   (refresh). Cada tanda (`importarTanda`): `obtenerDetalles`, crea la fila
   compartida de BGG si falta (con la cache, clave secreta) y da de alta en
   `catalogo_usuario` con la sesión (upsert `ignoreDuplicates`: lo que ya
-  estaba no se toca, ni su puntuación). Nada se quita.
+  estaba no se toca, ni su puntuación). Nada se quita. La colección trae el
+  nombre de la **edición** que cada uno marcó que tiene ("¿Alcachofas?¡No,
+  gracias!" en vez de "Abandon All Artichokes"): si es uno de los nombres de
+  BGG y nadie eligió el nombre en español, se usa ese (`nombreDeLaEdicion` +
+  `elegir_nombre_es`).
 - La puntuación de BGG entra solo al agregar el juego; después se cambia en
   la Ficha. "Desvincular" no toca los juegos importados.
+- "Traer mis partidas" (`PartidasBgg`): `importarPaginaPartidasBgg(pagina)`
+  desde el navegador, de a 100, hasta que no hay más. `armarPartidasParaImportar`:
+  quien importa es el jugador con su usuario de BGG o, si no figura, el
+  primer "Anonymous player" (así anota BGG a los jugadores sin nombre; los
+  demás quedan como "Sin nombre"), y si la partida no tiene jugadores se lo
+  suma; un amigo, el que tiene el usuario de BGG que vinculó; el resto entra
+  sin cuenta. El juego se vincula si su fila de BGG ya existe
+  (conviene traer los juegos primero); si no, queda solo el nombre. Lo ya
+  importado no se repite.
 
 ### Amigos (`/jugar/amigos`)
 
@@ -746,7 +810,8 @@ jugadores y reabrir una partida recién terminada. Además, la colección de BGG
   cambiar de modo limpia la elección. Filtros comunes: chips por dueño
   (`filtrarPorDuenos`, varios a la vez; ninguno = todos), "Solo para N
   jugadores" (`juegosParaLaMesa`; sin el dato no entra, como en el
-  catálogo) y duración máxima. El anfitrión puede "Jugar este"
+  catálogo; con "Que estén recomendados para N" usa la encuesta de BGG) y
+  duración máxima. El anfitrión puede "Jugar este"
   (`cambiarJuegoDeSala`); a los demás se les actualiza el
   encabezado porque la recarga nota el `juego_id` nuevo y hace
   `router.refresh()` (también cuando una sala sin juego recibe el primero).

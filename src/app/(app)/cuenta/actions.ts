@@ -4,6 +4,7 @@ import { refresh } from "next/cache";
 import { redirect } from "next/navigation";
 import { getUsuarioActual } from "@/lib/auth";
 import { importarTanda } from "@/lib/coleccion-bgg/importar";
+import { PARTIDAS_POR_PAGINA, armarPartidasParaImportar } from "@/lib/coleccion-bgg/partidas";
 import { planificarImportacion } from "@/lib/coleccion-bgg/planificar";
 import { ErrorGameData, getGameDataProvider } from "@/lib/game-data";
 import { CacheSupabase } from "@/lib/game-data/bgg/cache-supabase";
@@ -192,4 +193,75 @@ export async function importarTandaBgg(
 export async function terminarImportacionBgg(): Promise<Resultado<null>> {
   refresh();
   return { ok: true, data: null };
+}
+
+export type PaginaDePartidas = {
+  nuevas: number;
+  repetidas: number;
+  /** Partidas que BGG dice que hay en total (todas las páginas). */
+  total: number;
+  hayMas: boolean;
+};
+
+/**
+ * Importa una página (de 100) de las partidas registradas en BGG. Se llama
+ * desde el navegador, página por página, con progreso.
+ */
+export async function importarPaginaPartidasBgg(
+  pagina: number,
+): Promise<Resultado<PaginaDePartidas>> {
+  if (!Number.isInteger(pagina) || pagina < 1 || pagina > 1000) {
+    return { ok: false, error: "Página inválida." };
+  }
+  const usuario = await getUsuarioActual();
+  if (!usuario) return { ok: false, error: SESION_VENCIDA };
+  const provider = getGameDataProvider();
+  if (!provider) return { ok: false, error: "La conexión con BGG no está disponible." };
+
+  const supabase = await createClient();
+  const { data: perfiles, error: errorPerfiles } = await supabase
+    .from("perfiles")
+    .select("id, bgg_usuario")
+    .not("bgg_usuario", "is", null);
+  if (errorPerfiles) {
+    console.error("importarPaginaPartidasBgg", errorPerfiles);
+    return { ok: false, error: "No se pudo leer tu perfil. Probá de nuevo." };
+  }
+  const usuarioBgg = perfiles.find((p) => p.id === usuario.id)?.bgg_usuario;
+  if (!usuarioBgg) return { ok: false, error: "Primero vinculá tu usuario de BGG." };
+  // RLS deja ver los perfiles de amigos (y solicitudes): la base igual solo
+  // acepta como jugador con cuenta a un amigo.
+  const amigos = new Map(
+    perfiles
+      .filter((p) => p.id !== usuario.id && p.bgg_usuario)
+      .map((p) => [p.bgg_usuario!.toLowerCase(), p.id] as const),
+  );
+
+  try {
+    const { total, partidas } = await provider.partidas(usuarioBgg, pagina);
+    const hayMas = pagina * PARTIDAS_POR_PAGINA < total;
+    if (partidas.length === 0)
+      return { ok: true, data: { nuevas: 0, repetidas: 0, total, hayMas } };
+
+    const { data: filas, error } = await supabase
+      .from("juegos")
+      .select("id, bgg_id")
+      .eq("origen", "bgg")
+      .in("bgg_id", [...new Set(partidas.map((p) => p.bgg_id))]);
+    if (error) throw error;
+    const juegos = new Map(filas.flatMap((f) => (f.bgg_id ? [[f.bgg_id, f.id] as const] : [])));
+
+    const { data, error: errorImportar } = await supabase.rpc("importar_partidas_bgg", {
+      partidas: armarPartidasParaImportar(partidas, {
+        yo: { id: usuario.id, usuarioBgg },
+        amigos,
+        juegos,
+      }),
+    });
+    if (errorImportar) throw errorImportar;
+    const resumen = data[0] ?? { nuevas: 0, repetidas: 0 };
+    return { ok: true, data: { ...resumen, total, hayMas } };
+  } catch (error) {
+    return { ok: false, error: errorDeBgg(error, usuarioBgg) };
+  }
 }

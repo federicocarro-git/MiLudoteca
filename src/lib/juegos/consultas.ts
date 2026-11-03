@@ -24,7 +24,14 @@ export const obtenerJuego = cache(async (id: string) => {
   ]);
   if (error) throw error;
   if (!data) return null;
-  const { catalogo_usuario, ...juego } = data;
+  const { catalogo_usuario, ...fila } = data;
+  // En español si alguien eligió el nombre o BGG tiene la caja de una edición en español.
+  const juego = {
+    ...fila,
+    nombre: fila.nombre_es ?? fila.nombre,
+    imagen_url: fila.imagen_es ?? fila.imagen_url,
+    nombre_original: fila.nombre,
+  };
   return {
     juego,
     // RLS deja ver solo la fila propia de catalogo_usuario.
@@ -64,12 +71,19 @@ export async function obtenerRelacionados(juego: {
     if (juego.expande.length === 0) return { expansiones: [], bases: [] };
     const { data, error } = await supabase
       .from("juegos")
-      .select("id, nombre, imagen_url")
+      .select("id, nombre, nombre_es, imagen_url, imagen_es")
       .eq("origen", "bgg")
       .in("bgg_id", juego.expande)
       .order("nombre");
     if (error) throw error;
-    return { expansiones: [], bases: data };
+    return {
+      expansiones: [],
+      bases: data.map((b) => ({
+        id: b.id,
+        nombre: b.nombre_es ?? b.nombre,
+        imagen_url: b.imagen_es ?? b.imagen_url,
+      })),
+    };
   }
   if (juego.bgg_id === null) return { expansiones: [], bases: [] };
   const { data, error } = await supabase

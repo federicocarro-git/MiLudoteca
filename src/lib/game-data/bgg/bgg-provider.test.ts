@@ -65,7 +65,7 @@ describe("BggProvider.obtenerDetalle", () => {
   it("sin cache: pide a BGG con estadísticas y guarda en la cache", async () => {
     const { provider, pedir, cache } = crear({ "thing:13": fixture("thing-13.xml") });
     const d = await provider.obtenerDetalle("13");
-    expect(pedir).toHaveBeenCalledWith("thing", { id: "13", stats: "1" });
+    expect(pedir).toHaveBeenCalledWith("thing", { id: "13", stats: "1", versions: "1" });
     expect(d).toMatchObject({ bgg_id: 13, nombre: "CATAN", complejidad: 2.29 });
     expect(cache.guardar).toHaveBeenCalledWith(d, AHORA);
   });
@@ -133,7 +133,7 @@ describe("BggProvider.obtenerDetalles", () => {
       sincronizadoEn: AHORA,
     });
     const datos = await provider.obtenerDetalles([822, 13, 325, 13]);
-    expect(pedir).toHaveBeenCalledWith("thing", { id: "13,325", stats: "1" });
+    expect(pedir).toHaveBeenCalledWith("thing", { id: "13,325", stats: "1", versions: "1" });
     // 325 no vino en la respuesta: no aparece.
     expect(datos.map((d) => d.bgg_id)).toEqual([822, 13]);
     expect(cache.guardar).toHaveBeenCalledOnce();
@@ -194,5 +194,30 @@ describe("BggProvider.coleccion", () => {
     await expect(provider.coleccion("nadie")).rejects.toMatchObject({
       codigo: "usuario_inexistente",
     });
+  });
+});
+
+describe("BggProvider: datos nuevos y partidas", () => {
+  it("una copia de la cache sin la encuesta de jugadores se vuelve a pedir", async () => {
+    const { provider, pedir, cache } = crear({ "thing:13": fixture("thing-13.xml") });
+    cache.filas.set(13, {
+      datos: { nombre: "Viejo", bgg_id: 13, jugadores_recomendados: null } as DatosJuego,
+      sincronizadoEn: AHORA,
+    });
+    const datos = await provider.obtenerDetalle("13");
+    expect(pedir).toHaveBeenCalledOnce();
+    expect(datos?.jugadores_recomendados).toEqual([3, 4]);
+  });
+
+  it("partidas: pide la página con más intentos", async () => {
+    const { provider, pedir } = crear({ plays: fixture("plays.xml") });
+    const { total, partidas } = await provider.partidas(" Fedesin ", 2);
+    expect(pedir).toHaveBeenCalledWith(
+      "plays",
+      { username: "Fedesin", page: "2" },
+      { maxIntentos: 6 },
+    );
+    expect(total).toBe(104);
+    expect(partidas).toHaveLength(3);
   });
 });

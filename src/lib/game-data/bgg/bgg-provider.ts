@@ -5,10 +5,11 @@ import {
   type DatosJuego,
   type GameDataProvider,
   type ItemColeccion,
+  type PartidaBgg,
   type ResultadoBusqueda,
 } from "../types";
 import type { ClienteBgg } from "./cliente";
-import { parsearBusqueda, parsearColeccion, parsearDetalle } from "./parser";
+import { parsearBusqueda, parsearColeccion, parsearDetalle, parsearPartidas } from "./parser";
 
 /** Cache de detalles de BGG (en producción, las filas `origen = 'bgg'` de `juegos`). */
 export interface CacheJuegosBgg {
@@ -19,8 +20,25 @@ export interface CacheJuegosBgg {
 export const VIGENCIA_CACHE_MS = 30 * 24 * 60 * 60 * 1000;
 /** Ids por pedido a `thing` (verificado con la API real). */
 export const IDS_POR_PEDIDO = 20;
-/** `collection` puede tardar en armarse (BGG responde 202 mientras tanto). */
+/**
+ * `thing` con estadísticas (peso, encuesta de cantidad de jugadores) y con las
+ * ediciones (`versions`), de donde sale la caja en español.
+ */
+const PARAMS_THING = { stats: "1", versions: "1" };
+/** `collection` y `plays` pueden tardar en armarse (BGG responde 202 mientras tanto). */
 const INTENTOS_COLECCION = 6;
+
+/**
+ * ¿Sirve la copia de la cache? Tiene que tener menos de 30 días y los datos
+ * que se fueron sumando (una fila vieja sin la encuesta de jugadores se pide
+ * de nuevo).
+ */
+function vigente(cacheado: { datos: DatosJuego; sincronizadoEn: Date }, ahora: Date) {
+  return (
+    ahora.getTime() - cacheado.sincronizadoEn.getTime() < VIGENCIA_CACHE_MS &&
+    cacheado.datos.jugadores_recomendados !== null
+  );
+}
 
 export class BggProvider implements GameDataProvider {
   readonly id = "bgg" as const;
@@ -48,13 +66,11 @@ export class BggProvider implements GameDataProvider {
     const ahora = this.deps.ahora?.() ?? new Date();
 
     const cacheado = await this.leerCache(bggId);
-    if (cacheado && ahora.getTime() - cacheado.sincronizadoEn.getTime() < VIGENCIA_CACHE_MS) {
-      return cacheado.datos;
-    }
+    if (cacheado && vigente(cacheado, ahora)) return cacheado.datos;
 
     let datos: DatosJuego | null;
     try {
-      const xml = await this.deps.cliente.pedir("thing", { id: String(bggId), stats: "1" });
+      const xml = await this.deps.cliente.pedir("thing", { id: String(bggId), ...PARAMS_THING });
       datos = parsearDetalle(xml).find((d) => d.bgg_id === bggId) ?? null;
     } catch (error) {
       // Si BGG falla pero hay una copia vieja, mejor eso que nada.
@@ -80,7 +96,7 @@ export class BggProvider implements GameDataProvider {
     for (const id of ids) {
       const cacheado = await this.leerCache(id);
       if (!cacheado) continue;
-      if (ahora.getTime() - cacheado.sincronizadoEn.getTime() < VIGENCIA_CACHE_MS) {
+      if (vigente(cacheado, ahora)) {
         encontrados.set(id, cacheado.datos);
       } else {
         viejos.set(id, cacheado.datos);
@@ -92,7 +108,7 @@ export class BggProvider implements GameDataProvider {
       const lote = faltan.slice(i, i + IDS_POR_PEDIDO);
       let datos: DatosJuego[];
       try {
-        const xml = await this.deps.cliente.pedir("thing", { id: lote.join(","), stats: "1" });
+        const xml = await this.deps.cliente.pedir("thing", { id: lote.join(","), ...PARAMS_THING });
         datos = parsearDetalle(xml);
       } catch (error) {
         // Sin BGG, lo que haya en la cache (aunque esté vieja); si no hay nada, error.
@@ -135,6 +151,19 @@ export class BggProvider implements GameDataProvider {
     ).map((e) => ({ ...e, es_expansion: true }));
     const vistos = new Set(juegos.map((j) => j.bgg_id));
     return [...juegos, ...expansiones.filter((e) => !vistos.has(e.bgg_id))];
+  }
+
+  /** Una página (de 100) de las partidas que un usuario registró en BGG. */
+  async partidas(
+    usuario: string,
+    pagina: number,
+  ): Promise<{ total: number; partidas: PartidaBgg[] }> {
+    const xml = await this.deps.cliente.pedir(
+      "plays",
+      { username: usuario.trim(), page: String(Math.max(1, Math.floor(pagina))) },
+      { maxIntentos: INTENTOS_COLECCION },
+    );
+    return parsearPartidas(xml);
   }
 
   private async leerCache(bggId: number) {

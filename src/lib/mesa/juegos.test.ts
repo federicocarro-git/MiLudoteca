@@ -23,6 +23,7 @@ const fila = (
   duracion_min: null,
   complejidad: null,
   tipos: [],
+  jugadores_recomendados: null,
   ...juego,
 });
 
@@ -68,9 +69,27 @@ describe("agruparPorJuego", () => {
 
 describe("juegosParaLaMesa", () => {
   const juegos = [
-    { id: "2a4", jugadores_min: 2, jugadores_max: 4, duracion_min: 60 },
-    { id: "3a6", jugadores_min: 3, jugadores_max: 6, duracion_min: 30 },
-    { id: "sin", jugadores_min: null, jugadores_max: null, duracion_min: 20 },
+    {
+      id: "2a4",
+      jugadores_min: 2,
+      jugadores_max: 4,
+      duracion_min: 60,
+      jugadores_recomendados: [2, 3],
+    },
+    {
+      id: "3a6",
+      jugadores_min: 3,
+      jugadores_max: 6,
+      duracion_min: 30,
+      jugadores_recomendados: [4, 5],
+    },
+    {
+      id: "sin",
+      jugadores_min: null,
+      jugadores_max: null,
+      duracion_min: 20,
+      jugadores_recomendados: null,
+    },
   ];
 
   it("filtra por cantidad de jugadores; sin datos no pasa", () => {
@@ -80,6 +99,11 @@ describe("juegosParaLaMesa", () => {
 
   it("y por duración máxima", () => {
     expect(juegosParaLaMesa(juegos, 4, 45).map((j) => j.id)).toEqual(["3a6"]);
+  });
+
+  it("solo los recomendados por la comunidad de BGG para esa cantidad", () => {
+    expect(juegosParaLaMesa(juegos, 4, null, true).map((j) => j.id)).toEqual(["3a6"]);
+    expect(juegosParaLaMesa(juegos, 2, null, true).map((j) => j.id)).toEqual(["2a4"]);
   });
 });
 
