@@ -50,4 +50,30 @@ describe("armarPartidasParaImportar", () => {
     expect(p.juego_id).toBeNull();
     expect(p.jugadores).toEqual([{ user_id: "yo", nombre: "Yo", puntos: null, gano: false }]);
   });
+
+  it("si no figura quien importa, es el primer Anonymous player; los otros, Sin nombre", () => {
+    const anonimo = { nombre: "Anonymous player", usuario_bgg: null, puntos: null, gano: false };
+    const [p] = armarPartidasParaImportar([partida([anonimo, anonimo, anonimo])], contexto);
+    expect(p.jugadores.map((j) => [j.user_id, j.nombre])).toEqual([
+      ["yo", "Yo"],
+      [null, "Sin nombre"],
+      [null, "Sin nombre"],
+    ]);
+  });
+
+  it("si quien importa figura con su usuario, los Anonymous player quedan sin cuenta", () => {
+    const [p] = armarPartidasParaImportar(
+      [
+        partida([
+          { nombre: "Anonymous player", usuario_bgg: null, puntos: 3, gano: false },
+          { nombre: "Fede", usuario_bgg: "Fedesin", puntos: 9, gano: true },
+        ]),
+      ],
+      contexto,
+    );
+    expect(p.jugadores.map((j) => [j.user_id, j.nombre])).toEqual([
+      [null, "Sin nombre"],
+      ["yo", "Fede"],
+    ]);
+  });
 });

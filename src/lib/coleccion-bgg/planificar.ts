@@ -36,3 +36,18 @@ export function enTandas<T>(items: T[], tamano = JUEGOS_POR_TANDA): T[][] {
   for (let i = 0; i < items.length; i += tamano) tandas.push(items.slice(i, i + tamano));
   return tandas;
 }
+
+/**
+ * El nombre en español que sale de la colección: BGG devuelve el nombre de la
+ * edición que la persona marcó que tiene ("¿Alcachofas? ¡No, gracias!" en vez
+ * de "Abandon All Artichokes"). Solo vale si es uno de los otros nombres del
+ * juego en BGG (lo mismo que exige elegir_nombre_es).
+ */
+export function nombreDeLaEdicion(
+  nombreEnColeccion: string | undefined,
+  juego: { nombre: string; nombres_alternativos: string[] },
+): string | null {
+  const nombre = nombreEnColeccion?.trim();
+  if (!nombre || nombre === juego.nombre) return null;
+  return juego.nombres_alternativos.includes(nombre) ? nombre : null;
+}

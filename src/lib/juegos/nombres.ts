@@ -1,7 +1,7 @@
 // Los otros nombres de un juego en BGG vienen en todos los idiomas y sin decir
 // cuál es cuál: se ordenan para que los que parecen en español queden arriba.
 
-const PARECE_ESPANOL = /[áéíóúñ¿¡]|^(el|la|los|las|un|una|del)\s/i;
+const PARECE_ESPANOL = /[áéíóúñ¿¡]|(^|\s)(el|la|los|las|un|una|del|juego)(\s|$)/i;
 const OTRO_ALFABETO = /[^\p{Script=Latin}\p{N}\p{P}\p{S}\s]/u;
 
 /** Primero los que parecen en español; los de otros alfabetos, al final. */

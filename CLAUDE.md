@@ -513,7 +513,14 @@ Verificado el 2026-10-28 con el token real:
 - [x] `collection` con `own=1&stats=1` y los dos pedidos (juegos sin
       expansiones, y expansiones aparte) devuelve bien una colección real
       (90 juegos y 5 expansiones en unos 4 s); sin puntuación, `rating` es
-      "N/A" → null.
+      "N/A" → null. El `name` de cada ítem es el de la edición que la persona
+      marcó que tiene (por ejemplo, el título en español).
+- [x] La encuesta `suggested_numplayers` (Catan: ideal con 4, recomendado con
+      3–4), los nombres `alternate` (Catan tiene 64, en todos los idiomas y sin
+      decir cuál es cuál) y la caja en español de `versions`. Un `thing` con
+      `versions=1` pesa unos 250 KB.
+- [x] `plays` devuelve los jugadores sin nombre como "Anonymous player", sin
+      usuario (verificado el 2026-11-03).
 
 Todavía sin observar:
 
@@ -521,9 +528,6 @@ Todavía sin observar:
       y cómo es su cuerpo (el fixture `respuesta-202.xml` sigue siendo una
       suposición basada en `collection`).
 - [ ] Límites reales de rate limit, si el 429 trae `Retry-After` y en qué formato.
-- [ ] La encuesta `suggested_numplayers`, los nombres `alternate` y las
-      `versions` en español de un `thing` real, cuánto pesa con
-      `versions=1`, y el formato real de `plays` (correr con `BGG_USUARIO=...`).
 - [ ] Si todos los nombres de categorías y mecánicas coinciden con los de
       `tipos.ts` (los de Catan sí: `eurogame`, `negociación`).
 - [ ] Requisitos de atribución de los términos de uso de la API ("Powered by BGG").
@@ -674,14 +678,20 @@ jugadores y reabrir una partida recién terminada. Además, la colección de BGG
   (refresh). Cada tanda (`importarTanda`): `obtenerDetalles`, crea la fila
   compartida de BGG si falta (con la cache, clave secreta) y da de alta en
   `catalogo_usuario` con la sesión (upsert `ignoreDuplicates`: lo que ya
-  estaba no se toca, ni su puntuación). Nada se quita.
+  estaba no se toca, ni su puntuación). Nada se quita. La colección trae el
+  nombre de la **edición** que cada uno marcó que tiene ("¿Alcachofas?¡No,
+  gracias!" en vez de "Abandon All Artichokes"): si es uno de los nombres de
+  BGG y nadie eligió el nombre en español, se usa ese (`nombreDeLaEdicion` +
+  `elegir_nombre_es`).
 - La puntuación de BGG entra solo al agregar el juego; después se cambia en
   la Ficha. "Desvincular" no toca los juegos importados.
 - "Traer mis partidas" (`PartidasBgg`): `importarPaginaPartidasBgg(pagina)`
   desde el navegador, de a 100, hasta que no hay más. `armarPartidasParaImportar`:
-  quien importa es el jugador con su usuario de BGG (si la partida no tiene
-  jugadores, se lo suma); un amigo, el que tiene el usuario de BGG que vinculó;
-  el resto entra sin cuenta. El juego se vincula si su fila de BGG ya existe
+  quien importa es el jugador con su usuario de BGG o, si no figura, el
+  primer "Anonymous player" (así anota BGG a los jugadores sin nombre; los
+  demás quedan como "Sin nombre"), y si la partida no tiene jugadores se lo
+  suma; un amigo, el que tiene el usuario de BGG que vinculó; el resto entra
+  sin cuenta. El juego se vincula si su fila de BGG ya existe
   (conviene traer los juegos primero); si no, queda solo el nombre. Lo ya
   importado no se repite.
 

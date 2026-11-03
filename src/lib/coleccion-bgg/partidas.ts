@@ -5,6 +5,9 @@ import type { PartidaBgg } from "@/lib/game-data/types";
 /** Partidas por página en `plays` de BGG. */
 export const PARTIDAS_POR_PAGINA = 100;
 
+/** Así anota BGG a un jugador al que no se le puso nombre. */
+const NOMBRE_ANONIMO_BGG = "anonymous player";
+
 export type PartidaParaImportar = {
   bgg_play_id: number;
   juego_id: string | null;
@@ -16,8 +19,10 @@ export type PartidaParaImportar = {
 
 /**
  * Arma las partidas para la base:
- * - quien importa es el jugador con su usuario de BGG (y si la partida no
- *   tiene jugadores cargados, se lo suma: es su registro);
+ * - quien importa es el jugador con su usuario de BGG; si no figura, es el
+ *   primer "Anonymous player" (así anota BGG a los jugadores sin nombre) y,
+ *   si la partida no tiene jugadores cargados, se lo suma: es su registro;
+ * - los otros "Anonymous player" quedan como "Sin nombre";
  * - un amigo es el jugador con el usuario de BGG que ese amigo vinculó;
  * - el resto entra sin cuenta, con su nombre;
  * - el juego se vincula si su fila de BGG ya está en la base (si no, queda
@@ -35,11 +40,20 @@ export function armarPartidasParaImportar(
 ): PartidaParaImportar[] {
   const yo = contexto.yo.usuarioBgg.trim().toLowerCase();
   return partidas.map((p) => {
-    const jugadores = p.jugadores.map((j) => {
+    const anonimo = (j: PartidaBgg["jugadores"][number]) =>
+      !j.usuario_bgg && j.nombre.trim().toLowerCase() === NOMBRE_ANONIMO_BGG;
+    const estoy = p.jugadores.some((j) => j.usuario_bgg?.trim().toLowerCase() === yo);
+    const primerAnonimo = estoy ? -1 : p.jugadores.findIndex(anonimo);
+    const jugadores = p.jugadores.map((j, i) => {
       const usuario = j.usuario_bgg?.trim().toLowerCase() ?? null;
       const userId =
-        usuario === yo ? contexto.yo.id : usuario ? (contexto.amigos.get(usuario) ?? null) : null;
-      return { user_id: userId, nombre: j.nombre, puntos: j.puntos, gano: j.gano };
+        usuario === yo || i === primerAnonimo
+          ? contexto.yo.id
+          : usuario
+            ? (contexto.amigos.get(usuario) ?? null)
+            : null;
+      const nombre = i === primerAnonimo ? "Yo" : anonimo(j) ? "Sin nombre" : j.nombre;
+      return { user_id: userId, nombre, puntos: j.puntos, gano: j.gano };
     });
     if (jugadores.length === 0) {
       jugadores.push({ user_id: contexto.yo.id, nombre: "Yo", puntos: null, gano: false });

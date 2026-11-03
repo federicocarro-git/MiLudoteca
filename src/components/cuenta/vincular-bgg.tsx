@@ -104,7 +104,7 @@ function ColeccionBgg({ usuario, importadoEn }: { usuario: string; importadoEn: 
     setProgreso({ etapa: "agregando", hechos: 0, total: nuevos.length });
     for (const tanda of enTandas(nuevos)) {
       const r = await importarTandaBgg(
-        tanda.map(({ bgg_id, puntuacion }) => ({ bgg_id, puntuacion })),
+        tanda.map(({ bgg_id, puntuacion, nombre }) => ({ bgg_id, puntuacion, nombre })),
       );
       if (!r.ok) {
         setError(
